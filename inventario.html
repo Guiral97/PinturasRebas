@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inventario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="config.js"></script>
+<style>
+  :root {
+    --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
+    --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
+    --cinta: #E8D08A; --cinta-borde: #C9AE66; --alerta: #A1281F; --ok: #2F6B3A;
+    --radio: 6px;
+    font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
+      --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
+      --cinta: #C4AB68; --cinta-borde: #9E8850; --alerta: #E57B72; --ok: #7FC08A;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font-size: 16px; line-height: 1.45; }
+  [hidden] { display: none !important; }
+  .num { font-variant-numeric: tabular-nums; }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  input, select, textarea {
+    font: inherit; color: var(--tinta); background: var(--panel);
+    border: 1px solid var(--linea); border-radius: var(--radio);
+    padding: .5rem .65rem; width: 100%;
+  }
+  label, legend { font-weight: 500; }
+  .campo { display: grid; gap: .3rem; align-content: start; }
+  .campo small { color: var(--suave); }
+  .btn {
+    border: 1px solid var(--linea); background: var(--panel); color: var(--tinta);
+    padding: .5rem .9rem; border-radius: var(--radio); white-space: nowrap;
+  }
+  .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
+  .btn-primario:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-texto { border: 0; background: none; color: var(--acento); padding: .3rem .4rem; font-weight: 600; }
+  h2 { font-family: "Barlow Condensed", sans-serif; font-weight: 600; font-size: 1.45rem; margin: 0; }
+  h3 { font-family: "Barlow Condensed", sans-serif; font-weight: 600; font-size: 1.2rem; margin: 0; }
+
+  /* Barra */
+  .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
+  .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; margin-right: auto; }
+  #usuario { color: var(--suave); }
+  .nav { display: flex; gap: .25rem; }
+  .nav a { color: var(--tinta); text-decoration: none; padding: .4rem .7rem; border-radius: var(--radio); font-weight: 500; }
+  .nav a[aria-current="page"] { background: var(--fondo); box-shadow: inset 0 -3px 0 var(--acento); }
+
+  /* Login */
+  #login { max-width: 22rem; margin: 12vh auto 0; padding: 1.5rem; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: 1rem; }
+  #login h1 { font-family: "Barlow Condensed", sans-serif; font-size: 1.8rem; margin: 0; }
+  #loginError { color: var(--alerta); margin: 0; min-height: 1.4em; }
+
+  main { max-width: 78rem; margin: 0 auto; padding: 1.25rem; }
+
+  /* Pestañas */
+  .pestanas { display: flex; gap: .25rem; border-bottom: 1px solid var(--linea); margin-bottom: 1.25rem; overflow-x: auto; }
+  .pestanas button {
+    border: 0; background: none; color: var(--suave); padding: .7rem 1rem;
+    font-weight: 600; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap;
+  }
+  .pestanas button[aria-selected="true"] { color: var(--tinta); border-bottom-color: var(--acento); }
+
+  .herramientas { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-bottom: 1rem; }
+  .herramientas input[type="search"] { max-width: 24rem; }
+  .check { display: inline-flex; align-items: center; gap: .4rem; font-weight: 500; }
+  .check input { width: auto; }
+  .herramientas .btn-primario { margin-left: auto; }
+
+  /* Tablas */
+  .tabla-caja { overflow-x: auto; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); }
+  table { border-collapse: collapse; width: 100%; min-width: 40rem; }
+  th, td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--linea); vertical-align: top; }
+  th { font-weight: 600; color: var(--suave); font-size: .9rem; }
+  tr:last-child td { border-bottom: 0; }
+  td.der, th.der { text-align: right; }
+  td small { color: var(--suave); display: block; }
+  .bajo { color: var(--alerta); font-weight: 600; }
+  .inactivo { color: var(--suave); }
+  .vacio { color: var(--suave); padding: 1.5rem .8rem; }
+
+  /* Cinta del lector */
+  .cinta {
+    background: var(--cinta); padding: 1rem 1.6rem 1.1rem; transform: rotate(-.35deg);
+    clip-path: polygon(.9% 0, 99.1% 0, 100% 16%, 99.3% 34%, 100% 52%, 99.2% 70%, 100% 86%, 99.1% 100%, .9% 100%, 0 84%, .7% 66%, 0 48%, .8% 30%, 0 14%);
+  }
+  .cinta label { display: block; color: #2B2516; font-weight: 600; margin-bottom: .45rem; }
+  .cinta .fila { display: flex; gap: .5rem; }
+  .cinta input { font-size: 1.25rem; background: rgba(255,255,255,.88); border-color: var(--cinta-borde); color: #1A2127; }
+  .cinta .btn { background: rgba(255,255,255,.55); border-color: var(--cinta-borde); color: #1A2127; }
+  #lector { margin-top: 1rem; max-width: 26rem; border-radius: var(--radio); overflow: hidden; }
+
+  /* Entradas */
+  .entradas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .lista-opciones { list-style: none; margin: .75rem 0 0; padding: 0; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); }
+  .lista-opciones button { display: flex; justify-content: space-between; gap: 1rem; width: 100%; text-align: left; background: none; border: 0; color: var(--tinta); padding: .7rem .9rem; border-bottom: 1px solid var(--linea); }
+  .lista-opciones li:last-child button { border-bottom: 0; }
+  .lista-opciones small { color: var(--suave); display: block; }
+  .no-existe { margin-top: .75rem; padding: .9rem; background: var(--panel); border: 1px dashed var(--linea); border-radius: var(--radio); }
+  .no-existe p { margin: 0 0 .5rem; }
+
+  .tarjeta { background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: 1.25rem; display: grid; gap: 1rem; }
+  .seleccionado { border-left: 4px solid var(--acento); padding-left: .8rem; }
+  .seleccionado strong { display: block; font-size: 1.1rem; }
+  .seleccionado span { color: var(--suave); }
+  .segmentos { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+  .segmentos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+  fieldset { border: 0; padding: 0; margin: 0; }
+  legend { padding: 0; margin-bottom: .3rem; }
+  .movs { margin-top: 1.5rem; }
+  .movs h3 { margin-bottom: .5rem; }
+  .pos { color: var(--ok); font-weight: 600; }
+  .neg { color: var(--alerta); font-weight: 600; }
+
+  /* Clientes */
+  .clientes { display: grid; grid-template-columns: 22rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+
+  /* Diálogo de producto */
+  dialog { border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); color: var(--tinta); padding: 0; width: min(62rem, calc(100% - 1.5rem)); max-height: calc(100vh - 2rem); }
+  dialog::backdrop { background: rgba(10, 14, 18, .45); }
+  .dlg-cuerpo { padding: 1.25rem 1.5rem; display: grid; gap: 1.1rem; }
+  .dlg-pie { display: flex; justify-content: flex-end; gap: .5rem; padding: 1rem 1.5rem; border-top: 1px solid var(--linea); position: sticky; bottom: 0; background: var(--panel); }
+  .grilla-prod { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .9rem; }
+  .con-boton { display: flex; gap: .4rem; }
+  .pres-lista { display: grid; gap: .75rem; }
+  .pres {
+    display: grid; gap: .6rem; padding: .9rem; border: 1px solid var(--linea); border-radius: var(--radio);
+    grid-template-columns: 1.3fr 1fr 1.4fr 1fr 1fr .8fr .9fr auto; align-items: end;
+  }
+  .pres .campo label { font-size: .85rem; }
+  .pres .check { padding-bottom: .55rem; }
+  .pres-cab { display: flex; justify-content: space-between; align-items: center; }
+
+  #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
+  #aviso.error { background: var(--alerta); color: #fff; }
+
+  @media (max-width: 960px) {
+    .pres { grid-template-columns: 1fr 1fr; }
+    .entradas, .clientes { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    #usuario { display: none; }
+    main { padding: 1rem; }
+    .herramientas .btn-primario { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <span class="tienda" id="nombreTienda">Pinturas</span>
+  <nav class="nav" aria-label="Secciones">
+    <a href="index.html">Caja</a>
+    <a href="inventario.html" aria-current="page">Inventario</a>
+    <a href="cartera.html">Cartera</a>
+    <a href="tablero.html">Tablero</a>
+  </nav>
+  <span id="usuario"></span>
+  <button class="btn" id="salir" hidden>Cerrar sesión</button>
+</header>
+
+<form id="login" hidden>
+  <h1>Iniciar sesión</h1>
+  <div class="campo"><label for="email">Correo</label><input id="email" type="email" autocomplete="username" required></div>
+  <div class="campo"><label for="clave">Contraseña</label><input id="clave" type="password" autocomplete="current-password" required></div>
+  <p id="loginError" role="alert"></p>
+  <button class="btn btn-primario" type="submit">Entrar</button>
+</form>
+
+<main id="app" hidden>
+  <div class="pestanas" role="tablist">
+    <button role="tab" id="t-catalogo" aria-controls="p-catalogo" aria-selected="true">Catálogo</button>
+    <button role="tab" id="t-entradas" aria-controls="p-entradas" aria-selected="false">Entradas de mercancía</button>
+    <button role="tab" id="t-clientes" aria-controls="p-clientes" aria-selected="false">Clientes</button>
+  </div>
+
+  <!-- ============ CATÁLOGO ============ -->
+  <section id="p-catalogo" role="tabpanel" aria-labelledby="t-catalogo">
+    <div class="herramientas">
+      <input type="search" id="buscarCat" placeholder="Buscar por nombre, marca, color o código" aria-label="Buscar en el catálogo">
+      <label class="check"><input type="checkbox" id="soloBajo"> Solo stock bajo</label>
+      <label class="check"><input type="checkbox" id="verInactivos"> Ver inactivos</label>
+      <button class="btn btn-primario" id="nuevoProducto" type="button">Nuevo producto</button>
+    </div>
+    <div class="tabla-caja">
+      <table>
+        <thead><tr>
+          <th>Producto</th><th>Código</th><th class="der">Precio</th><th class="der">Costo</th>
+          <th class="der">Stock</th><th><span class="visually-hidden">Acciones</span></th>
+        </tr></thead>
+        <tbody id="tbCatalogo"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ ENTRADAS ============ -->
+  <section id="p-entradas" role="tabpanel" aria-labelledby="t-entradas" hidden>
+    <div class="entradas">
+      <div>
+        <div class="cinta">
+          <label for="scanEntrada">Escanea o busca el producto que llegó</label>
+          <div class="fila">
+            <input id="scanEntrada" autocomplete="off" spellcheck="false" enterkeyhint="search">
+            <button class="btn" id="btnCamara" type="button">Usar cámara</button>
+          </div>
+        </div>
+        <div id="lector" hidden></div>
+        <ul class="lista-opciones" id="opcionesEntrada" hidden></ul>
+        <div class="no-existe" id="noExiste" hidden>
+          <p id="noExisteTexto"></p>
+          <button class="btn" type="button" id="crearConCodigo">Crear producto con este código</button>
+        </div>
+
+        <div class="movs">
+          <h3>Últimos movimientos</h3>
+          <div class="tabla-caja">
+            <table>
+              <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th class="der">Cantidad</th><th>Nota</th></tr></thead>
+              <tbody id="tbMovs"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <form class="tarjeta" id="frmEntrada">
+        <h2>Registrar movimiento</h2>
+        <div class="seleccionado" id="selEntrada">
+          <strong>Ningún producto seleccionado</strong>
+          <span>Escanea o busca un producto para empezar.</span>
+        </div>
+
+        <fieldset>
+          <legend>Tipo</legend>
+          <div class="segmentos" id="tiposMov">
+            <button type="button" class="btn" data-tipo="compra" aria-pressed="true">Compra</button>
+            <button type="button" class="btn" data-tipo="inicial" aria-pressed="false">Inventario inicial</button>
+            <button type="button" class="btn" data-tipo="ajuste" aria-pressed="false">Ajuste</button>
+          </div>
+        </fieldset>
+
+        <div class="dos">
+          <div class="campo">
+            <label for="cantMov">Cantidad</label>
+            <input id="cantMov" type="number" step="1" inputmode="decimal" class="num" required>
+            <small id="ayudaCant">Unidades que entran.</small>
+          </div>
+          <div class="campo" id="campoCosto">
+            <label for="costoMov">Costo unitario</label>
+            <input id="costoMov" type="number" min="0" step="any" inputmode="numeric" class="num">
+            <small>Actualiza el costo del producto.</small>
+          </div>
+        </div>
+
+        <div class="campo" id="campoProveedor">
+          <label for="provMov">Proveedor</label>
+          <div class="con-boton">
+            <select id="provMov"><option value="">Sin proveedor</option></select>
+            <button type="button" class="btn" id="nuevoProveedor">Nuevo</button>
+          </div>
+        </div>
+
+        <div class="campo">
+          <label for="notaMov">Nota</label>
+          <input id="notaMov" placeholder="Número de factura, motivo del ajuste…">
+        </div>
+
+        <button class="btn btn-primario" type="submit" id="btnMov" disabled>Registrar movimiento</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============ CLIENTES ============ -->
+  <section id="p-clientes" role="tabpanel" aria-labelledby="t-clientes" hidden>
+    <div class="clientes">
+      <form class="tarjeta" id="frmCliente">
+        <h2 id="tituloCliente">Nuevo cliente</h2>
+        <div class="campo"><label for="cliNombre">Nombre o razón social</label><input id="cliNombre" required></div>
+        <div class="dos">
+          <div class="campo"><label for="cliDoc">Cédula o NIT</label><input id="cliDoc"></div>
+          <div class="campo"><label for="cliTipo">Tipo</label>
+            <select id="cliTipo"><option value="particular">Particular</option><option value="taller">Taller</option><option value="empresa">Empresa</option></select>
+          </div>
+        </div>
+        <div class="dos">
+          <div class="campo"><label for="cliTel">Teléfono</label><input id="cliTel" type="tel"></div>
+          <div class="campo"><label for="cliEmail">Correo</label><input id="cliEmail" type="email"></div>
+        </div>
+        <div class="campo"><label for="cliDir">Dirección</label><input id="cliDir"></div>
+        <div class="dos">
+          <div class="campo"><label for="cliCupo">Cupo de crédito</label><input id="cliCupo" type="number" min="0" step="any" inputmode="numeric" class="num" placeholder="Sin límite"><small>Vacío = sin límite.</small></div>
+          <div class="campo"><label for="cliPlazo">Plazo (días)</label><input id="cliPlazo" type="number" min="0" step="1" inputmode="numeric" class="num" value="30"></div>
+        </div>
+        <div class="con-boton">
+          <button class="btn btn-primario" type="submit" id="btnCliente">Guardar cliente</button>
+          <button class="btn" type="button" id="cancelarCliente" hidden>Cancelar edición</button>
+        </div>
+      </form>
+
+      <div>
+        <div class="herramientas">
+          <input type="search" id="buscarCli" placeholder="Buscar cliente por nombre, documento o teléfono" aria-label="Buscar cliente">
+        </div>
+        <div class="tabla-caja">
+          <table>
+            <thead><tr><th>Cliente</th><th>Documento</th><th>Tipo</th><th>Teléfono</th><th></th></tr></thead>
+            <tbody id="tbClientes"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ DIÁLOGO PRODUCTO ============ -->
+<dialog id="dlgProducto" aria-labelledby="tituloProducto">
+  <form id="frmProducto">
+    <div class="dlg-cuerpo">
+      <h2 id="tituloProducto">Nuevo producto</h2>
+      <div class="grilla-prod">
+        <div class="campo"><label for="prodNombre">Nombre</label><input id="prodNombre" required placeholder="Ej: Base bicapa, Masilla poliéster"></div>
+        <div class="campo"><label for="prodMarca">Marca</label>
+          <div class="con-boton"><select id="prodMarca"><option value="">Sin marca</option></select><button type="button" class="btn" id="nuevaMarca">Nueva</button></div>
+        </div>
+        <div class="campo"><label for="prodCategoria">Categoría</label>
+          <div class="con-boton"><select id="prodCategoria"><option value="">Sin categoría</option></select><button type="button" class="btn" id="nuevaCategoria">Nueva</button></div>
+        </div>
+        <div class="campo"><label for="prodColor">Código de color</label><input id="prodColor" placeholder="Opcional"></div>
+      </div>
+      <div class="campo"><label for="prodDesc">Descripción</label><input id="prodDesc" placeholder="Opcional"></div>
+      <label class="check"><input type="checkbox" id="prodActivo" checked> Producto activo</label>
+
+      <div class="pres-cab">
+        <h3>Presentaciones</h3>
+        <button type="button" class="btn-texto" id="agregarPres">Agregar presentación</button>
+      </div>
+      <div class="pres-lista" id="presLista"></div>
+    </div>
+    <div class="dlg-pie">
+      <button type="button" class="btn" id="cerrarProducto">Cancelar</button>
+      <button type="submit" class="btn btn-primario" id="guardarProducto">Guardar producto</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="aviso" role="status" hidden></div>
+
+<style>.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}</style>
+
+<script>
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, NOMBRE_TIENDA } = window.APP_CONFIG;
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const $ = (s) => document.querySelector(s);
+  const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+  const fecha = new Intl.DateTimeFormat('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+
+  document.title = `Inventario | ${NOMBRE_TIENDA}`;
+  $('#nombreTienda').textContent = NOMBRE_TIENDA;
+
+  // ---------- Estado ----------
+  let catalogo = [], marcas = [], categorias = [], proveedores = [], clientes = [];
+  let productoEditando = null;     // id del producto abierto en el diálogo
+  let seleccionEntrada = null;     // presentación elegida en Entradas
+  let tipoMov = 'compra';
+  let codigoPendiente = '';        // código escaneado que no existe
+  let clienteEditando = null;
+  let lectorCamara = null;
+
+  // ---------- Utilidades ----------
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const norm = (t) => String(t ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  const numOrNull = (v) => (v === '' || v == null ? null : Number(v));
+  const textoOrNull = (v) => (v.trim() === '' ? null : v.trim());
+
+  let tAviso;
+  function aviso(texto, tipo = 'info') {
+    const a = $('#aviso');
+    a.textContent = texto;
+    a.className = tipo === 'error' ? 'error' : '';
+    a.hidden = false;
+    clearTimeout(tAviso);
+    tAviso = setTimeout(() => (a.hidden = true), tipo === 'error' ? 6000 : 3000);
+  }
+
+  function mensajeError(error) {
+    if (!error) return '';
+    if (error.code === '23505') {
+      const m = error.message || '';
+      if (m.includes('codigo_barras')) return 'Ese código de barras ya está asignado a otro producto.';
+      if (m.includes('sku')) return 'Ese SKU ya existe en otro producto.';
+      if (m.includes('producto_id_nombre')) return 'Este producto ya tiene una presentación con ese nombre.';
+      if (m.includes('documento')) return 'Ya existe un cliente con ese documento.';
+      if (m.includes('nombre')) return 'Ya existe un registro con ese nombre.';
+      return 'Ese dato ya existe.';
+    }
+    return error.message;
+  }
+
+  function opciones(lista, vacio, seleccion) {
+    return `<option value="">${vacio}</option>` + lista.map((x) =>
+      `<option value="${x.id}" ${String(x.id) === String(seleccion ?? '') ? 'selected' : ''}>${esc(x.nombre)}</option>`).join('');
+  }
+
+  // ---------- Sesión ----------
+  async function mostrarSesion(session) {
+    const con = !!session;
+    $('#login').hidden = con;
+    $('#app').hidden = !con;
+    $('#salir').hidden = !con;
+    if (!con) return;
+    const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
+    if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
+    $('#usuario').textContent = perfil?.nombre ?? session.user.email;
+    await Promise.all([cargarCatalogo(), cargarMaestros(), cargarClientes(), cargarMovimientos()]);
+  }
+
+  $('#login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('#loginError').textContent = '';
+    const { error } = await db.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#clave').value });
+    if (error) $('#loginError').textContent = 'Correo o contraseña incorrectos.';
+  });
+  $('#salir').addEventListener('click', () => db.auth.signOut());
+
+  // ---------- Pestañas ----------
+  const tabs = ['catalogo', 'entradas', 'clientes'];
+  function abrirPestana(nombre) {
+    tabs.forEach((t) => {
+      $(`#t-${t}`).setAttribute('aria-selected', t === nombre);
+      $(`#p-${t}`).hidden = t !== nombre;
+    });
+    if (nombre !== 'entradas') detenerCamara();
+    if (nombre === 'entradas') $('#scanEntrada').focus();
+  }
+  tabs.forEach((t) => $(`#t-${t}`).addEventListener('click', () => abrirPestana(t)));
+
+  // ---------- Carga de datos ----------
+  async function cargarCatalogo() {
+    const { data, error } = await db.from('v_catalogo').select('*').order('etiqueta').limit(2000);
+    if (error) return aviso('No se pudo cargar el catálogo: ' + error.message, 'error');
+    catalogo = data;
+    pintarCatalogo();
+  }
+
+  async function cargarMaestros() {
+    const [m, c, p] = await Promise.all([
+      db.from('marcas').select('id, nombre').order('nombre'),
+      db.from('categorias').select('id, nombre').order('nombre'),
+      db.from('proveedores').select('id, nombre').order('nombre')
+    ]);
+    if (m.error || c.error || p.error) return aviso('No se pudieron cargar marcas, categorías o proveedores.', 'error');
+    marcas = m.data; categorias = c.data; proveedores = p.data;
+    $('#provMov').innerHTML = opciones(proveedores, 'Sin proveedor', $('#provMov').value);
+  }
+
+  async function cargarClientes() {
+    const { data, error } = await db.from('clientes').select('*').order('nombre').limit(2000);
+    if (error) return aviso('No se pudieron cargar los clientes.', 'error');
+    clientes = data;
+    pintarClientes();
+  }
+
+  async function cargarMovimientos() {
+    const { data, error } = await db.from('movimientos_inventario')
+      .select('id, tipo, cantidad, nota, creado_en, presentaciones(nombre, productos(nombre))')
+      .order('creado_en', { ascending: false }).limit(20);
+    if (error) return;
+    const nombresTipo = { inicial: 'Inicial', compra: 'Compra', venta: 'Venta', devolucion: 'Devolución', ajuste: 'Ajuste' };
+    $('#tbMovs').innerHTML = data.length ? data.map((m) => `
+      <tr>
+        <td class="num">${fecha.format(new Date(m.creado_en))}</td>
+        <td>${esc(m.presentaciones?.productos?.nombre)} <small>${esc(m.presentaciones?.nombre)}</small></td>
+        <td>${nombresTipo[m.tipo] ?? m.tipo}</td>
+        <td class="der num ${m.cantidad > 0 ? 'pos' : 'neg'}">${m.cantidad > 0 ? '+' : ''}${Number(m.cantidad)}</td>
+        <td>${esc(m.nota)}</td>
+      </tr>`).join('') : '<tr><td colspan="5" class="vacio">Todavía no hay movimientos.</td></tr>';
+  }
+
+  // ---------- Catálogo ----------
+  function pintarCatalogo() {
+    const q = norm($('#buscarCat').value.trim());
+    const soloBajo = $('#soloBajo').checked;
+    const verInactivos = $('#verInactivos').checked;
+    const filas = catalogo.filter((p) =>
+      (verInactivos || p.activo) &&
+      (!soloBajo || (p.activo && Number(p.stock) <= Number(p.stock_minimo))) &&
+      (!q || norm(`${p.etiqueta} ${p.categoria ?? ''} ${p.codigo_barras ?? ''} ${p.sku ?? ''}`).includes(q)));
+
+    if (!catalogo.length) {
+      $('#tbCatalogo').innerHTML = '<tr><td colspan="6" class="vacio">El catálogo está vacío. Crea tu primer producto con el botón “Nuevo producto”.</td></tr>';
+      return;
+    }
+    if (!filas.length) {
+      $('#tbCatalogo').innerHTML = '<tr><td colspan="6" class="vacio">Ningún producto coincide con la búsqueda.</td></tr>';
+      return;
+    }
+    $('#tbCatalogo').innerHTML = filas.map((p) => {
+      const bajo = p.activo && Number(p.stock) <= Number(p.stock_minimo);
+      return `
+      <tr class="${p.activo ? '' : 'inactivo'}">
+        <td>${esc(p.etiqueta)}<small>${esc(p.categoria ?? 'Sin categoría')}${p.activo ? '' : ' · Inactivo'}</small></td>
+        <td class="num">${esc(p.codigo_barras || p.sku || '')}</td>
+        <td class="der num">${cop.format(p.precio_venta)}</td>
+        <td class="der num">${cop.format(p.costo)}</td>
+        <td class="der num ${bajo ? 'bajo' : ''}">${Number(p.stock)}${bajo ? `<small>Mínimo ${Number(p.stock_minimo)}</small>` : ''}</td>
+        <td><button type="button" class="btn-texto" data-producto="${p.producto_id}">Editar</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  ['#buscarCat', '#soloBajo', '#verInactivos'].forEach((s) => $(s).addEventListener('input', pintarCatalogo));
+  $('#tbCatalogo').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-producto]');
+    if (b) abrirProducto(+b.dataset.producto);
+  });
+  $('#nuevoProducto').addEventListener('click', () => abrirProducto(null));
+
+  // ---------- Diálogo de producto ----------
+  const dlg = $('#dlgProducto');
+
+  function filaPresentacion(p = {}) {
+    const nueva = !p.id;
+    const div = document.createElement('div');
+    div.className = 'pres';
+    if (p.id) div.dataset.id = p.id;
+    const uid = Math.random().toString(36).slice(2, 8);
+    div.innerHTML = `
+      <div class="campo"><label for="pn${uid}">Presentación</label><input id="pn${uid}" data-f="nombre" value="${esc(p.nombre ?? '')}" placeholder="Galón, 1/4, Unidad" required></div>
+      <div class="campo"><label for="ps${uid}">SKU interno</label><input id="ps${uid}" data-f="sku" value="${esc(p.sku ?? '')}"></div>
+      <div class="campo"><label for="pc${uid}">Código de barras</label><input id="pc${uid}" data-f="codigo_barras" value="${esc(p.codigo_barras ?? '')}" autocomplete="off"></div>
+      <div class="campo"><label for="pp${uid}">Precio venta</label><input id="pp${uid}" data-f="precio_venta" type="number" min="0" step="any" class="num" value="${p.precio_venta ?? ''}" required></div>
+      <div class="campo"><label for="pk${uid}">Costo</label><input id="pk${uid}" data-f="costo" type="number" min="0" step="any" class="num" value="${p.costo ?? ''}"></div>
+      <div class="campo"><label for="pm${uid}">Stock mín.</label><input id="pm${uid}" data-f="stock_minimo" type="number" min="0" step="any" class="num" value="${p.stock_minimo ?? 0}"></div>
+      ${nueva
+        ? `<div class="campo"><label for="pi${uid}">Stock inicial</label><input id="pi${uid}" data-f="stock_inicial" type="number" min="0" step="any" class="num" placeholder="0"></div>`
+        : `<div class="campo"><label>Stock actual</label><span class="num" style="padding:.5rem 0">${Number(p.stock ?? 0)}</span></div>`}
+      <label class="check"><input type="checkbox" data-f="activo" ${p.activo === false ? '' : 'checked'}> Activa</label>`;
+    return div;
+  }
+
+  async function abrirProducto(id, codigoInicial = '') {
+    productoEditando = id;
+    $('#frmProducto').reset();
+    $('#presLista').innerHTML = '';
+    $('#tituloProducto').textContent = id ? 'Editar producto' : 'Nuevo producto';
+    let prod = { activo: true };
+    let pres = [];
+
+    if (id) {
+      const [rp, rpr] = await Promise.all([
+        db.from('productos').select('*').eq('id', id).single(),
+        db.from('presentaciones').select('*').eq('producto_id', id).order('id')
+      ]);
+      if (rp.error || rpr.error) return aviso('No se pudo abrir el producto.', 'error');
+      prod = rp.data;
+      const stockPorId = Object.fromEntries(catalogo.map((c) => [c.id, c.stock]));
+      pres = rpr.data.map((p) => ({ ...p, stock: stockPorId[p.id] ?? 0 }));
+    }
+
+    $('#prodNombre').value = prod.nombre ?? '';
+    $('#prodMarca').innerHTML = opciones(marcas, 'Sin marca', prod.marca_id);
+    $('#prodCategoria').innerHTML = opciones(categorias, 'Sin categoría', prod.categoria_id);
+    $('#prodColor').value = prod.codigo_color ?? '';
+    $('#prodDesc').value = prod.descripcion ?? '';
+    $('#prodActivo').checked = prod.activo !== false;
+
+    if (!pres.length) pres = [{ codigo_barras: codigoInicial }];
+    pres.forEach((p) => $('#presLista').appendChild(filaPresentacion(p)));
+
+    dlg.showModal();
+    $('#prodNombre').focus();
+  }
+
+  $('#agregarPres').addEventListener('click', () => {
+    const fila = filaPresentacion();
+    $('#presLista').appendChild(fila);
+    fila.querySelector('input').focus();
+  });
+  $('#cerrarProducto').addEventListener('click', () => dlg.close());
+
+  // El lector termina con Enter: dentro del formulario no debe guardar.
+  $('#frmProducto').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.matches('input')) e.preventDefault();
+  });
+
+  async function crearMaestro(tabla, etiqueta) {
+    const nombre = prompt(`Nombre de la nueva ${etiqueta}:`);
+    if (!nombre || !nombre.trim()) return null;
+    const { data, error } = await db.from(tabla).insert({ nombre: nombre.trim() }).select('id').single();
+    if (error) { aviso(mensajeError(error), 'error'); return null; }
+    await cargarMaestros();
+    return data.id;
+  }
+
+  $('#nuevaMarca').addEventListener('click', async () => {
+    const id = await crearMaestro('marcas', 'marca');
+    if (id) $('#prodMarca').innerHTML = opciones(marcas, 'Sin marca', id);
+  });
+  $('#nuevaCategoria').addEventListener('click', async () => {
+    const id = await crearMaestro('categorias', 'categoría');
+    if (id) $('#prodCategoria').innerHTML = opciones(categorias, 'Sin categoría', id);
+  });
+
+  $('#frmProducto').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = $('#guardarProducto');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    try {
+      await guardarProducto();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Guardar producto';
+    }
+  });
+
+  async function guardarProducto() {
+    const filas = [...$('#presLista').querySelectorAll('.pres')];
+    if (!filas.length) return aviso('Agrega al menos una presentación.', 'error');
+
+    const prod = {
+      nombre: $('#prodNombre').value.trim(),
+      marca_id: numOrNull($('#prodMarca').value),
+      categoria_id: numOrNull($('#prodCategoria').value),
+      codigo_color: textoOrNull($('#prodColor').value),
+      descripcion: textoOrNull($('#prodDesc').value),
+      activo: $('#prodActivo').checked
+    };
+
+    if (productoEditando) {
+      const { error } = await db.from('productos').update(prod).eq('id', productoEditando);
+      if (error) return aviso(mensajeError(error), 'error');
+    } else {
+      const { data, error } = await db.from('productos').insert(prod).select('id').single();
+      if (error) return aviso(mensajeError(error), 'error');
+      productoEditando = data.id;   // si algo falla después, reintentar actualiza en vez de duplicar
+    }
+
+    for (const fila of filas) {
+      const v = (f) => fila.querySelector(`[data-f="${f}"]`);
+      const datos = {
+        producto_id: productoEditando,
+        nombre: v('nombre').value.trim(),
+        sku: textoOrNull(v('sku').value),
+        codigo_barras: textoOrNull(v('codigo_barras').value),
+        precio_venta: Number(v('precio_venta').value || 0),
+        costo: Number(v('costo').value || 0),
+        stock_minimo: Number(v('stock_minimo').value || 0),
+        activo: v('activo').checked
+      };
+
+      if (fila.dataset.id) {
+        const { error } = await db.from('presentaciones').update(datos).eq('id', fila.dataset.id);
+        if (error) return aviso(`${datos.nombre}: ${mensajeError(error)}`, 'error');
+      } else {
+        const { data, error } = await db.from('presentaciones').insert(datos).select('id').single();
+        if (error) return aviso(`${datos.nombre}: ${mensajeError(error)}`, 'error');
+        fila.dataset.id = data.id;
+
+        const inicial = Number(v('stock_inicial')?.value || 0);
+        if (inicial > 0) {
+          const { error: e2 } = await db.rpc('registrar_movimiento', {
+            p_presentacion_id: data.id, p_tipo: 'inicial', p_cantidad: inicial,
+            p_costo_unitario: datos.costo || null, p_nota: 'Stock inicial al crear el producto'
+          });
+          if (e2) aviso(`${datos.nombre} se guardó, pero no el stock inicial: ${e2.message}`, 'error');
+        }
+        v('stock_inicial')?.closest('.campo').remove();   // evita registrarlo dos veces
+      }
+    }
+
+    dlg.close();
+    aviso('Producto guardado.');
+    await Promise.all([cargarCatalogo(), cargarMovimientos()]);
+    if (codigoPendiente) {
+      const creado = catalogo.find((c) => c.codigo_barras === codigoPendiente);
+      codigoPendiente = '';
+      $('#noExiste').hidden = true;
+      if (creado) seleccionar(creado);
+    }
+  }
+
+  // ---------- Entradas ----------
+  function buscarEntrada(texto) {
+    texto = texto.trim();
+    $('#opcionesEntrada').hidden = true;
+    $('#noExiste').hidden = true;
+    if (!texto) return;
+
+    const exacto = catalogo.find((p) => p.activo && (p.codigo_barras === texto || p.sku === texto));
+    if (exacto) { seleccionar(exacto); return; }
+
+    const q = norm(texto);
+    const lista = catalogo.filter((p) => p.activo && norm(p.etiqueta).includes(q)).slice(0, 8);
+    if (lista.length) {
+      $('#opcionesEntrada').innerHTML = lista.map((p, i) => `
+        <li><button type="button" data-i="${i}">
+          <span>${esc(p.etiqueta)}<small>${esc(p.codigo_barras || p.sku || 'Sin código')}</small></span>
+          <span class="num">Stock ${Number(p.stock)}</span>
+        </button></li>`).join('');
+      $('#opcionesEntrada').hidden = false;
+      $('#opcionesEntrada').querySelectorAll('button').forEach((b) =>
+        b.addEventListener('click', () => seleccionar(lista[+b.dataset.i])));
+      return;
+    }
+
+    codigoPendiente = /^[\w.\-]+$/.test(texto) ? texto : '';
+    $('#noExisteTexto').textContent = `No hay ningún producto con “${texto}”.`;
+    $('#crearConCodigo').hidden = !codigoPendiente;
+    $('#noExiste').hidden = false;
+  }
+
+  function seleccionar(p) {
+    seleccionEntrada = p;
+    $('#opcionesEntrada').hidden = true;
+    $('#noExiste').hidden = true;
+    $('#scanEntrada').value = '';
+    $('#selEntrada').innerHTML = `<strong>${esc(p.etiqueta)}</strong>
+      <span class="num">Stock actual: ${Number(p.stock)} · Costo actual: ${cop.format(p.costo)}</span>`;
+    $('#costoMov').value = p.costo > 0 ? Number(p.costo) : '';
+    $('#btnMov').disabled = false;
+    $('#cantMov').focus();
+  }
+
+  $('#scanEntrada').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); buscarEntrada($('#scanEntrada').value); }
+  });
+
+  $('#crearConCodigo').addEventListener('click', () => abrirProducto(null, codigoPendiente));
+
+  function aplicarTipo() {
+    const esCompra = tipoMov === 'compra';
+    $('#campoCosto').hidden = !esCompra;
+    $('#campoProveedor').hidden = !esCompra;
+    const cant = $('#cantMov');
+    if (tipoMov === 'ajuste') {
+      cant.removeAttribute('min');
+      $('#ayudaCant').textContent = 'Positivo si sobra mercancía, negativo si falta o se dañó.';
+      $('#notaMov').placeholder = 'Motivo del ajuste (obligatorio)';
+    } else {
+      cant.min = '1';
+      $('#ayudaCant').textContent = 'Unidades que entran.';
+      $('#notaMov').placeholder = esCompra ? 'Número de factura del proveedor' : 'Opcional';
+    }
+  }
+
+  $('#tiposMov').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tipo]');
+    if (!b) return;
+    tipoMov = b.dataset.tipo;
+    $('#tiposMov').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    aplicarTipo();
+  });
+
+  $('#nuevoProveedor').addEventListener('click', async () => {
+    const id = await crearMaestro('proveedores', 'empresa proveedora');
+    if (id) $('#provMov').innerHTML = opciones(proveedores, 'Sin proveedor', id);
+  });
+
+  $('#frmEntrada').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!seleccionEntrada) return aviso('Primero escanea o busca un producto.', 'error');
+    const cantidad = Number($('#cantMov').value);
+    if (!cantidad) return aviso('Escribe la cantidad.', 'error');
+    if (tipoMov === 'ajuste' && !$('#notaMov').value.trim()) return aviso('Los ajustes necesitan una nota con el motivo.', 'error');
+
+    const btn = $('#btnMov');
+    btn.disabled = true;
+    const { error } = await db.rpc('registrar_movimiento', {
+      p_presentacion_id: seleccionEntrada.id,
+      p_tipo: tipoMov,
+      p_cantidad: cantidad,
+      p_costo_unitario: tipoMov === 'compra' ? numOrNull($('#costoMov').value) : null,
+      p_proveedor_id: tipoMov === 'compra' ? numOrNull($('#provMov').value) : null,
+      p_nota: textoOrNull($('#notaMov').value)
+    });
+    btn.disabled = false;
+    if (error) return aviso('No se registró: ' + error.message, 'error');
+
+    aviso(`Movimiento registrado: ${cantidad > 0 ? '+' : ''}${cantidad} ${seleccionEntrada.etiqueta}`);
+    seleccionEntrada = null;
+    $('#selEntrada').innerHTML = '<strong>Ningún producto seleccionado</strong><span>Escanea o busca el siguiente producto.</span>';
+    $('#cantMov').value = '';
+    $('#costoMov').value = '';
+    if (tipoMov !== 'compra') $('#notaMov').value = '';   // en compras la factura suele repetirse
+    btn.disabled = true;
+    await Promise.all([cargarCatalogo(), cargarMovimientos()]);
+    $('#scanEntrada').focus();
+  });
+
+  // Cámara
+  async function detenerCamara() {
+    if (!lectorCamara) return;
+    try { await lectorCamara.stop(); lectorCamara.clear(); } catch (_) {}
+    lectorCamara = null;
+    $('#lector').hidden = true;
+    $('#btnCamara').textContent = 'Usar cámara';
+  }
+
+  $('#btnCamara').addEventListener('click', async () => {
+    if (lectorCamara) { await detenerCamara(); return; }
+    $('#lector').hidden = false;
+    lectorCamara = new Html5Qrcode('lector');
+    try {
+      await lectorCamara.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 280, height: 120 } },
+        async (codigo) => { await detenerCamara(); $('#scanEntrada').value = codigo; buscarEntrada(codigo); });
+      $('#btnCamara').textContent = 'Cerrar cámara';
+    } catch (_) {
+      lectorCamara = null;
+      $('#lector').hidden = true;
+      aviso('No se pudo abrir la cámara. Revisa que el navegador tenga permiso para usarla.', 'error');
+    }
+  });
+
+  // ---------- Clientes ----------
+  function pintarClientes() {
+    const q = norm($('#buscarCli').value.trim());
+    const tipos = { particular: 'Particular', taller: 'Taller', empresa: 'Empresa' };
+    const filas = clientes.filter((c) => !q || norm(`${c.nombre} ${c.documento ?? ''} ${c.telefono ?? ''}`).includes(q));
+    $('#tbClientes').innerHTML = filas.length ? filas.map((c) => `
+      <tr>
+        <td>${esc(c.nombre)}${c.email ? `<small>${esc(c.email)}</small>` : ''}</td>
+        <td class="num">${esc(c.documento)}</td>
+        <td>${tipos[c.tipo] ?? c.tipo}</td>
+        <td class="num">${esc(c.telefono)}</td>
+        <td><button type="button" class="btn-texto" data-cliente="${c.id}">Editar</button></td>
+      </tr>`).join('')
+      : `<tr><td colspan="5" class="vacio">${clientes.length ? 'Ningún cliente coincide con la búsqueda.' : 'Aún no hay clientes. Regístralos con el formulario; los talleres a crédito deben estar aquí.'}</td></tr>`;
+  }
+
+  $('#buscarCli').addEventListener('input', pintarClientes);
+
+  function limpiarCliente() {
+    clienteEditando = null;
+    $('#frmCliente').reset();
+    $('#tituloCliente').textContent = 'Nuevo cliente';
+    $('#cancelarCliente').hidden = true;
+  }
+
+  $('#tbClientes').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-cliente]');
+    if (!b) return;
+    const c = clientes.find((x) => x.id === +b.dataset.cliente);
+    clienteEditando = c.id;
+    $('#cliNombre').value = c.nombre;
+    $('#cliDoc').value = c.documento ?? '';
+    $('#cliTipo').value = c.tipo;
+    $('#cliTel').value = c.telefono ?? '';
+    $('#cliEmail').value = c.email ?? '';
+    $('#cliDir').value = c.direccion ?? '';
+    $('#cliCupo').value = c.cupo_credito ?? '';
+    $('#cliPlazo').value = c.plazo_dias ?? 30;
+    $('#tituloCliente').textContent = 'Editar cliente';
+    $('#cancelarCliente').hidden = false;
+    $('#cliNombre').focus();
+  });
+
+  $('#cancelarCliente').addEventListener('click', limpiarCliente);
+
+  $('#frmCliente').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const datos = {
+      nombre: $('#cliNombre').value.trim(),
+      documento: textoOrNull($('#cliDoc').value),
+      tipo: $('#cliTipo').value,
+      telefono: textoOrNull($('#cliTel').value),
+      email: textoOrNull($('#cliEmail').value),
+      direccion: textoOrNull($('#cliDir').value),
+      cupo_credito: numOrNull($('#cliCupo').value),
+      plazo_dias: $('#cliPlazo').value === '' ? 30 : Number($('#cliPlazo').value)
+    };
+    const consulta = clienteEditando
+      ? db.from('clientes').update(datos).eq('id', clienteEditando)
+      : db.from('clientes').insert(datos);
+    const { error } = await consulta;
+    if (error) return aviso(mensajeError(error), 'error');
+    aviso(clienteEditando ? 'Cliente actualizado.' : 'Cliente guardado.');
+    limpiarCliente();
+    cargarClientes();
+  });
+
+  // ---------- Inicio ----------
+  aplicarTipo();
+  db.auth.onAuthStateChange((evento, s) => {
+    if (evento === 'TOKEN_REFRESHED') return;
+    setTimeout(() => mostrarSesion(s), 0);
+  });
+</script>
+</body>
+</html>

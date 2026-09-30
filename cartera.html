@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cartera</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  :root {
+    --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
+    --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
+    --cinta: #E8D08A; --alerta: #A1281F; --ok: #2F6B3A; --radio: 6px;
+    font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
+      --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
+      --cinta: #C4AB68; --alerta: #E57B72; --ok: #7FC08A;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font-size: 16px; line-height: 1.45; }
+  [hidden] { display: none !important; }
+  .num { font-variant-numeric: tabular-nums; }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  input, select { font: inherit; color: var(--tinta); background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: .5rem .65rem; width: 100%; }
+  label, legend { font-weight: 500; }
+  .campo { display: grid; gap: .3rem; }
+  .btn { border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .5rem .9rem; border-radius: var(--radio); white-space: nowrap; text-decoration: none; display: inline-block; }
+  .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
+  .btn-primario:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-texto { border: 0; background: none; color: var(--acento); padding: .2rem .3rem; font-weight: 600; }
+  h2, h3 { font-family: "Barlow Condensed", sans-serif; font-weight: 600; margin: 0; }
+  h2 { font-size: 1.6rem; } h3 { font-size: 1.2rem; }
+
+  .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
+  .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; margin-right: auto; }
+  #usuario { color: var(--suave); }
+  .nav { display: flex; gap: .25rem; }
+  .nav a { color: var(--tinta); text-decoration: none; padding: .4rem .7rem; border-radius: var(--radio); font-weight: 500; }
+  .nav a[aria-current="page"] { background: var(--fondo); box-shadow: inset 0 -3px 0 var(--acento); }
+
+  #login { max-width: 22rem; margin: 12vh auto 0; padding: 1.5rem; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: 1rem; }
+  #login h1 { font-family: "Barlow Condensed", sans-serif; font-size: 1.8rem; margin: 0; }
+  #loginError { color: var(--alerta); margin: 0; min-height: 1.4em; }
+
+  main { max-width: 80rem; margin: 0 auto; padding: 1.25rem; }
+
+  /* Resumen: una línea de totales, sin tarjetas */
+  .resumen { display: flex; flex-wrap: wrap; gap: .5rem 2.5rem; align-items: baseline; padding-bottom: 1rem; margin-bottom: 1.25rem; border-bottom: 2px solid var(--tinta); }
+  .resumen div { display: grid; }
+  .resumen span { color: var(--suave); }
+  .resumen strong { font-family: "Barlow Condensed", sans-serif; font-size: 2.3rem; line-height: 1.05; font-weight: 700; }
+  .resumen .vencido strong { color: var(--alerta); }
+
+  .cuerpo { display: grid; grid-template-columns: 24rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+
+  /* Lista de clientes */
+  .filtros { display: grid; gap: .6rem; margin-bottom: .75rem; }
+  .check { display: inline-flex; align-items: center; gap: .4rem; font-weight: 500; }
+  .check input { width: auto; }
+  #listaClientes { list-style: none; margin: 0; padding: 0; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); }
+  #listaClientes button {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .15rem 1rem; width: 100%;
+    text-align: left; background: none; border: 0; border-bottom: 1px solid var(--linea);
+    color: var(--tinta); padding: .75rem .9rem; border-left: 4px solid transparent;
+  }
+  #listaClientes li:last-child button { border-bottom: 0; }
+  #listaClientes button[aria-current="true"] { border-left-color: var(--acento); background: var(--fondo); }
+  #listaClientes .nom { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #listaClientes .sal { font-weight: 600; text-align: right; }
+  #listaClientes .det { color: var(--suave); font-size: .875rem; }
+  #listaClientes .ven { color: var(--alerta); font-size: .875rem; font-weight: 600; text-align: right; }
+  .vacio { color: var(--suave); padding: 1.25rem .9rem; margin: 0; }
+
+  /* Detalle */
+  .detalle { background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: 1.25rem; display: grid; gap: 1.5rem; }
+  .det-cab { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; justify-content: space-between; align-items: start; }
+  .det-cab p { margin: .2rem 0 0; color: var(--suave); }
+  .tabla-caja { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 34rem; }
+  th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--linea); }
+  th { font-weight: 600; color: var(--suave); font-size: .9rem; }
+  td.der, th.der { text-align: right; }
+  .vencida { color: var(--alerta); font-weight: 600; }
+
+  .abono { display: grid; gap: .9rem; padding: 1rem; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--fondo); }
+  .fila-abono { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+  .con-boton { display: flex; gap: .4rem; }
+  .segmentos { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+  .segmentos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
+  fieldset { border: 0; margin: 0; padding: 0; }
+  legend { padding: 0; margin-bottom: .3rem; }
+
+  #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
+  #aviso.error { background: var(--alerta); color: #fff; }
+
+  @media (max-width: 900px) {
+    .cuerpo { grid-template-columns: 1fr; }
+    .fila-abono { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    #usuario { display: none; }
+    main { padding: 1rem; }
+    .resumen strong { font-size: 1.9rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <span class="tienda" id="nombreTienda">Pinturas</span>
+  <nav class="nav" aria-label="Secciones">
+    <a href="index.html">Caja</a>
+    <a href="inventario.html">Inventario</a>
+    <a href="cartera.html" aria-current="page">Cartera</a>
+    <a href="tablero.html">Tablero</a>
+  </nav>
+  <span id="usuario"></span>
+  <button class="btn" id="salir" hidden>Cerrar sesión</button>
+</header>
+
+<form id="login" hidden>
+  <h1>Iniciar sesión</h1>
+  <div class="campo"><label for="email">Correo</label><input id="email" type="email" autocomplete="username" required></div>
+  <div class="campo"><label for="clave">Contraseña</label><input id="clave" type="password" autocomplete="current-password" required></div>
+  <p id="loginError" role="alert"></p>
+  <button class="btn btn-primario" type="submit">Entrar</button>
+</form>
+
+<main id="app" hidden>
+  <section class="resumen num" aria-label="Resumen de cartera">
+    <div><span>Por cobrar</span><strong id="totPorCobrar">$ 0</strong></div>
+    <div class="vencido"><span>Vencido</span><strong id="totVencido">$ 0</strong></div>
+    <div><span>Clientes con saldo</span><strong id="totClientes">0</strong></div>
+  </section>
+
+  <div class="cuerpo">
+    <section aria-label="Clientes con saldo">
+      <div class="filtros">
+        <input type="search" id="buscar" placeholder="Buscar cliente" aria-label="Buscar cliente">
+        <label class="check"><input type="checkbox" id="soloVencidos"> Solo con saldo vencido</label>
+      </div>
+      <ul id="listaClientes"></ul>
+    </section>
+
+    <section class="detalle" id="detalle" aria-live="polite">
+      <p class="vacio" id="detVacio">Elige un cliente para ver sus facturas pendientes y registrar abonos.</p>
+      <div id="detContenido" hidden>
+        <div class="det-cab">
+          <div>
+            <h2 id="detNombre"></h2>
+            <p id="detDatos" class="num"></p>
+          </div>
+          <a class="btn" id="btnWhatsapp" target="_blank" rel="noopener">Enviar recordatorio por WhatsApp</a>
+        </div>
+
+        <div>
+          <h3>Facturas pendientes</h3>
+          <div class="tabla-caja">
+            <table>
+              <thead><tr><th>Venta</th><th>Fecha</th><th>Vence</th><th class="der">Total</th><th class="der">Abonado</th><th class="der">Saldo</th><th></th></tr></thead>
+              <tbody id="tbFacturas"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <form class="abono" id="frmAbono">
+          <h3>Registrar abono</h3>
+          <div class="fila-abono">
+            <div class="campo">
+              <label for="abValor">Valor</label>
+              <div class="con-boton">
+                <input id="abValor" type="number" min="1" step="any" inputmode="numeric" class="num" required>
+                <button type="button" class="btn" id="btnTodo">Saldo completo</button>
+              </div>
+            </div>
+            <div class="campo">
+              <label for="abAplicar">Aplicar a</label>
+              <select id="abAplicar"></select>
+            </div>
+          </div>
+          <fieldset>
+            <legend>Forma de pago</legend>
+            <div class="segmentos" id="abMetodos">
+              <button type="button" class="btn" data-metodo="efectivo" aria-pressed="true">Efectivo</button>
+              <button type="button" class="btn" data-metodo="transferencia" aria-pressed="false">Transferencia</button>
+              <button type="button" class="btn" data-metodo="tarjeta" aria-pressed="false">Tarjeta</button>
+            </div>
+          </fieldset>
+          <div class="campo">
+            <label for="abRef">Referencia</label>
+            <input id="abRef" placeholder="Número de transferencia o recibo (opcional)">
+          </div>
+          <button class="btn btn-primario" type="submit" id="btnAbono">Registrar abono</button>
+        </form>
+
+        <div>
+          <h3>Abonos recientes</h3>
+          <div class="tabla-caja">
+            <table>
+              <thead><tr><th>Fecha</th><th>Venta</th><th>Forma de pago</th><th>Referencia</th><th class="der">Valor</th></tr></thead>
+              <tbody id="tbAbonos"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div id="aviso" role="status" hidden></div>
+
+<script>
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, NOMBRE_TIENDA } = window.APP_CONFIG;
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const $ = (s) => document.querySelector(s);
+  const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+  const fCorta = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+  const fHora = new Intl.DateTimeFormat('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+
+  document.title = `Cartera | ${NOMBRE_TIENDA}`;
+  $('#nombreTienda').textContent = NOMBRE_TIENDA;
+
+  let cartera = [];           // v_cartera_clientes
+  let facturas = [];          // facturas pendientes del cliente abierto
+  let clienteActual = null;   // fila de v_cartera_clientes
+  let metodoAbono = 'efectivo';
+
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const norm = (t) => String(t ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  // Las fechas "date" llegan como 'AAAA-MM-DD'; se leen como fecha local, no UTC
+  const fechaLocal = (d) => { const [a, m, dd] = d.split('-').map(Number); return new Date(a, m - 1, dd); };
+
+  let tAviso;
+  function aviso(texto, tipo = 'info') {
+    const a = $('#aviso');
+    a.textContent = texto;
+    a.className = tipo === 'error' ? 'error' : '';
+    a.hidden = false;
+    clearTimeout(tAviso);
+    tAviso = setTimeout(() => (a.hidden = true), tipo === 'error' ? 6000 : 3500);
+  }
+
+  // ---------- Sesión ----------
+  async function mostrarSesion(session) {
+    const con = !!session;
+    $('#login').hidden = con;
+    $('#app').hidden = !con;
+    $('#salir').hidden = !con;
+    if (!con) return;
+    const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
+    if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
+    $('#usuario').textContent = perfil?.nombre ?? session.user.email;
+    cargarCartera();
+  }
+
+  $('#login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('#loginError').textContent = '';
+    const { error } = await db.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#clave').value });
+    if (error) $('#loginError').textContent = 'Correo o contraseña incorrectos.';
+  });
+  $('#salir').addEventListener('click', () => db.auth.signOut());
+
+  // ---------- Cartera general ----------
+  async function cargarCartera() {
+    const { data, error } = await db.from('v_cartera_clientes').select('*')
+      .order('saldo_vencido', { ascending: false }).order('saldo', { ascending: false });
+    if (error) return aviso('No se pudo cargar la cartera: ' + error.message, 'error');
+    cartera = data;
+
+    const total = cartera.reduce((s, c) => s + Number(c.saldo), 0);
+    const vencido = cartera.reduce((s, c) => s + Number(c.saldo_vencido), 0);
+    $('#totPorCobrar').textContent = cop.format(total);
+    $('#totVencido').textContent = cop.format(vencido);
+    $('#totClientes').textContent = cartera.length;
+    pintarLista();
+  }
+
+  function pintarLista() {
+    const q = norm($('#buscar').value.trim());
+    const soloVenc = $('#soloVencidos').checked;
+    const filas = cartera.filter((c) =>
+      (!soloVenc || Number(c.saldo_vencido) > 0) &&
+      (!q || norm(`${c.nombre} ${c.documento ?? ''} ${c.telefono ?? ''}`).includes(q)));
+
+    if (!filas.length) {
+      $('#listaClientes').innerHTML = `<li><p class="vacio">${cartera.length
+        ? 'Ningún cliente coincide con el filtro.'
+        : 'Nadie debe nada. Las ventas a crédito aparecerán aquí.'}</p></li>`;
+      return;
+    }
+    $('#listaClientes').innerHTML = filas.map((c) => `
+      <li><button type="button" data-id="${c.cliente_id}" aria-current="${clienteActual?.cliente_id === c.cliente_id}">
+        <span class="nom">${esc(c.nombre)}</span>
+        <span class="sal num">${cop.format(c.saldo)}</span>
+        <span class="det">${c.facturas_pendientes} ${c.facturas_pendientes === 1 ? 'factura' : 'facturas'}</span>
+        <span class="ven num">${Number(c.saldo_vencido) > 0 ? `Vencido ${c.max_dias_vencida} días` : ''}</span>
+      </button></li>`).join('');
+  }
+
+  $('#buscar').addEventListener('input', pintarLista);
+  $('#soloVencidos').addEventListener('change', pintarLista);
+  $('#listaClientes').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-id]');
+    if (b) abrirCliente(+b.dataset.id);
+  });
+
+  // ---------- Detalle del cliente ----------
+  async function abrirCliente(id) {
+    clienteActual = cartera.find((c) => c.cliente_id === id) ?? null;
+    pintarLista();
+    if (!clienteActual) {
+      $('#detContenido').hidden = true;
+      $('#detVacio').hidden = false;
+      return;
+    }
+
+    const [rf, ra] = await Promise.all([
+      db.from('v_cartera_ventas').select('*').eq('cliente_id', id).gt('saldo', 0).order('creado_en'),
+      db.from('abonos').select('*').eq('cliente_id', id).order('creado_en', { ascending: false }).limit(20)
+    ]);
+    if (rf.error || ra.error) return aviso('No se pudo cargar el detalle del cliente.', 'error');
+    facturas = rf.data;
+
+    const c = clienteActual;
+    $('#detNombre').textContent = c.nombre;
+    const partes = [];
+    if (c.documento) partes.push(c.documento);
+    if (c.telefono) partes.push(c.telefono);
+    partes.push(`Plazo ${c.plazo_dias} días`);
+    partes.push(c.cupo_credito != null
+      ? `Cupo ${cop.format(c.cupo_credito)} (disponible ${cop.format(Math.max(c.cupo_credito - c.saldo, 0))})`
+      : 'Sin cupo definido');
+    $('#detDatos').textContent = partes.join(' · ');
+
+    // WhatsApp
+    const tel = String(c.telefono ?? '').replace(/\D/g, '');
+    const telIntl = tel.length === 10 ? '57' + tel : tel;
+    const btnWa = $('#btnWhatsapp');
+    if (telIntl.length >= 11) {
+      let msg = `Hola ${c.nombre}, te saludamos de ${NOMBRE_TIENDA}. Tienes un saldo pendiente de ${cop.format(c.saldo)}`;
+      if (Number(c.saldo_vencido) > 0) msg += `, de los cuales ${cop.format(c.saldo_vencido)} ya están vencidos`;
+      msg += '. ¿Nos confirmas cuándo puedes hacer el pago? Gracias.';
+      btnWa.href = `https://wa.me/${telIntl}?text=${encodeURIComponent(msg)}`;
+      btnWa.hidden = false;
+    } else {
+      btnWa.hidden = true;
+    }
+
+    // Facturas
+    $('#tbFacturas').innerHTML = facturas.map((f) => `
+      <tr>
+        <td class="num">${f.id}</td>
+        <td class="num">${fCorta.format(fechaLocal(f.fecha))}</td>
+        <td class="num ${f.dias_vencida > 0 ? 'vencida' : ''}">${fCorta.format(fechaLocal(f.vence_en))}${f.dias_vencida > 0 ? ` (${f.dias_vencida} días)` : ''}</td>
+        <td class="der num">${cop.format(f.total)}</td>
+        <td class="der num">${cop.format(f.abonado)}</td>
+        <td class="der num"><strong>${cop.format(f.saldo)}</strong></td>
+        <td><button type="button" class="btn-texto" data-pagar="${f.id}">Abonar</button></td>
+      </tr>`).join('');
+
+    // Aplicar a
+    $('#abAplicar').innerHTML = '<option value="">Facturas más antiguas primero</option>' +
+      facturas.map((f) => `<option value="${f.id}">Venta ${f.id}, saldo ${cop.format(f.saldo)}</option>`).join('');
+
+    // Abonos recientes
+    const metodos = { efectivo: 'Efectivo', transferencia: 'Transferencia', tarjeta: 'Tarjeta' };
+    $('#tbAbonos').innerHTML = ra.data.length ? ra.data.map((a) => `
+      <tr>
+        <td class="num">${fHora.format(new Date(a.creado_en))}</td>
+        <td class="num">${a.venta_id}</td>
+        <td>${metodos[a.metodo_pago] ?? a.metodo_pago}</td>
+        <td>${esc(a.referencia)}</td>
+        <td class="der num">${cop.format(a.valor)}</td>
+      </tr>`).join('') : '<tr><td colspan="5" class="vacio">Este cliente todavía no ha hecho abonos.</td></tr>';
+
+    $('#frmAbono').reset();
+    $('#detVacio').hidden = true;
+    $('#detContenido').hidden = false;
+  }
+
+  $('#tbFacturas').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-pagar]');
+    if (!b) return;
+    $('#abAplicar').value = b.dataset.pagar;
+    $('#abValor').focus();
+  });
+
+  function saldoObjetivo() {
+    const id = $('#abAplicar').value;
+    return id ? Number(facturas.find((f) => String(f.id) === id)?.saldo ?? 0) : Number(clienteActual?.saldo ?? 0);
+  }
+
+  $('#btnTodo').addEventListener('click', () => {
+    $('#abValor').value = saldoObjetivo();
+    $('#abValor').focus();
+  });
+
+  $('#abMetodos').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-metodo]');
+    if (!b) return;
+    metodoAbono = b.dataset.metodo;
+    $('#abMetodos').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+  });
+
+  $('#frmAbono').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!clienteActual) return;
+    const valor = Number($('#abValor').value);
+    if (!valor || valor <= 0) return aviso('Escribe el valor del abono.', 'error');
+    if (valor > saldoObjetivo()) return aviso(`El abono supera el saldo (${cop.format(saldoObjetivo())}).`, 'error');
+
+    const btn = $('#btnAbono');
+    btn.disabled = true;
+    btn.textContent = 'Registrando…';
+    const { data, error } = await db.rpc('registrar_abono', {
+      p_cliente_id: clienteActual.cliente_id,
+      p_valor: valor,
+      p_metodo_pago: metodoAbono,
+      p_venta_id: $('#abAplicar').value ? +$('#abAplicar').value : null,
+      p_referencia: $('#abRef').value.trim() || null
+    });
+    btn.disabled = false;
+    btn.textContent = 'Registrar abono';
+    if (error) return aviso('No se registró el abono: ' + error.message, 'error');
+
+    const id = clienteActual.cliente_id;
+    const nombre = clienteActual.nombre;
+    await cargarCartera();
+    if (Number(data.saldo_restante) === 0) {
+      aviso(`Abono registrado. ${nombre} quedó al día.`);
+      clienteActual = null;
+      pintarLista();
+      $('#detContenido').hidden = true;
+      $('#detVacio').hidden = false;
+    } else {
+      aviso(`Abono registrado. Saldo pendiente: ${cop.format(data.saldo_restante)}.`);
+      abrirCliente(id);
+    }
+  });
+
+  // ---------- Inicio ----------
+  db.auth.onAuthStateChange((evento, s) => {
+    if (evento === 'TOKEN_REFRESHED') return;
+    setTimeout(() => mostrarSesion(s), 0);
+  });
+</script>
+</body>
+</html>

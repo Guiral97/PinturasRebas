@@ -1,0 +1,72 @@
+# =====================================================================
+#  Respaldo diario de Supabase + mantener el proyecto activo
+#
+#  IMPORTANTE: este archivo va en un repositorio PRIVADO aparte
+#  (ej: pinturas-respaldos), NO en el repo público de GitHub Pages.
+#  Los respaldos contienen datos de clientes y ventas.
+#
+#  Secretos (repo > Settings > Secrets and variables > Actions):
+#    SUPABASE_DB_URL    Supabase > Connect > "Session pooler" (URI con la contraseña).
+#                       Usa el pooler: los runners de GitHub no llegan a la
+#                       conexión directa, que es solo IPv6.
+#    SUPABASE_URL       https://TU-PROYECTO.supabase.co
+#    SUPABASE_ANON_KEY  La misma anon key de config.js
+#
+#  Para restaurar (en un proyecto Supabase nuevo), descarga el .tar.gz
+#  desde Actions > ejecución > Artifacts, descomprímelo y ejecuta:
+#    psql --single-transaction --variable ON_ERROR_STOP=1 \
+#      --file roles.sql --file esquema.sql \
+#      --command 'SET session_replication_role = replica' \
+#      --file datos.sql --dbname "URI_DEL_PROYECTO_NUEVO"
+# =====================================================================
+name: Respaldo diario Supabase
+
+on:
+  schedule:
+    - cron: '0 8 * * *'     # 3:00 a. m. hora de Colombia (08:00 UTC)
+  workflow_dispatch:         # botón "Run workflow" para probarlo a mano
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Mantener activo el proyecto
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          curl -fsS "$SUPABASE_URL/rest/v1/categorias?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" > /dev/null
+          echo "API de Supabase respondió"
+
+      - name: Instalar Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Volcar la base de datos
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir -p respaldo
+          supabase db dump --db-url "$DB_URL" -f respaldo/roles.sql --role-only
+          supabase db dump --db-url "$DB_URL" -f respaldo/esquema.sql
+          supabase db dump --db-url "$DB_URL" -f respaldo/datos.sql --use-copy --data-only
+          # Falla el job si algún archivo quedó vacío
+          for f in respaldo/*.sql; do test -s "$f" || { echo "Vacío: $f"; exit 1; }; done
+          ls -lh respaldo
+
+      - name: Comprimir
+        run: |
+          FECHA=$(TZ=America/Bogota date +%F)
+          echo "FECHA=$FECHA" >> "$GITHUB_ENV"
+          tar -czf "respaldo-$FECHA.tar.gz" -C respaldo .
+
+      - name: Guardar respaldo
+        uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-${{ env.FECHA }}
+          path: respaldo-${{ env.FECHA }}.tar.gz
+          retention-days: 60
