@@ -1,0 +1,1055 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cotizaciones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="config.js"></script>
+<script src="cotizacion.js"></script>
+<style>
+  :root {
+    --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
+    --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
+    --cinta: #E8D08A; --cinta-borde: #C9AE66; --alerta: #A1281F; --ok: #2F6B3A; --radio: 6px;
+    font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
+      --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
+      --cinta: #C4AB68; --cinta-borde: #9E8850; --alerta: #E57B72; --ok: #7FC08A;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font-size: 16px; line-height: 1.45; }
+  [hidden] { display: none !important; }
+  .num { font-variant-numeric: tabular-nums; }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  input, select { font: inherit; color: var(--tinta); background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: .5rem .65rem; width: 100%; }
+  label, legend { font-weight: 500; }
+  .campo { display: grid; gap: .3rem; align-content: start; }
+  .ayuda { color: var(--suave); font-size: .875rem; margin: 0; }
+  .btn { border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .5rem .9rem; border-radius: var(--radio); white-space: nowrap; text-decoration: none; display: inline-block; }
+  .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-peligro { color: var(--alerta); }
+  h2, h3 { font-family: "Barlow Condensed", sans-serif; font-weight: 600; margin: 0; }
+  h2 { font-size: 1.6rem; } h3 { font-size: 1.2rem; }
+
+  .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
+  .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; margin-right: auto; }
+  #usuario { color: var(--suave); }
+  .nav { display: flex; gap: .25rem; flex-wrap: wrap; }
+  .nav a { color: var(--tinta); text-decoration: none; padding: .4rem .7rem; border-radius: var(--radio); font-weight: 500; }
+  .nav a[aria-current="page"] { background: var(--fondo); box-shadow: inset 0 -3px 0 var(--acento); }
+
+  #login { max-width: 22rem; margin: 12vh auto 0; padding: 1.5rem; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: 1rem; }
+  #login h1 { font-family: "Barlow Condensed", sans-serif; font-size: 1.8rem; margin: 0; }
+  #loginError { color: var(--alerta); margin: 0; min-height: 1.4em; }
+
+  main { max-width: 80rem; margin: 0 auto; padding: 1.25rem; }
+
+  .resumen { display: flex; flex-wrap: wrap; gap: .5rem 2.5rem; align-items: baseline; padding-bottom: 1rem; margin-bottom: 1.25rem; border-bottom: 2px solid var(--tinta); }
+  .resumen div { display: grid; }
+  .resumen span { color: var(--suave); }
+  .resumen strong { font-family: "Barlow Condensed", sans-serif; font-size: 2.3rem; line-height: 1.05; font-weight: 700; }
+  .resumen .alerta strong { color: var(--alerta); }
+
+  .cuerpo { display: grid; grid-template-columns: 24rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+
+  .filtros { display: grid; gap: .6rem; margin-bottom: .75rem; }
+  .segmentos { display: grid; grid-template-columns: repeat(4, 1fr); gap: .4rem; }
+  .segmentos.dos { grid-template-columns: 1fr 1fr; }
+  .segmentos button { padding-inline: .3rem; }
+  .segmentos button[aria-pressed="true"], .metodos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
+  #lista { list-style: none; margin: 0; padding: 0; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); }
+  #lista button {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .15rem 1rem; width: 100%;
+    text-align: left; background: none; border: 0; border-bottom: 1px solid var(--linea);
+    color: var(--tinta); padding: .75rem .9rem; border-left: 4px solid transparent;
+  }
+  #lista li:last-child button { border-bottom: 0; }
+  #lista button[aria-current="true"] { border-left-color: var(--acento); background: var(--fondo); }
+  #lista .nom { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #lista .val { font-weight: 600; text-align: right; }
+  #lista .det { color: var(--suave); font-size: .875rem; }
+  #lista .vig { font-size: .875rem; text-align: right; color: var(--suave); }
+  .vacio { color: var(--suave); padding: 1.25rem .9rem; margin: 0; }
+  .atrasado { color: var(--alerta) !important; font-weight: 600; }
+  .pronto { font-weight: 600; color: var(--tinta) !important; }
+  .falta { color: var(--alerta); font-weight: 600; }
+  .etiqueta-prospecto { font-size: .8rem; font-weight: 600; color: var(--suave); border: 1px solid var(--linea); border-radius: 999px; padding: 0 .45rem; }
+
+  .estado { display: inline-flex; align-items: center; gap: .35rem; font-weight: 600; font-size: .875rem; }
+  .estado::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: currentColor; }
+  .e-pendiente { color: var(--acento); }
+  .e-vencida { color: var(--alerta); }
+  .e-aceptada { color: var(--ok); }
+  .e-rechazada { color: var(--suave); }
+
+  .panel { background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: 1.25rem; display: grid; gap: 1.5rem; }
+  .bloque { display: grid; gap: 1.5rem; }
+  .cab { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; justify-content: space-between; align-items: start; }
+  .cab p { margin: .2rem 0 0; color: var(--suave); }
+  .titulo { display: flex; align-items: baseline; gap: .9rem; flex-wrap: wrap; }
+  .acciones { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .nota-caja { margin: 0; padding: .75rem .9rem; border-left: 4px solid var(--linea); background: var(--fondo); border-radius: 0 var(--radio) var(--radio) 0; }
+  .nota-caja.aviso { border-left-color: var(--alerta); }
+  .tabla-caja { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 36rem; }
+  th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--linea); vertical-align: top; }
+  th { font-weight: 600; color: var(--suave); font-size: .9rem; }
+  td.der, th.der { text-align: right; }
+  td small { display: block; color: var(--suave); }
+  .cifras { display: grid; grid-template-columns: 1fr auto; gap: .3rem 1rem; margin: 0; }
+  .cifras dt { color: var(--suave); }
+  .cifras dd { margin: 0; text-align: right; }
+  .totales { display: grid; gap: .5rem; justify-self: end; width: min(22rem, 100%); }
+  .total { border-top: 2px solid var(--tinta); padding-top: .6rem; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+  .total-cifra { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 2.3rem; line-height: 1; }
+
+  .rejilla { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9rem; }
+  .rejilla .ancho { grid-column: 1 / -1; }
+  .rejilla .dos { grid-column: span 2; }
+  .cinta {
+    background: var(--cinta); padding: 1rem 1.6rem 1.1rem; transform: rotate(-.35deg);
+    clip-path: polygon(.9% 0, 99.1% 0, 100% 16%, 99.3% 34%, 100% 52%, 99.2% 70%, 100% 86%, 99.1% 100%,
+      .9% 100%, 0 84%, .7% 66%, 0 48%, .8% 30%, 0 14%);
+  }
+  .cinta label { display: block; color: #2B2516; font-weight: 600; margin-bottom: .45rem; }
+  .cinta .fila { display: flex; gap: .5rem; }
+  .cinta input { font-size: 1.2rem; background: rgba(255,255,255,.88); border-color: var(--cinta-borde); color: #1A2127; }
+  .cinta .btn { background: rgba(255,255,255,.55); border-color: var(--cinta-borde); color: #1A2127; }
+  #lector { max-width: 26rem; border-radius: var(--radio); overflow: hidden; }
+  #resultados { list-style: none; margin: 0; padding: 0; background: var(--fondo); border: 1px solid var(--linea); border-radius: var(--radio); }
+  #resultados button { display: flex; justify-content: space-between; gap: 1rem; width: 100%; text-align: left; background: none; border: 0; color: var(--tinta); padding: .7rem .9rem; border-bottom: 1px solid var(--linea); }
+  #resultados li:last-child button { border-bottom: 0; }
+  #resultados small { color: var(--suave); display: block; }
+
+  #lineas { list-style: none; margin: 0; padding: 0; }
+  .linea { display: grid; grid-template-columns: minmax(0, 1fr) auto 7rem auto; grid-template-areas: "info paso valor quitar"; gap: .75rem; align-items: center; padding: .8rem 0; border-bottom: 1px solid var(--linea); }
+  .linea .info { grid-area: info; min-width: 0; }
+  .linea .nombre { font-weight: 600; }
+  .linea .meta { color: var(--suave); font-size: .875rem; }
+  .paso { grid-area: paso; display: inline-flex; align-items: center; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); }
+  .paso button { border: 0; background: none; color: var(--tinta); width: 2.3rem; height: 2.3rem; font-size: 1.15rem; }
+  .paso input { width: 3.4rem; border: 0; text-align: center; padding: 0; background: transparent; }
+  .linea .valor { grid-area: valor; text-align: right; font-weight: 600; }
+  .quitar { grid-area: quitar; border: 0; background: none; color: var(--suave); width: 2.3rem; height: 2.3rem; font-size: 1.4rem; border-radius: var(--radio); }
+  .pie-editor { display: grid; grid-template-columns: minmax(0, 1fr) 22rem; gap: 1.5rem; align-items: end; }
+
+  dialog { border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); color: var(--tinta); padding: 1.5rem; max-width: 28rem; width: calc(100% - 2rem); }
+  dialog::backdrop { background: rgba(10, 14, 18, .45); }
+  dialog h2 { font-size: 1.8rem; margin-bottom: .25rem; }
+  dialog form, .dlg-cuerpo { display: grid; gap: 1rem; }
+  .dlg-acciones { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
+  fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: .45rem; }
+  legend { padding: 0; margin-bottom: .3rem; }
+  .opcion { display: flex; gap: .5rem; align-items: center; font-weight: 500; }
+  .opcion input { width: auto; }
+
+  #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
+  #aviso.error { background: var(--alerta); color: #fff; }
+
+  @media (max-width: 900px) {
+    .cuerpo, .pie-editor { grid-template-columns: 1fr; }
+    .rejilla { grid-template-columns: 1fr; }
+    .rejilla .dos { grid-column: auto; }
+    .linea { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "info info quitar" "paso valor valor"; }
+  }
+  @media (max-width: 560px) {
+    #usuario { display: none; }
+    main { padding: 1rem; }
+    .resumen strong { font-size: 1.9rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+  /* En celular la navegación baja a su propia fila */
+  @media (max-width: 700px) { .barra { flex-wrap: wrap; } .nav { order: 3; width: 100%; overflow-x: auto; flex-wrap: nowrap; } .nav a { white-space: nowrap; padding-inline: .5rem; } }
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <span class="tienda" id="nombreTienda">Pinturas</span>
+  <nav class="nav" aria-label="Secciones">
+    <a href="index.html">Caja</a>
+    <a href="cotizaciones.html" aria-current="page">Cotizaciones</a>
+    <a href="pedidos.html">Pedidos</a>
+    <a href="inventario.html">Inventario</a>
+    <a href="cartera.html">Cartera</a>
+    <a href="tablero.html">Tablero</a>
+  </nav>
+  <span id="usuario"></span>
+  <button class="btn" id="salir" hidden>Cerrar sesión</button>
+</header>
+
+<form id="login" hidden>
+  <h1>Iniciar sesión</h1>
+  <div class="campo"><label for="email">Correo</label><input id="email" type="email" autocomplete="username" required></div>
+  <div class="campo"><label for="clave">Contraseña</label><input id="clave" type="password" autocomplete="current-password" required></div>
+  <p id="loginError" role="alert"></p>
+  <button class="btn btn-primario" type="submit">Entrar</button>
+</form>
+
+<main id="app" hidden>
+  <section class="resumen num" aria-label="Resumen de cotizaciones pendientes">
+    <div><span>Vigentes</span><strong id="totVigentes">0</strong></div>
+    <div id="bloquePronto"><span>Vencen en 3 días o menos</span><strong id="totPronto">0</strong></div>
+    <div id="bloqueVencidas"><span>Vencidas sin respuesta</span><strong id="totVencidas">0</strong></div>
+    <div><span>Valor cotizado vigente</span><strong id="totValor">$ 0</strong></div>
+  </section>
+
+  <div class="cuerpo">
+    <section aria-label="Lista de cotizaciones">
+      <div class="filtros">
+        <button class="btn btn-primario" type="button" id="btnNueva">Nueva cotización</button>
+        <div class="segmentos" id="filtroEstado" role="group" aria-label="Filtrar por estado">
+          <button type="button" class="btn" data-filtro="pendiente" aria-pressed="true">Pendientes</button>
+          <button type="button" class="btn" data-filtro="aceptada" aria-pressed="false">Aceptadas</button>
+          <button type="button" class="btn" data-filtro="rechazada" aria-pressed="false">Rechazadas</button>
+          <button type="button" class="btn" data-filtro="todas" aria-pressed="false">Todas</button>
+        </div>
+        <input type="search" id="buscar" placeholder="Buscar por cliente, teléfono o número" aria-label="Buscar cotización">
+      </div>
+      <ul id="lista"></ul>
+    </section>
+
+    <section class="panel" aria-live="polite">
+      <p class="vacio" id="panelVacio">Elige una cotización para verla, imprimirla o enviarla, o crea una nueva. Cuando el cliente acepta, se convierte en pedido con un clic.</p>
+
+      <!-- Detalle -->
+      <div id="vista" class="bloque" hidden>
+        <div class="cab">
+          <div>
+            <div class="titulo"><h2 id="vTitulo"></h2><span id="vEstado" class="estado"></span></div>
+            <p id="vCliente"></p>
+            <p id="vFechas" class="num"></p>
+          </div>
+        </div>
+        <div class="acciones" id="vAcciones"></div>
+        <p class="nota-caja" id="vNotas" hidden></p>
+        <p class="nota-caja aviso" id="vAviso" hidden></p>
+        <div class="tabla-caja">
+          <table>
+            <thead><tr><th>Producto</th><th class="der">Cantidad</th><th class="der">Precio</th><th class="der">Subtotal</th><th class="der">Disponible hoy</th></tr></thead>
+            <tbody id="vDetalle"></tbody>
+          </table>
+        </div>
+        <div class="totales">
+          <dl class="cifras num" id="vCifras"></dl>
+          <div class="total"><span>Total</span><span class="total-cifra num" id="vTotal">$ 0</span></div>
+        </div>
+        <p class="ayuda" id="vPrecio" hidden></p>
+      </div>
+
+      <!-- Crear o editar -->
+      <div id="editor" class="bloque" hidden>
+        <h2 id="eTitulo">Nueva cotización</h2>
+
+        <div class="segmentos dos" id="eTipo" role="group" aria-label="Para quién es la cotización">
+          <button type="button" class="btn" data-tipo="cliente" aria-pressed="true">Cliente registrado</button>
+          <button type="button" class="btn" data-tipo="prospecto" aria-pressed="false">Prospecto (aún no es cliente)</button>
+        </div>
+
+        <div class="rejilla">
+          <div class="campo dos" id="eBloqueCliente">
+            <label for="eCliente">Cliente</label>
+            <select id="eCliente"></select>
+          </div>
+          <div class="campo" id="eBloqueNombre" hidden>
+            <label for="eNombre">Nombre o empresa</label>
+            <input id="eNombre" maxlength="150" autocomplete="off">
+          </div>
+          <div class="campo" id="eBloqueTel" hidden>
+            <label for="eTel">Teléfono (WhatsApp)</label>
+            <input id="eTel" type="tel" inputmode="tel" maxlength="20" autocomplete="off">
+          </div>
+          <div class="campo" id="eBloqueDoc" hidden>
+            <label for="eDoc">Cédula o NIT (opcional)</label>
+            <input id="eDoc" maxlength="30" autocomplete="off">
+          </div>
+          <div class="campo">
+            <label for="eVigencia">Válida hasta</label>
+            <input id="eVigencia" type="date" required>
+          </div>
+          <div class="campo ancho">
+            <label for="eNotas">Notas para el cliente</label>
+            <input id="eNotas" maxlength="500" placeholder="Ej.: color igualado a muestra, entrega en 2 días hábiles">
+          </div>
+        </div>
+
+        <div class="cinta">
+          <label for="scan">Escanea el código o escribe el nombre del producto</label>
+          <div class="fila">
+            <input id="scan" autocomplete="off" spellcheck="false" enterkeyhint="search">
+            <button class="btn" id="btnCamara" type="button">Usar cámara</button>
+          </div>
+        </div>
+        <div id="lector" hidden></div>
+        <ul id="resultados" hidden></ul>
+
+        <div>
+          <h3>Productos cotizados</h3>
+          <p class="vacio" id="eVacio" style="padding-inline:0">Aún no hay productos. Se cotiza con el precio de lista del catálogo.</p>
+          <ul id="lineas"></ul>
+        </div>
+
+        <div class="pie-editor">
+          <div class="campo">
+            <label for="eDescuento">Descuento total (pesos)</label>
+            <input id="eDescuento" type="number" min="0" step="100" inputmode="numeric" value="0" class="num" style="max-width:14rem">
+          </div>
+          <div class="totales" style="width:100%">
+            <dl class="cifras num">
+              <dt>Subtotal</dt><dd id="eSubtotal">$ 0</dd>
+              <dt>Descuento</dt><dd id="eDescMostrado">$ 0</dd>
+            </dl>
+            <div class="total"><span>Total</span><span class="total-cifra num" id="eTotal">$ 0</span></div>
+          </div>
+        </div>
+        <div class="acciones" style="justify-content:flex-end">
+          <button class="btn" type="button" id="eCancelar">Descartar</button>
+          <button class="btn btn-primario" type="button" id="eGuardar">Guardar cotización</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div id="aviso" role="status" hidden></div>
+
+<!-- Convertir en pedido -->
+<dialog id="dlgConvertir">
+  <form method="dialog" id="frmConvertir">
+    <div>
+      <h2 id="dCtitulo">Convertir en pedido</h2>
+      <p class="ayuda" id="dCdetalle"></p>
+    </div>
+    <fieldset id="dCprospecto">
+      <legend>El prospecto pasa a ser cliente</legend>
+      <label class="opcion"><input type="radio" name="dCmodo" value="crear" checked> <span id="dCcrearTxt">Crear cliente con sus datos</span></label>
+      <label class="opcion"><input type="radio" name="dCmodo" value="existente"> Es un cliente que ya está registrado</label>
+      <select id="dCcliente" hidden aria-label="Cliente registrado"></select>
+    </fieldset>
+    <div class="campo">
+      <label for="dCfecha">Fecha de entrega del pedido (opcional)</label>
+      <input id="dCfecha" type="date">
+    </div>
+    <p class="nota-caja" id="dCprecio" hidden></p>
+    <div class="dlg-acciones">
+      <button class="btn" type="button" id="dCcerrar">Volver</button>
+      <button class="btn btn-primario" type="submit" id="dCconfirmar">Crear pedido</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgListo">
+  <div class="dlg-cuerpo">
+    <h2 id="dLtitulo">Pedido creado</h2>
+    <p id="dLdetalle" style="margin:0"></p>
+    <div class="dlg-acciones">
+      <button class="btn" id="dLcerrar" type="button">Seguir aquí</button>
+      <a class="btn btn-primario" id="dLir" href="pedidos.html">Ir al pedido</a>
+    </div>
+  </div>
+</dialog>
+
+<!-- Rechazar -->
+<dialog id="dlgRechazar">
+  <form method="dialog" id="frmRechazar">
+    <h2 id="dRtitulo">Marcar como rechazada</h2>
+    <div class="campo">
+      <label for="dRmotivo">Motivo (opcional)</label>
+      <input id="dRmotivo" maxlength="300" placeholder="Ej.: compró en otro lado, le pareció caro">
+    </div>
+    <div class="dlg-acciones">
+      <button class="btn" type="button" id="dRcerrar">Volver</button>
+      <button class="btn btn-primario" type="submit">Marcar rechazada</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, NOMBRE_TIENDA } = window.APP_CONFIG;
+  const VIGENCIA_DIAS = Number(window.APP_CONFIG.VIGENCIA_COTIZACION_DIAS) || 15;
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const $ = (s) => document.querySelector(s);
+  const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+  const cant = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
+  const fCorta = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+  const fHora = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' });
+  const ESTADOS = { pendiente: 'Pendiente', vencida: 'Vencida', aceptada: 'Aceptada', rechazada: 'Rechazada' };
+
+  document.title = `Cotizaciones | ${NOMBRE_TIENDA}`;
+  $('#nombreTienda').textContent = NOMBRE_TIENDA;
+
+  let pendientes = [];      // v_cotizaciones pendientes (para el resumen)
+  let cotizaciones = [];    // lista según el filtro
+  let filtro = 'pendiente';
+  let actual = null;        // { ...fila de v_cotizaciones, detalle: [...] }
+  let clientes = [];
+  let editando = null;      // { id|null, tipo, items: [...] }
+  let procesando = false;
+  let lectorCamara = null;
+  let cargaLista = 0;
+  let usuarioCargado = null;
+
+  // ---------- Utilidades ----------
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const norm = (t) => String(t ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  const fechaLocal = (d) => { const [a, m, dd] = d.split('-').map(Number); return new Date(a, m - 1, dd); };
+  // Hoy en Colombia como 'AAAA-MM-DD', y sumar días a una fecha así
+  const hoyBogota = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
+  const sumarDias = (iso, n) => { const d = new Date(`${iso}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+
+  let tAviso;
+  function aviso(texto, tipo = 'info') {
+    const a = $('#aviso');
+    a.textContent = texto;
+    a.className = tipo === 'error' ? 'error' : '';
+    a.hidden = false;
+    clearTimeout(tAviso);
+    tAviso = setTimeout(() => (a.hidden = true), tipo === 'error' ? 6000 : 3500);
+  }
+
+  const estadoVisible = (q) => (q.vencida ? 'vencida' : q.estado);
+
+  function vigencia(q) {
+    if (q.estado === 'aceptada') return { txt: q.pedido_id ? `Pedido ${q.pedido_id}` : 'Aceptada', cls: '' };
+    if (q.estado === 'rechazada') return { txt: 'Rechazada', cls: '' };
+    const d = q.dias_vigencia;
+    if (d < 0) return { txt: `Venció hace ${-d} ${d === -1 ? 'día' : 'días'}`, cls: 'atrasado' };
+    if (d === 0) return { txt: 'Vence hoy', cls: 'pronto' };
+    if (d === 1) return { txt: 'Vence mañana', cls: 'pronto' };
+    return { txt: `Vence en ${d} días`, cls: d <= 3 ? 'pronto' : '' };
+  }
+
+  function telefonoWa(t) {
+    const tel = String(t ?? '').replace(/\D/g, '');
+    const intl = tel.length === 10 ? '57' + tel : tel;
+    return intl.length >= 11 ? intl : null;
+  }
+
+  function ponerUrl(params) {
+    const u = new URL(location.href);
+    u.search = params ? new URLSearchParams(params).toString() : '';
+    history.replaceState(null, '', u);
+  }
+
+  // ---------- Sesión ----------
+  async function mostrarSesion(session) {
+    const con = !!session;
+    $('#login').hidden = con;
+    $('#app').hidden = !con;
+    $('#salir').hidden = !con;
+    if (!con) { usuarioCargado = null; return; }
+    // Supabase puede volver a avisar la misma sesión al volver a la pestaña:
+    // no recargar para no perder una cotización a medio escribir.
+    if (usuarioCargado === session.user.id) return;
+    usuarioCargado = session.user.id;
+    const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
+    if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
+    $('#usuario').textContent = perfil?.nombre ?? session.user.email;
+
+    await Promise.all([cargarClientes(), cargarTodo()]);
+
+    const q = new URLSearchParams(location.search);
+    if (q.has('id')) abrirCotizacion(+q.get('id'));
+    else if (q.has('nueva')) abrirEditor(null);
+  }
+
+  $('#login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('#loginError').textContent = '';
+    const { error } = await db.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#clave').value });
+    if (error) $('#loginError').textContent = 'Correo o contraseña incorrectos.';
+  });
+  $('#salir').addEventListener('click', () => db.auth.signOut());
+
+  async function cargarClientes() {
+    const { data, error } = await db.from('clientes').select('id, nombre, documento').order('nombre').limit(1000);
+    if (error) return aviso('No se pudieron cargar los clientes.', 'error');
+    clientes = data;
+  }
+
+  const opcionesClientes = (vacio) => `<option value="">${vacio}</option>` +
+    clientes.map((c) => `<option value="${c.id}">${esc(c.nombre)}${c.documento ? ' (' + esc(c.documento) + ')' : ''}</option>`).join('');
+
+  // ---------- Lista y resumen ----------
+  async function cargarTodo() {
+    await Promise.all([cargarPendientes(), filtro === 'pendiente' ? null : cargarLista()]);
+  }
+
+  async function cargarPendientes() {
+    const { data, error } = await db.from('v_cotizaciones').select('*')
+      .eq('estado', 'pendiente').order('valida_hasta').order('id');
+    if (error) return aviso('No se pudieron cargar las cotizaciones: ' + error.message, 'error');
+    pendientes = data;
+
+    const vigentes = pendientes.filter((q) => !q.vencida);
+    const pronto = vigentes.filter((q) => q.dias_vigencia <= 3).length;
+    const vencidas = pendientes.length - vigentes.length;
+    $('#totVigentes').textContent = vigentes.length;
+    $('#totPronto').textContent = pronto;
+    $('#totVencidas').textContent = vencidas;
+    $('#totValor').textContent = cop.format(vigentes.reduce((s, q) => s + Number(q.total), 0));
+    $('#bloqueVencidas').classList.toggle('alerta', vencidas > 0);
+
+    if (filtro === 'pendiente') { cotizaciones = pendientes; pintarLista(); }
+  }
+
+  async function cargarLista() {
+    if (filtro === 'pendiente') { cotizaciones = pendientes; return pintarLista(); }
+    const n = ++cargaLista;
+    let q = db.from('v_cotizaciones').select('*').order('id', { ascending: false }).limit(300);
+    if (filtro !== 'todas') q = q.eq('estado', filtro);
+    const { data, error } = await q;
+    if (n !== cargaLista) return;
+    if (error) return aviso('No se pudieron cargar las cotizaciones: ' + error.message, 'error');
+    cotizaciones = data;
+    pintarLista();
+  }
+
+  function pintarLista() {
+    const q = norm($('#buscar').value.trim());
+    const filas = cotizaciones.filter((c) =>
+      !q || norm(`${c.id} ${c.cliente ?? ''} ${c.documento ?? ''} ${c.telefono ?? ''} ${c.notas ?? ''}`).includes(q));
+
+    if (!filas.length) {
+      const msg = cotizaciones.length ? 'Ninguna cotización coincide con la búsqueda.'
+        : filtro === 'pendiente' ? 'No hay cotizaciones pendientes. Crea una con “Nueva cotización”.'
+        : 'No hay cotizaciones en este estado.';
+      $('#lista').innerHTML = `<li><p class="vacio">${msg}</p></li>`;
+      return;
+    }
+    $('#lista').innerHTML = filas.map((c) => {
+      const v = vigencia(c);
+      const ev = estadoVisible(c);
+      return `
+      <li><button type="button" data-id="${c.id}" aria-current="${actual?.id === c.id}">
+        <span class="nom">${c.id} · ${esc(c.cliente)}</span>
+        <span class="val num">${cop.format(c.total)}</span>
+        <span class="det"><span class="estado e-${ev}">${ESTADOS[ev]}</span>${c.es_prospecto ? ' <span class="etiqueta-prospecto">Prospecto</span>' : ''}</span>
+        <span class="vig num ${v.cls}">${esc(v.txt)}</span>
+      </button></li>`;
+    }).join('');
+  }
+
+  $('#buscar').addEventListener('input', pintarLista);
+  $('#filtroEstado').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-filtro]');
+    if (!b) return;
+    filtro = b.dataset.filtro;
+    $('#filtroEstado').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    cargarLista();
+  });
+  $('#lista').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-id]');
+    if (!b) return;
+    if (!confirmarDescartar()) return;
+    abrirCotizacion(+b.dataset.id);
+  });
+
+  // ---------- Panel ----------
+  function mostrarPanel(cual) {
+    $('#panelVacio').hidden = cual !== 'vacio';
+    $('#vista').hidden = cual !== 'vista';
+    $('#editor').hidden = cual !== 'editor';
+    if (cual !== 'editor') { detenerCamara(); editando = null; }
+  }
+
+  function confirmarDescartar() {
+    if (!editando || !editando.items.length) return true;
+    return window.confirm('Tienes una cotización sin guardar. ¿Descartarla?');
+  }
+
+  async function abrirCotizacion(id) {
+    const [rq, rd] = await Promise.all([
+      db.from('v_cotizaciones').select('*').eq('id', id).maybeSingle(),
+      db.from('v_cotizacion_detalle').select('*').eq('cotizacion_id', id).order('id')
+    ]);
+    if (rq.error || rd.error) return aviso('No se pudo abrir la cotización.', 'error');
+    if (!rq.data) {
+      actual = null;
+      mostrarPanel('vacio');
+      ponerUrl(null);
+      pintarLista();
+      return aviso(`La cotización ${id} no existe.`, 'error');
+    }
+    actual = { ...rq.data, detalle: rd.data };
+    ponerUrl({ id });
+    pintarCotizacion();
+    pintarLista();
+  }
+
+  function pintarCotizacion() {
+    const q = actual;
+    const pendiente = q.estado === 'pendiente';
+    const ev = estadoVisible(q);
+    mostrarPanel('vista');
+
+    $('#vTitulo').textContent = `Cotización ${q.id}`;
+    $('#vEstado').textContent = ESTADOS[ev];
+    $('#vEstado').className = `estado e-${ev}`;
+    $('#vCliente').innerHTML = esc([q.cliente, q.documento, q.telefono].filter(Boolean).join(' · ')) +
+      (q.es_prospecto ? ' <span class="etiqueta-prospecto">Prospecto</span>' : '');
+
+    const v = vigencia(q);
+    $('#vFechas').textContent = [
+      `Creada ${fHora.format(new Date(q.creado_en))} por ${q.creado_por}`,
+      `Válida hasta ${fCorta.format(fechaLocal(q.valida_hasta))}${pendiente ? ` (${v.txt.toLowerCase()})` : ''}`
+    ].join(' · ');
+    $('#vFechas').className = 'num' + (pendiente && q.vencida ? ' atrasado' : '');
+
+    $('#vNotas').hidden = !q.notas;
+    $('#vNotas').textContent = q.notas ? `Notas: ${q.notas}` : '';
+
+    let alerta = '';
+    if (q.estado === 'rechazada') alerta = `Rechazada${q.motivo_rechazo ? ': ' + q.motivo_rechazo : '.'}`;
+    else if (pendiente && q.inactivos > 0) alerta = `Tiene ${q.inactivos} ${q.inactivos === 1 ? 'producto inactivo' : 'productos inactivos'}: edítala y quítalos antes de convertirla en pedido.`;
+    else if (pendiente && q.vencida) alerta = 'Está vencida. Si el cliente la acepta, el pedido se hace con los precios de hoy. Para renovarla, edítala y cambia la fecha de vigencia.';
+    $('#vAviso').hidden = !alerta;
+    $('#vAviso').textContent = alerta;
+
+    $('#vDetalle').innerHTML = q.detalle.map((d) => {
+      const corto = pendiente && (!d.activo || Number(d.stock) < Number(d.cantidad));
+      return `
+      <tr>
+        <td>${esc(d.etiqueta)}<small>${esc(d.codigo ?? 'Sin código')}</small></td>
+        <td class="der num">${cant.format(d.cantidad)}</td>
+        <td class="der num">${cop.format(d.precio_unitario)}</td>
+        <td class="der num">${cop.format(d.subtotal)}</td>
+        <td class="der num ${corto ? 'falta' : ''}">${!pendiente ? '—' : d.activo ? cant.format(d.stock) : 'Inactivo'}</td>
+      </tr>`;
+    }).join('');
+
+    $('#vCifras').innerHTML = Number(q.descuento) > 0
+      ? `<dt>Subtotal</dt><dd>${cop.format(q.subtotal)}</dd><dt>Descuento</dt><dd>−${cop.format(q.descuento)}</dd>` : '';
+    $('#vTotal').textContent = cop.format(q.total);
+
+    const subio = Math.round(Number(q.subtotal_actual)) - Math.round(Number(q.subtotal));
+    $('#vPrecio').hidden = !(pendiente && subio !== 0);
+    $('#vPrecio').textContent = !pendiente || subio === 0 ? ''
+      : !q.vencida && subio > 0
+        ? `Los precios de lista subieron ${cop.format(subio)} desde que se cotizó. Mientras esté vigente se respeta el total cotizado.`
+        : `Con los precios de hoy el subtotal sería ${cop.format(q.subtotal_actual)}.`;
+
+    // Acciones
+    const acc = [];
+    if (pendiente) {
+      acc.push(`<button class="btn btn-primario" type="button" data-acc="convertir" ${q.inactivos > 0 ? 'disabled' : ''}>Convertir en pedido</button>`);
+    }
+    if (q.estado === 'aceptada' && q.pedido_id) {
+      acc.push(`<a class="btn btn-primario" href="pedidos.html?id=${q.pedido_id}">Ver pedido ${q.pedido_id}</a>`);
+    }
+    acc.push('<button class="btn" type="button" data-acc="carta">Imprimir o PDF</button>');
+    acc.push('<button class="btn" type="button" data-acc="ticket">Ticket</button>');
+    const tel = telefonoWa(q.telefono);
+    if (tel && q.estado !== 'rechazada') {
+      acc.push(`<a class="btn" target="_blank" rel="noopener" href="https://wa.me/${tel}?text=${encodeURIComponent(textoWhatsapp(q))}">Enviar por WhatsApp</a>`);
+    }
+    if (pendiente) acc.push('<button class="btn" type="button" data-acc="editar">Editar</button>');
+    acc.push('<button class="btn" type="button" data-acc="copiar">Copiar como nueva</button>');
+    if (pendiente) acc.push('<button class="btn btn-peligro" type="button" data-acc="rechazar">Marcar rechazada</button>');
+    if (q.estado === 'rechazada') acc.push('<button class="btn" type="button" data-acc="reabrir">Reabrir</button>');
+    $('#vAcciones').innerHTML = acc.join('');
+  }
+
+  function datosImpresion(q) {
+    return {
+      id: q.id, fecha: q.creado_en, valida_hasta: q.valida_hasta,
+      cliente: q.cliente, documento: q.documento, telefono: q.telefono,
+      vendedor: q.creado_por, notas: q.notas,
+      items: q.detalle.map((d) => ({ etiqueta: d.etiqueta, codigo: d.codigo, cantidad: Number(d.cantidad), precio: Number(d.precio_unitario) })),
+      subtotal: Number(q.subtotal), descuento: Number(q.descuento), total: Number(q.total)
+    };
+  }
+
+  function textoWhatsapp(q) {
+    const l = [`Hola ${q.cliente}, te enviamos la cotización N.° ${q.id} de ${NOMBRE_TIENDA}:`, ''];
+    q.detalle.forEach((d) => l.push(`- ${cant.format(d.cantidad)} x ${d.etiqueta}: ${cop.format(d.subtotal)}`));
+    l.push('');
+    if (Number(q.descuento) > 0) {
+      l.push(`Subtotal: ${cop.format(q.subtotal)}`);
+      l.push(`Descuento: ${cop.format(q.descuento)}`);
+    }
+    l.push(`*Total: ${cop.format(q.total)}*`);
+    l.push(`Válida hasta el ${fCorta.format(fechaLocal(q.valida_hasta))}.`);
+    if (q.notas) l.push('', q.notas);
+    l.push('', '¿Te la separamos?');
+    return l.join('\n');
+  }
+
+  $('#vAcciones').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-acc]');
+    if (!b || !actual || procesando) return;
+    const acc = b.dataset.acc;
+    if (acc === 'convertir') abrirConvertir();
+    if (acc === 'carta' || acc === 'ticket') imprimirCotizacion(datosImpresion(actual), acc);
+    if (acc === 'editar') abrirEditor(actual, false);
+    if (acc === 'copiar') abrirEditor(actual, true);
+    if (acc === 'reabrir') cambiarEstado('pendiente');
+    if (acc === 'rechazar') {
+      $('#dRtitulo').textContent = `Cotización ${actual.id} rechazada`;
+      $('#frmRechazar').reset();
+      $('#dlgRechazar').showModal();
+      $('#dRmotivo').focus();
+    }
+  });
+
+  async function cambiarEstado(estado, motivo = null) {
+    procesando = true;
+    const { error } = await db.rpc('cambiar_estado_cotizacion', { p_cotizacion_id: actual.id, p_estado: estado, p_motivo: motivo });
+    procesando = false;
+    if (error) return aviso('No se cambió el estado: ' + error.message, 'error');
+    aviso(estado === 'rechazada' ? `Cotización ${actual.id} marcada como rechazada.` : `Cotización ${actual.id} reabierta.`);
+    const id = actual.id;
+    await cargarTodo();
+    abrirCotizacion(id);
+  }
+
+  $('#dRcerrar').addEventListener('click', () => $('#dlgRechazar').close());
+  $('#frmRechazar').addEventListener('submit', (e) => {
+    e.preventDefault();
+    $('#dlgRechazar').close();
+    cambiarEstado('rechazada', $('#dRmotivo').value.trim() || null);
+  });
+
+  // ---------- Convertir en pedido ----------
+  function abrirConvertir() {
+    const q = actual;
+    $('#dCtitulo').textContent = `Convertir cotización ${q.id} en pedido`;
+    $('#dCdetalle').textContent = `${q.cliente} · ${q.lineas} ${q.lineas === 1 ? 'producto' : 'productos'} · ${cop.format(q.total)}`;
+    $('#dCprospecto').hidden = !q.es_prospecto;
+    $('#frmConvertir').reset();
+    $('#dCcliente').innerHTML = opcionesClientes('Elige el cliente');
+    $('#dCcliente').hidden = true;
+    $('#dCcrearTxt').textContent = `Crear cliente “${q.cliente}”${q.documento ? ' (' + q.documento + ')' : ''}`;
+
+    const subio = Math.round(Number(q.subtotal_actual)) - Math.round(Number(q.subtotal));
+    let nota = '';
+    if (!q.vencida && subio > 0) nota = `Los precios subieron desde que se cotizó. El pedido lleva un descuento de ${cop.format(Number(q.descuento) + subio)} para respetar el total de ${cop.format(q.total)}.`;
+    else if (q.vencida && subio !== 0) nota = `La cotización está vencida: el pedido se hace con los precios de hoy (subtotal ${cop.format(q.subtotal_actual)}${Number(q.descuento) > 0 ? `, menos el descuento de ${cop.format(q.descuento)}` : ''}).`;
+    else if (Number(q.descuento) > 0) nota = `El descuento de ${cop.format(q.descuento)} pasa al pedido y se propone al cobrar.`;
+    $('#dCprecio').hidden = !nota;
+    $('#dCprecio').textContent = nota;
+
+    $('#dlgConvertir').showModal();
+    $('#dCfecha').focus();
+  }
+
+  $('#frmConvertir').addEventListener('change', (e) => {
+    if (e.target.name === 'dCmodo') $('#dCcliente').hidden = e.target.value !== 'existente';
+  });
+  $('#dCcerrar').addEventListener('click', () => $('#dlgConvertir').close());
+
+  $('#frmConvertir').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!actual || procesando) return;
+    let clienteId = null;
+    if (actual.es_prospecto && $('#frmConvertir').elements.dCmodo.value === 'existente') {
+      clienteId = $('#dCcliente').value ? +$('#dCcliente').value : null;
+      if (!clienteId) { aviso('Elige el cliente registrado.', 'error'); return $('#dCcliente').focus(); }
+    }
+
+    procesando = true;
+    const btn = $('#dCconfirmar');
+    btn.disabled = true;
+    btn.textContent = 'Creando…';
+    const { data: pedidoId, error } = await db.rpc('convertir_cotizacion', {
+      p_cotizacion_id: actual.id,
+      p_cliente_id: clienteId,
+      p_fecha_entrega: $('#dCfecha').value || null
+    });
+    procesando = false;
+    btn.disabled = false;
+    btn.textContent = 'Crear pedido';
+    if (error) return aviso('No se creó el pedido: ' + error.message, 'error');
+
+    $('#dlgConvertir').close();
+    const id = actual.id;
+    const eraProspecto = actual.es_prospecto && !clienteId;
+    $('#dLtitulo').textContent = `Pedido ${pedidoId} creado`;
+    $('#dLdetalle').textContent = `La cotización ${id} quedó aceptada.` +
+      (eraProspecto ? ` ${actual.cliente} ya está registrado como cliente.` : '') +
+      ' Desde Pedidos se entrega y se cobra.';
+    $('#dLir').href = `pedidos.html?id=${pedidoId}`;
+    $('#dlgListo').showModal();
+    $('#dLir').focus();
+
+    await Promise.all([cargarTodo(), eraProspecto ? cargarClientes() : null]);
+    abrirCotizacion(id);
+  });
+  $('#dLcerrar').addEventListener('click', () => $('#dlgListo').close());
+
+  // ---------- Editor ----------
+  $('#btnNueva').addEventListener('click', () => {
+    if (!confirmarDescartar()) return;
+    abrirEditor(null);
+  });
+
+  // q: cotización a editar (o copiar si copia = true); null para una nueva
+  function abrirEditor(q, copia = false) {
+    const prospecto = q ? q.es_prospecto : false;
+    editando = {
+      id: q && !copia ? q.id : null,
+      tipo: prospecto ? 'prospecto' : 'cliente',
+      items: (q?.detalle ?? []).filter((d) => d.activo).map((d) => ({
+        id: d.presentacion_id, etiqueta: d.etiqueta, codigo: d.codigo ?? '',
+        precio: Number(d.precio_actual), cantidad: Number(d.cantidad), stock: Number(d.stock)
+      }))
+    };
+    if (!editando.id) { actual = null; pintarLista(); }
+    mostrarPanel('editor');
+    ponerUrl(editando.id ? { id: editando.id } : { nueva: 1 });
+
+    $('#eTitulo').textContent = editando.id ? `Editar cotización ${q.id}` : copia ? `Nueva cotización (copia de la ${q.id})` : 'Nueva cotización';
+    $('#eCliente').innerHTML = opcionesClientes('Elige el cliente');
+    $('#eCliente').value = q?.cliente_id ?? '';
+    $('#eNombre').value = q?.prospecto_nombre ?? '';
+    $('#eTel').value = q?.prospecto_telefono ?? '';
+    $('#eDoc').value = q?.prospecto_documento ?? '';
+    // Vigencia: la de la cotización si sigue vigente; si no, la de por defecto desde hoy
+    const hoy = hoyBogota();
+    $('#eVigencia').min = hoy;
+    $('#eVigencia').value = q && !copia && q.valida_hasta >= hoy ? q.valida_hasta : sumarDias(hoy, VIGENCIA_DIAS);
+    $('#eNotas').value = q?.notas ?? '';
+    $('#eDescuento').value = q ? Number(q.descuento) : 0;
+    $('#scan').value = '';
+    ocultarResultados();
+    ponerTipo(editando.tipo);
+    pintarLineas();
+    if (q && q.detalle.some((d) => !d.activo)) aviso('Se quitaron los productos que ya no están activos.', 'error');
+    (q ? $('#scan') : $('#eCliente')).focus();
+  }
+
+  function ponerTipo(tipo) {
+    if (!editando) return;
+    editando.tipo = tipo;
+    $('#eTipo').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x.dataset.tipo === tipo));
+    $('#eBloqueCliente').hidden = tipo !== 'cliente';
+    ['#eBloqueNombre', '#eBloqueTel', '#eBloqueDoc'].forEach((s) => ($(s).hidden = tipo !== 'prospecto'));
+  }
+  $('#eTipo').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tipo]');
+    if (!b) return;
+    ponerTipo(b.dataset.tipo);
+    (b.dataset.tipo === 'cliente' ? $('#eCliente') : $('#eNombre')).focus();
+  });
+
+  $('#eCancelar').addEventListener('click', () => {
+    const id = editando?.id;
+    editando = null;
+    if (id) abrirCotizacion(id);
+    else { mostrarPanel('vacio'); ponerUrl(null); }
+  });
+
+  async function buscar(texto) {
+    texto = texto.trim();
+    ocultarResultados();
+    if (!texto) return;
+    const campos = 'id, etiqueta, codigo_barras, sku, precio_venta, stock';
+
+    if (/^[\w.\-]+$/.test(texto)) {
+      const { data, error } = await db.from('v_catalogo').select(campos)
+        .eq('activo', true).or(`codigo_barras.eq.${texto},sku.eq.${texto}`).limit(1);
+      if (error) return aviso('Error consultando el catálogo: ' + error.message, 'error');
+      if (data.length) { agregar(data[0]); $('#scan').value = ''; return; }
+    }
+
+    const { data, error } = await db.from('v_catalogo').select(campos)
+      .eq('activo', true).ilike('etiqueta', `%${texto}%`).order('etiqueta').limit(8);
+    if (error) return aviso('Error consultando el catálogo: ' + error.message, 'error');
+    if (!data.length) {
+      aviso(`No hay productos que coincidan con “${texto}”. Revisa el código o regístralo en el catálogo.`, 'error');
+      $('#scan').select();
+      return;
+    }
+    mostrarResultados(data);
+  }
+
+  function mostrarResultados(lista) {
+    const r = $('#resultados');
+    r.innerHTML = lista.map((p, i) => `
+      <li><button type="button" data-i="${i}">
+        <span>${esc(p.etiqueta)}<small>${esc(p.codigo_barras || p.sku || 'Sin código')} · Stock: ${cant.format(p.stock)}</small></span>
+        <span class="num">${cop.format(p.precio_venta)}</span>
+      </button></li>`).join('');
+    r.hidden = false;
+    r.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+      agregar(lista[+b.dataset.i]);
+      $('#scan').value = '';
+      ocultarResultados();
+      $('#scan').focus();
+    }));
+  }
+
+  function ocultarResultados() {
+    $('#resultados').hidden = true;
+    $('#resultados').innerHTML = '';
+  }
+
+  function agregar(p) {
+    if (!editando) return;
+    const ex = editando.items.find((i) => i.id === p.id);
+    if (ex) ex.cantidad += 1;
+    else editando.items.push({
+      id: p.id, etiqueta: p.etiqueta, codigo: p.codigo_barras || p.sku || '',
+      precio: Number(p.precio_venta), cantidad: 1, stock: Number(p.stock)
+    });
+    pintarLineas();
+  }
+
+  function calcularEditor() {
+    const subtotal = (editando?.items ?? []).reduce((s, i) => s + i.precio * i.cantidad, 0);
+    const pedido = Math.max(parseFloat($('#eDescuento').value) || 0, 0);
+    return { subtotal, descuento: Math.min(pedido, subtotal), excede: pedido > subtotal };
+  }
+
+  function pintarTotales() {
+    const { subtotal, descuento, excede } = calcularEditor();
+    $('#eSubtotal').textContent = cop.format(subtotal);
+    $('#eDescMostrado').textContent = cop.format(descuento);
+    $('#eDescMostrado').className = excede ? 'falta' : '';
+    $('#eTotal').textContent = cop.format(subtotal - descuento);
+  }
+
+  function pintarLineas() {
+    const items = editando?.items ?? [];
+    $('#eVacio').hidden = items.length > 0;
+    $('#lineas').innerHTML = items.map((i) => `
+      <li class="linea" data-id="${i.id}">
+        <div class="info">
+          <div class="nombre">${esc(i.etiqueta)}</div>
+          <div class="meta num">${i.codigo ? esc(i.codigo) + ' · ' : ''}${cop.format(i.precio)} c/u · Disponible hoy: ${cant.format(i.stock)}</div>
+        </div>
+        <div class="paso">
+          <button type="button" data-accion="menos" aria-label="Quitar una unidad">−</button>
+          <input type="number" min="1" step="1" value="${i.cantidad}" class="num" aria-label="Cantidad de ${esc(i.etiqueta)}">
+          <button type="button" data-accion="mas" aria-label="Agregar una unidad">+</button>
+        </div>
+        <div class="valor num">${cop.format(i.precio * i.cantidad)}</div>
+        <button type="button" class="quitar" data-accion="quitar" aria-label="Quitar ${esc(i.etiqueta)} de la cotización">×</button>
+      </li>`).join('');
+    pintarTotales();
+  }
+
+  function cambiarCantidad(id, nueva) {
+    const it = editando?.items.find((i) => i.id === id);
+    if (!it) return;
+    if (!Number.isFinite(nueva) || nueva < 1) nueva = 1;
+    it.cantidad = Math.floor(nueva);
+    pintarLineas();
+  }
+
+  $('#lineas').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-accion]');
+    if (!b) return;
+    const id = +b.closest('.linea').dataset.id;
+    const it = editando.items.find((i) => i.id === id);
+    if (b.dataset.accion === 'mas') cambiarCantidad(id, it.cantidad + 1);
+    if (b.dataset.accion === 'menos') cambiarCantidad(id, it.cantidad - 1);
+    if (b.dataset.accion === 'quitar') {
+      editando.items = editando.items.filter((i) => i.id !== id);
+      pintarLineas();
+      $('#scan').focus();
+    }
+  });
+  $('#lineas').addEventListener('change', (e) => {
+    if (e.target.matches('.paso input')) cambiarCantidad(+e.target.closest('.linea').dataset.id, parseFloat(e.target.value));
+  });
+  $('#eDescuento').addEventListener('input', pintarTotales);
+
+  $('#eGuardar').addEventListener('click', async () => {
+    if (!editando || procesando) return;
+    const esCliente = editando.tipo === 'cliente';
+    const clienteId = esCliente && $('#eCliente').value ? +$('#eCliente').value : null;
+    const nombre = $('#eNombre').value.trim();
+    if (esCliente && !clienteId) { aviso('Elige el cliente de la cotización.', 'error'); return $('#eCliente').focus(); }
+    if (!esCliente && !nombre) { aviso('Escribe el nombre del prospecto.', 'error'); return $('#eNombre').focus(); }
+    if (!$('#eVigencia').value) { aviso('Indica hasta cuándo es válida la cotización.', 'error'); return $('#eVigencia').focus(); }
+    if (!editando.items.length) { aviso('Agrega al menos un producto.', 'error'); return $('#scan').focus(); }
+    const { descuento, excede } = calcularEditor();
+    if (excede) { aviso('El descuento no puede superar el subtotal.', 'error'); return $('#eDescuento').focus(); }
+
+    procesando = true;
+    const btn = $('#eGuardar');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    const { data: id, error } = await db.rpc('guardar_cotizacion', {
+      p_items: editando.items.map((i) => ({ presentacion_id: i.id, cantidad: i.cantidad })),
+      p_cliente_id: clienteId,
+      p_prospecto_nombre: esCliente ? null : nombre,
+      p_prospecto_telefono: esCliente ? null : ($('#eTel').value.trim() || null),
+      p_prospecto_documento: esCliente ? null : ($('#eDoc').value.trim() || null),
+      p_descuento: descuento,
+      p_valida_hasta: $('#eVigencia').value,
+      p_notas: $('#eNotas').value.trim() || null,
+      p_cotizacion_id: editando.id
+    });
+    procesando = false;
+    btn.disabled = false;
+    btn.textContent = 'Guardar cotización';
+    if (error) return aviso('No se guardó la cotización: ' + error.message, 'error');
+
+    const eraNueva = !editando.id;
+    editando = null;
+    aviso(eraNueva ? `Cotización ${id} creada.` : `Cotización ${id} actualizada.`);
+    await cargarTodo();
+    abrirCotizacion(id);
+  });
+
+  // Lector USB: escribe el código como teclado y termina con Enter
+  $('#scan').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); buscar($('#scan').value); }
+    if (e.key === 'Escape') { $('#scan').value = ''; ocultarResultados(); }
+  });
+  document.addEventListener('keydown', (e) => {
+    if ($('#editor').hidden || document.querySelector('dialog[open]')) return;
+    const a = document.activeElement;
+    if ((!a || a === document.body) && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) $('#scan').focus();
+  });
+  ['#eNombre', '#eTel', '#eDoc', '#eVigencia', '#eNotas', '#eDescuento'].forEach((s) =>
+    $(s).addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); }));
+
+  // Cámara
+  async function detenerCamara() {
+    if (!lectorCamara) return;
+    const l = lectorCamara;
+    lectorCamara = null;
+    try { await l.stop(); l.clear(); } catch (_) {}
+    $('#lector').hidden = true;
+    $('#btnCamara').textContent = 'Usar cámara';
+  }
+  $('#btnCamara').addEventListener('click', async () => {
+    if (lectorCamara) { await detenerCamara(); $('#scan').focus(); return; }
+    $('#lector').hidden = false;
+    lectorCamara = new Html5Qrcode('lector');
+    try {
+      await lectorCamara.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 280, height: 120 } },
+        async (codigo) => { await detenerCamara(); $('#scan').value = codigo; buscar(codigo); });
+      $('#btnCamara').textContent = 'Cerrar cámara';
+    } catch (err) {
+      lectorCamara = null;
+      $('#lector').hidden = true;
+      aviso('No se pudo abrir la cámara. Revisa que el navegador tenga permiso para usarla.', 'error');
+    }
+  });
+
+  // ---------- Inicio ----------
+  db.auth.onAuthStateChange((evento, s) => {
+    if (evento === 'TOKEN_REFRESHED') return;
+    setTimeout(() => mostrarSesion(s), 0);
+  });
+</script>
+</body>
+</html>
