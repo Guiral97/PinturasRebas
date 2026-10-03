@@ -214,6 +214,8 @@
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
   }
+  /* En celular la navegación baja a su propia fila */
+  @media (max-width: 700px) { .barra { flex-wrap: wrap; } .nav { order: 3; width: 100%; overflow-x: auto; flex-wrap: nowrap; } .nav a { white-space: nowrap; padding-inline: .5rem; } }
 </style>
 </head>
 <body>
@@ -222,6 +224,8 @@
   <span class="tienda" id="nombreTienda">Pinturas</span>
   <nav class="nav" aria-label="Secciones">
     <a href="index.html" aria-current="page">Caja</a>
+    <a href="cotizaciones.html">Cotizaciones</a>
+    <a href="pedidos.html">Pedidos</a>
     <a href="inventario.html">Inventario</a>
     <a href="cartera.html">Cartera</a>
     <a href="tablero.html">Tablero</a>
