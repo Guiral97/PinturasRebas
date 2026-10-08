@@ -36,18 +36,20 @@
       <title>Recibo ${v.id}</title>
       <style>
         @page { size: ${ancho} auto; margin: 2mm; }
-        * { box-sizing: border-box; }
-        body { margin: 0; width: calc(${ancho} - 4mm); color: #000;
-               font: 12px/1.35 "Courier New", Courier, monospace; }
-        h1 { font-size: 15px; text-align: center; margin: 0 0 2px; }
+        * { box-sizing: border-box; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        /* Térmica: negro puro, letra gruesa y nada de grises (salen pálidos) */
+        body { margin: 0; width: calc(${ancho} - 4mm); background: #fff;
+               font: 700 ${ancho === '58mm' ? 12 : 13.5}px/1.35 Arial, Helvetica, sans-serif;
+               letter-spacing: .01em; -webkit-font-smoothing: none; }
+        h1 { font-size: ${ancho === '58mm' ? 16 : 19}px; font-weight: 900; text-align: center; margin: 0 0 3px; }
         .c { text-align: center; }
-        hr { border: 0; border-top: 1px dashed #000; margin: 6px 0; }
+        hr { border: 0; border-top: 2px solid #000; margin: 6px 0; }
         table { width: 100%; border-collapse: collapse; }
-        td { padding: 1px 0; vertical-align: top; }
+        td { padding: 1px 0; vertical-align: top; font-weight: 700; }
         .der { text-align: right; white-space: nowrap; padding-left: 6px; }
-        .prod { padding-top: 4px; }
-        .total td { font-size: 15px; font-weight: bold; padding-top: 4px; }
-        .nota { font-size: 10px; margin-top: 4px; }
+        .prod { padding-top: 5px; }
+        .total td { font-size: ${ancho === '58mm' ? 16 : 19}px; font-weight: 900; padding-top: 5px; }
+        .nota { font-size: ${ancho === '58mm' ? 10.5 : 11.5}px; margin-top: 4px; }
       </style></head><body>
       <h1>${esc(cfg.NOMBRE_TIENDA)}</h1>
       ${n.NIT ? `<div class="c">NIT ${esc(n.NIT)}</div>` : ''}
