@@ -214,6 +214,22 @@
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
   }
+  /* Indicador de conexión */
+  .red { border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); border-radius: 999px;
+         padding: .3rem .8rem; font: inherit; font-size: .9rem; font-weight: 600; display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap; }
+  .red::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: currentColor; }
+  .red.ok { color: var(--ok); }
+  .red.enviando, .red.pendiente { color: var(--acento); }
+  .red.fuera { color: #fff; background: var(--alerta); border-color: var(--alerta); }
+  .metodos button:disabled { opacity: .4; cursor: not-allowed; }
+  #dlgCola { max-width: 34rem; }
+  #dlgCola h3 { font-family: "Barlow Condensed", sans-serif; font-size: 1.2rem; margin: 1rem 0 .4rem; }
+  #dlgCola ul { list-style: none; margin: 0; padding: 0; border: 1px solid var(--linea); border-radius: var(--radio); max-height: 14rem; overflow: auto; }
+  #dlgCola li { display: flex; justify-content: space-between; align-items: center; gap: .75rem; padding: .6rem .75rem; border-bottom: 1px solid var(--linea); font-size: .95rem; }
+  #dlgCola li:last-child { border-bottom: 0; }
+  #dlgCola li.vacio { color: var(--suave); padding: .8rem .75rem; }
+  .ayuda { color: var(--suave); font-size: .875rem; margin: .5rem 0 0; }
+  #loginCola { margin: 0; color: var(--alerta); font-weight: 600; }
   /* En celular la navegación baja a su propia fila */
   @media (max-width: 700px) { .barra { flex-wrap: wrap; } .nav { order: 3; width: 100%; overflow-x: auto; flex-wrap: nowrap; } .nav a { white-space: nowrap; padding-inline: .5rem; } }
 </style>
@@ -230,6 +246,7 @@
     <a href="cartera.html">Cartera</a>
     <a href="tablero.html">Tablero</a>
   </nav>
+  <button type="button" class="red ok" id="estadoRed" hidden aria-label="Estado de la conexión y ventas pendientes">En línea</button>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -246,6 +263,7 @@
     <input id="clave" type="password" autocomplete="current-password" required>
   </div>
   <p id="loginError" role="alert"></p>
+  <p id="loginCola" hidden></p>
   <button class="btn btn-primario" type="submit">Entrar</button>
 </form>
 
@@ -321,6 +339,20 @@
   </div>
 </dialog>
 
+<dialog id="dlgCola" aria-labelledby="colaTitulo">
+  <h2 id="colaTitulo">Conexión y ventas pendientes</h2>
+  <p class="ayuda">Sin internet la caja sigue vendiendo con el catálogo guardado en este equipo. Las ventas se guardan aquí y se envían solas al volver la conexión. Sin conexión no se vende a crédito.</p>
+  <h3>Por enviar</h3>
+  <ul id="colaLista"></ul>
+  <p class="ayuda" id="colaCatalogo"></p>
+  <h3>Para revisar (stock o precio)</h3>
+  <ul id="revisarLista"></ul>
+  <div class="dlg-acciones" style="margin-top: 1rem; justify-content: flex-end">
+    <button class="btn" type="button" id="colaCerrar">Cerrar</button>
+    <button class="btn btn-primario" type="button" id="colaEnviar">Enviar ahora</button>
+  </div>
+</dialog>
+
 <script>
   // La configuración vive en config.js
   const { SUPABASE_URL, SUPABASE_ANON_KEY, NOMBRE_TIENDA } = window.APP_CONFIG;
@@ -328,6 +360,7 @@
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const $ = (s) => document.querySelector(s);
   const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+  const fHora = new Intl.DateTimeFormat('es-CO', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Bogota' });
 
   const el = {
     login: $('#login'), pos: $('#pos'), salir: $('#salir'), usuario: $('#usuario'),
@@ -336,7 +369,8 @@
     subtotal: $('#subtotal'), descMostrado: $('#descMostrado'), total: $('#total'),
     bloqueEfectivo: $('#bloqueEfectivo'), recibido: $('#recibido'), cambio: $('#cambio'),
     cobrar: $('#cobrar'), aviso: $('#aviso'), btnCamara: $('#btnCamara'), lector: $('#lector'),
-    dlg: $('#dlgVenta'), dlgTitulo: $('#dlgTitulo'), dlgDetalle: $('#dlgDetalle')
+    dlg: $('#dlgVenta'), dlgTitulo: $('#dlgTitulo'), dlgDetalle: $('#dlgDetalle'),
+    red: $('#estadoRed'), dlgCola: $('#dlgCola')
   };
 
   let carrito = [];          // { id, etiqueta, codigo, precio, cantidad, stock }
@@ -344,6 +378,17 @@
   let procesando = false;
   let lectorCamara = null;
   let ultimaVenta = null;    // para imprimir el recibo
+  let uuidVenta = null;      // código único de la venta en curso (reintentos sin duplicar)
+  let dudosa = null;         // venta a crédito que no se pudo confirmar por la red: { uuid, firma }
+
+  // Estado de conexión y modo sin conexión
+  let enLinea = navigator.onLine;
+  let haySesion = false;     // sesión de Supabase válida en este momento
+  let modoSinSesion = false; // caja abierta sin internet con el perfil guardado
+  let sincronizando = false;
+  let cola = [];             // ventas pendientes por enviar
+  let catalogo = [];         // copia local de v_catalogo
+  let catalogoEn = null;
 
   document.title = `Caja de ventas | ${NOMBRE_TIENDA}`;
   $('#nombreTienda').textContent = NOMBRE_TIENDA;
@@ -351,6 +396,7 @@
   // ---------- Utilidades ----------
   const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const norm = (t) => String(t ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
   let temporizadorAviso;
   function aviso(texto, tipo = 'info') {
@@ -358,87 +404,327 @@
     el.aviso.className = tipo === 'error' ? 'error' : '';
     el.aviso.hidden = false;
     clearTimeout(temporizadorAviso);
-    temporizadorAviso = setTimeout(() => (el.aviso.hidden = true), tipo === 'error' ? 6000 : 3000);
+    temporizadorAviso = setTimeout(() => (el.aviso.hidden = true), tipo === 'error' ? 6000 : 3500);
   }
 
   function enfocar() {
-    if (!el.pos.hidden && !el.dlg.open) el.scan.focus();
+    if (!el.pos.hidden && !el.dlg.open && !el.dlgCola.open) el.scan.focus();
+  }
+
+  // Un error de red (sin respuesta del servidor) frente a un error del negocio (stock, cupo...)
+  function esErrorDeRed(res) {
+    if (!res || !res.error) return false;
+    if (res.status === 0) return true;
+    return /fetch|network|load failed|abort|timeout|offline/i.test(`${res.error.message} ${res.error.details ?? ''}`);
+  }
+  const limite = (ms) => (typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined);
+  function conLimite(consulta, ms) {
+    const s = limite(ms);
+    return s && consulta.abortSignal ? consulta.abortSignal(s) : consulta;
+  }
+
+  function nuevoUuid() {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    const b = crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+    const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+  }
+
+  // ---------- Almacenamiento local (IndexedDB) ----------
+  const almacen = (() => {
+    let dbp = null;
+    function abrir() {
+      if (dbp) return dbp;
+      dbp = new Promise((ok, mal) => {
+        const r = indexedDB.open('rebas-caja', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('kv');
+        r.onsuccess = () => ok(r.result);
+        r.onerror = () => mal(r.error);
+      });
+      return dbp;
+    }
+    async function op(modo, fn) {
+      const d = await abrir();
+      return new Promise((ok, mal) => {
+        const tx = d.transaction('kv', modo);
+        const req = fn(tx.objectStore('kv'));
+        tx.oncomplete = () => ok(req?.result);
+        tx.onerror = () => mal(tx.error);
+      });
+    }
+    return {
+      get: (k) => op('readonly', (s) => s.get(k)).catch(() => undefined),
+      set: (k, v) => op('readwrite', (s) => s.put(v, k)).catch((e) => console.warn('No se pudo guardar', k, e))
+    };
+  })();
+
+  async function guardarCola() { await almacen.set('cola', cola); pintarEstado(); }
+
+  // Código corto de este equipo para numerar recibos provisionales (P-K7Q-0001)
+  async function siguienteProvisional() {
+    let equipo = await almacen.get('equipo');
+    if (!equipo) {
+      const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      equipo = Array.from(crypto.getRandomValues(new Uint8Array(3)), (n) => letras[n % letras.length]).join('');
+      await almacen.set('equipo', equipo);
+    }
+    const n = ((await almacen.get('contadorProvisional')) || 0) + 1;
+    await almacen.set('contadorProvisional', n);
+    return `P-${equipo}-${String(n).padStart(4, '0')}`;
+  }
+
+  // ---------- Estado de conexión ----------
+  function pintarEstado() {
+    const pendientes = cola.length;
+    const errores = cola.filter((v) => v.error).length;
+    let txt, cls;
+    if (!enLinea) {
+      txt = pendientes ? `Sin conexión · ${pendientes} por enviar` : 'Sin conexión';
+      cls = 'fuera';
+    } else if (sincronizando) {
+      txt = `Enviando ${pendientes}…`; cls = 'enviando';
+    } else if (pendientes) {
+      txt = errores ? `${errores} con error` : `${pendientes} por enviar`; cls = 'pendiente';
+    } else {
+      txt = 'En línea'; cls = 'ok';
+    }
+    el.red.textContent = txt;
+    el.red.className = `red ${cls}`;
+    el.red.hidden = el.pos.hidden;
+    // Sin conexión no se vende a crédito
+    const credito = el.metodos.querySelector('[data-metodo="credito"]');
+    credito.disabled = !enLinea;
+    credito.title = enLinea ? '' : 'Sin conexión no se puede vender a crédito';
+    if (!enLinea && metodo === 'credito') el.metodos.querySelector('[data-metodo="efectivo"]').click();
+    if (el.dlgCola.open) pintarCola();
+  }
+
+  function marcarSinRed() {
+    if (!enLinea) return;
+    enLinea = false;
+    pintarEstado();
+    aviso('Se perdió la conexión. La caja sigue vendiendo y enviará las ventas cuando vuelva internet.', 'error');
+  }
+
+  async function marcarEnLinea() {
+    if (enLinea) return;
+    enLinea = true;
+    pintarEstado();
+    // Recupera la sesión si la caja se abrió sin conexión
+    const { data } = await db.auth.getSession();
+    if (data?.session && !haySesion) await mostrarSesion(data.session);
+    else if (!data?.session && modoSinSesion) { await mostrarSesion(null); return; }
+    verificarDudosa();
+    if (cola.length) sincronizar();
+    else actualizarCatalogo();
+  }
+
+  // Comprueba la conexión real (navigator.onLine no siempre dice la verdad)
+  async function probarConexion() {
+    if (!navigator.onLine) { marcarSinRed(); return false; }
+    const res = await conLimite(db.from('categorias').select('id').limit(1), 5000);
+    if (esErrorDeRed(res)) { marcarSinRed(); return false; }
+    await marcarEnLinea();
+    return true;
+  }
+  window.addEventListener('offline', marcarSinRed);
+  window.addEventListener('online', () => probarConexion());
+  setInterval(() => { if (!enLinea || cola.length) probarConexion(); }, 20000);
+  setInterval(() => { if (enLinea && haySesion) actualizarCatalogo(); }, 10 * 60 * 1000);
+
+  // ---------- Catálogo y clientes guardados en el equipo ----------
+  async function actualizarCatalogo() {
+    if (!haySesion) return;
+    const campos = 'id, etiqueta, codigo_barras, sku, precio_venta, stock, activo';
+    const todo = [];
+    for (let desde = 0; ; desde += 1000) {
+      const res = await conLimite(db.from('v_catalogo').select(campos).order('id').range(desde, desde + 999), 15000);
+      if (res.error) { if (esErrorDeRed(res)) marcarSinRed(); return; }
+      todo.push(...res.data);
+      if (res.data.length < 1000) break;
+    }
+    catalogo = todo;
+    catalogoEn = new Date().toISOString();
+    await almacen.set('catalogo', { en: catalogoEn, filas: catalogo });
+  }
+
+  async function cargarCatalogoLocal() {
+    const c = await almacen.get('catalogo');
+    if (c) { catalogo = c.filas; catalogoEn = c.en; }
+  }
+
+  function descontarLocal(items) {
+    items.forEach((i) => {
+      const p = catalogo.find((x) => x.id === i.presentacion_id);
+      if (p) p.stock = Number(p.stock) - i.cantidad;
+    });
+    almacen.set('catalogo', { en: catalogoEn, filas: catalogo });
+  }
+
+  function pintarClientes(data) {
+    const actual = el.cliente.value;
+    el.cliente.innerHTML = '<option value="">Consumidor final</option>' +
+      data.map((c) => `<option value="${c.id}">${esc(c.nombre)}${c.documento ? ' (' + esc(c.documento) + ')' : ''}</option>`).join('');
+    el.cliente.value = actual;
+  }
+
+  async function cargarClientes() {
+    if (enLinea && haySesion) {
+      const res = await conLimite(db.from('clientes').select('id, nombre, documento').order('nombre').limit(1000), 8000);
+      if (!res.error) {
+        await almacen.set('clientes', res.data);
+        return pintarClientes(res.data);
+      }
+      if (esErrorDeRed(res)) marcarSinRed();
+      else aviso('No se pudieron cargar los clientes.', 'error');
+    }
+    pintarClientes((await almacen.get('clientes')) || []);
   }
 
   // ---------- Sesión ----------
   async function mostrarSesion(session) {
     const conSesion = !!session;
-    el.login.hidden = conSesion;
-    el.pos.hidden = !conSesion;
-    el.salir.hidden = !conSesion;
+    haySesion = conSesion;
     el.usuario.textContent = '';
-    if (!conSesion) return;
 
-    const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
-    if (!perfil) {
-      aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
+    if (!conSesion) {
+      // Sin internet y con el perfil guardado en este equipo: la caja abre igual
+      const perfil = await almacen.get('perfil');
+      if (perfil && (!navigator.onLine || !(await probarConexion()))) {
+        enLinea = false;
+        return entrarSinSesion(perfil);
+      }
+      modoSinSesion = false;
+      el.login.hidden = false;
+      el.pos.hidden = true;
+      el.salir.hidden = true;
+      $('#loginCola').hidden = !cola.length;
+      $('#loginCola').textContent = cola.length
+        ? `Hay ${cola.length} ${cola.length === 1 ? 'venta' : 'ventas'} sin enviar en este equipo. Inicia sesión para enviarlas.` : '';
+      pintarEstado();
+      return;
     }
-    el.usuario.textContent = perfil?.nombre ?? session.user.email;
+
+    modoSinSesion = false;
+    el.login.hidden = true;
+    el.pos.hidden = false;
+    el.salir.hidden = false;
+
+    const res = await conLimite(db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle(), 6000);
+    let nombre = res.data?.nombre;
+    if (esErrorDeRed(res)) {
+      enLinea = false;
+      nombre = (await almacen.get('perfil'))?.nombre;
+    } else if (!res.data) {
+      aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
+    } else {
+      enLinea = true;
+    }
+    nombre = nombre ?? session.user.email;
+    el.usuario.textContent = nombre;
+    await almacen.set('perfil', { id: session.user.id, nombre, email: session.user.email });
+
+    pintarEstado();
     cargarClientes();
+    if (enLinea) {
+      verificarDudosa();
+      if (cola.length) sincronizar(); else actualizarCatalogo();
+    }
+    enfocar();
+  }
+
+  function entrarSinSesion(perfil) {
+    modoSinSesion = true;
+    el.login.hidden = true;
+    el.pos.hidden = false;
+    el.salir.hidden = true;
+    el.usuario.textContent = `${perfil.nombre} (sin conexión)`;
+    pintarEstado();
+    cargarClientes();
+    aviso('Sin conexión: la caja trabaja con el catálogo guardado en este equipo.', 'error');
     enfocar();
   }
 
   el.login.addEventListener('submit', async (e) => {
     e.preventDefault();
     $('#loginError').textContent = '';
-    const { error } = await db.auth.signInWithPassword({
+    const res = await db.auth.signInWithPassword({
       email: $('#email').value.trim(),
       password: $('#clave').value
     });
-    if (error) $('#loginError').textContent = 'Correo o contraseña incorrectos.';
+    if (res.error) {
+      $('#loginError').textContent = /fetch|network/i.test(res.error.message) || !navigator.onLine
+        ? 'Sin conexión. Si ya entraste antes en este equipo, la caja abre sola cuando no hay internet.'
+        : 'Correo o contraseña incorrectos.';
+    }
   });
 
-  el.salir.addEventListener('click', () => db.auth.signOut());
-
-  // ---------- Clientes ----------
-  async function cargarClientes() {
-    const { data, error } = await db.from('clientes').select('id, nombre, documento').order('nombre').limit(1000);
-    if (error) return aviso('No se pudieron cargar los clientes.', 'error');
-    el.cliente.innerHTML = '<option value="">Consumidor final</option>' +
-      data.map((c) => `<option value="${c.id}">${esc(c.nombre)}${c.documento ? ' (' + esc(c.documento) + ')' : ''}</option>`).join('');
-  }
+  el.salir.addEventListener('click', async () => {
+    if (cola.length && !confirm(`Hay ${cola.length} ventas sin enviar. Quedan guardadas en este equipo y se enviarán cuando alguien inicie sesión. ¿Cerrar sesión?`)) return;
+    await almacen.set('perfil', null);
+    db.auth.signOut();
+  });
 
   // ---------- Búsqueda ----------
+  function buscarLocal(texto) {
+    const exacto = catalogo.find((p) => p.activo && (p.codigo_barras === texto || p.sku === texto));
+    if (exacto) return { exacto };
+    const palabras = norm(texto).split(/\s+/).filter(Boolean);
+    const lista = catalogo
+      .filter((p) => p.activo && palabras.every((w) => norm(p.etiqueta).includes(w)))
+      .sort((a, b) => a.etiqueta.localeCompare(b.etiqueta))
+      .slice(0, 8);
+    return { lista };
+  }
+
   async function buscar(texto) {
     texto = texto.trim();
     ocultarResultados();
     if (!texto) return;
 
-    const campos = 'id, etiqueta, codigo_barras, sku, precio_venta, stock';
-
-    // 1) Coincidencia exacta por código de barras o SKU
-    if (/^[\w.\-]+$/.test(texto)) {
-      const { data, error } = await db.from('v_catalogo').select(campos)
-        .eq('activo', true)
-        .or(`codigo_barras.eq.${texto},sku.eq.${texto}`)
-        .limit(1);
-      if (error) return aviso('Error consultando el catálogo: ' + error.message, 'error');
-      if (data.length) {
-        agregar(data[0]);
-        el.scan.value = '';
-        return;
+    if (enLinea && haySesion) {
+      const campos = 'id, etiqueta, codigo_barras, sku, precio_venta, stock';
+      let fallo = false;
+      // 1) Coincidencia exacta por código de barras o SKU
+      if (/^[\w.\-]+$/.test(texto)) {
+        const res = await conLimite(db.from('v_catalogo').select(campos)
+          .eq('activo', true).or(`codigo_barras.eq.${texto},sku.eq.${texto}`).limit(1), 4000);
+        if (esErrorDeRed(res)) fallo = true;
+        else if (res.error) return aviso('Error consultando el catálogo: ' + res.error.message, 'error');
+        else if (res.data.length) { agregar(res.data[0]); el.scan.value = ''; return; }
       }
+      // 2) Búsqueda por nombre, marca, color o presentación
+      if (!fallo) {
+        const res = await conLimite(db.from('v_catalogo').select(campos)
+          .eq('activo', true).ilike('etiqueta', `%${texto}%`).order('etiqueta').limit(8), 4000);
+        if (esErrorDeRed(res)) fallo = true;
+        else if (res.error) return aviso('Error consultando el catálogo: ' + res.error.message, 'error');
+        else {
+          if (!res.data.length) {
+            aviso(`No hay productos que coincidan con “${texto}”. Revisa el código o regístralo en el catálogo.`, 'error');
+            el.scan.select();
+            return;
+          }
+          return mostrarResultados(res.data);
+        }
+      }
+      if (fallo) marcarSinRed();
     }
 
-    // 2) Búsqueda por nombre, marca, color o presentación
-    const { data, error } = await db.from('v_catalogo').select(campos)
-      .eq('activo', true)
-      .ilike('etiqueta', `%${texto}%`)
-      .order('etiqueta')
-      .limit(8);
-    if (error) return aviso('Error consultando el catálogo: ' + error.message, 'error');
-
-    if (!data.length) {
-      aviso(`No hay productos que coincidan con “${texto}”. Revisa el código o regístralo en el catálogo.`, 'error');
+    // Sin conexión: catálogo guardado en el equipo
+    if (!catalogo.length) {
+      aviso('Sin conexión y sin catálogo guardado. Abre la caja una vez con internet para guardarlo.', 'error');
+      return;
+    }
+    const { exacto, lista } = buscarLocal(texto);
+    if (exacto) { agregar(exacto); el.scan.value = ''; return; }
+    if (!lista.length) {
+      aviso(`No hay productos que coincidan con “${texto}” en el catálogo guardado.`, 'error');
       el.scan.select();
       return;
     }
-    mostrarResultados(data);
+    mostrarResultados(lista);
   }
 
   function mostrarResultados(lista) {
@@ -464,6 +750,7 @@
 
   // ---------- Carrito ----------
   function agregar(p) {
+    uuidVenta = null;
     const existente = carrito.find((i) => i.id === p.id);
     if (existente) {
       existente.cantidad += 1;
@@ -483,11 +770,13 @@
     if (!item) return;
     if (!Number.isFinite(nueva) || nueva < 1) nueva = 1;
     item.cantidad = Math.floor(nueva);
+    uuidVenta = null;
     pintar();
   }
 
   function quitar(id) {
     carrito = carrito.filter((i) => i.id !== id);
+    uuidVenta = null;
     pintar();
     enfocar();
   }
@@ -555,73 +844,149 @@
     el.cobrar.disabled = !carrito.length || procesando;
   }
 
-  el.descuento.addEventListener('input', recalcular);
+  el.descuento.addEventListener('input', () => { uuidVenta = null; recalcular(); });
   el.recibido.addEventListener('input', recalcular);
+  el.cliente.addEventListener('change', () => { uuidVenta = null; });
 
   el.metodos.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-metodo]');
-    if (!b) return;
+    if (!b || b.disabled) return;
     metodo = b.dataset.metodo;
+    uuidVenta = null;
     el.metodos.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
     recalcular();
   });
 
+  // Huella de la venta en pantalla: si es la misma que quedó en duda, se reutiliza su código
+  function firmaVenta(metodoVenta, clienteId, descuento) {
+    return JSON.stringify([carrito.map((i) => [i.id, i.cantidad]), clienteId, metodoVenta, descuento]);
+  }
+
+  // Al volver internet: ¿la venta a crédito que quedó en duda sí se registró?
+  async function verificarDudosa() {
+    if (!dudosa || !haySesion) return;
+    const res = await conLimite(db.from('ventas').select('id').eq('uuid_caja', dudosa.uuid).maybeSingle(), 6000);
+    if (esErrorDeRed(res)) return;
+    if (res.data) {
+      aviso(`La venta a crédito que quedó en duda sí se registró (venta ${res.data.id}). No la vuelvas a cobrar.`);
+      const { descuento } = calcular();
+      if (dudosa.firma === firmaVenta('credito', el.cliente.value ? +el.cliente.value : null, descuento)) {
+        carrito = []; el.descuento.value = 0; el.cliente.value = ''; pintar();
+      }
+    }
+    dudosa = null;
+    await almacen.set('dudosa', null);
+  }
+
   // ---------- Cobrar ----------
   el.cobrar.addEventListener('click', async () => {
     if (!carrito.length || procesando) return;
-    const { total, descuento } = calcular();
+    const metodoVenta = metodo;   // fijo durante todo el cobro, aunque cambie el estado de la red
+    const { subtotal, total, descuento } = calcular();
     const clienteId = el.cliente.value ? +el.cliente.value : null;
+    const clienteNombre = clienteId ? el.cliente.selectedOptions[0].textContent : null;
 
-    if (metodo === 'credito' && !clienteId) {
+    if (metodoVenta === 'credito' && !clienteId) {
       aviso('Selecciona un cliente para vender a crédito.', 'error');
       el.cliente.focus();
       return;
     }
+    if (metodoVenta === 'credito' && !enLinea) {
+      aviso('Sin conexión no se puede vender a crédito. Cobra con otra forma de pago o espera a que vuelva internet.', 'error');
+      return;
+    }
     const recibido = parseFloat(el.recibido.value);
-    if (metodo === 'efectivo' && Number.isFinite(recibido) && recibido < total) {
+    if (metodoVenta === 'efectivo' && Number.isFinite(recibido) && recibido < total) {
       aviso('El efectivo recibido no alcanza para el total.', 'error');
       el.recibido.focus();
       return;
     }
 
+    // El mismo código si se reintenta la misma venta: nunca se registra dos veces
+    const firma = firmaVenta(metodoVenta, clienteId, descuento);
+    if (dudosa && dudosa.firma === firma) uuidVenta = dudosa.uuid;
+    uuidVenta = uuidVenta ?? nuevoUuid();
+    const uuidCobro = uuidVenta;
+    const items = carrito.map((i) => ({ presentacion_id: i.id, cantidad: i.cantidad, precio: i.precio, etiqueta: i.etiqueta }));
+    const base = {
+      fecha: new Date().toISOString(),
+      cliente: clienteNombre,
+      vendedor: el.usuario.textContent.replace(' (sin conexión)', ''),
+      metodo: metodoVenta,
+      estado: metodoVenta === 'credito' ? 'pendiente_pago' : 'pagada',
+      items: items.map((i) => ({ etiqueta: i.etiqueta, cantidad: i.cantidad, precio: i.precio })),
+      subtotal, descuento, total,
+      recibido: metodoVenta === 'efectivo' && Number.isFinite(recibido) ? recibido : null
+    };
+
     procesando = true;
     el.cobrar.textContent = 'Registrando…';
     recalcular();
 
-    const { data: ventaId, error } = await db.rpc('registrar_venta', {
-      p_items: carrito.map((i) => ({ presentacion_id: i.id, cantidad: i.cantidad })),
-      p_cliente_id: clienteId,
-      p_metodo_pago: metodo,
-      p_descuento: descuento
-    });
+    let resultado = null;
+    if (enLinea && haySesion) {
+      const res = await conLimite(db.rpc('registrar_venta_caja', {
+        p_uuid: uuidCobro,
+        p_items: items.map(({ presentacion_id, cantidad, precio }) => ({ presentacion_id, cantidad, precio })),
+        p_cliente_id: clienteId,
+        p_metodo_pago: metodoVenta,
+        p_descuento: descuento,
+        p_sin_conexion: false
+      }), 10000);
+
+      if (!res.error) {
+        resultado = { id: res.data.venta_id };
+      } else if (!esErrorDeRed(res)) {
+        procesando = false;
+        el.cobrar.textContent = 'Cobrar venta';
+        recalcular();
+        uuidVenta = null;
+        aviso('No se registró la venta: ' + res.error.message, 'error');
+        return;
+      } else {
+        if (metodoVenta === 'credito') {
+          // A crédito no se guarda sin conexión: queda en duda y se reintenta con el mismo código
+          dudosa = { uuid: uuidCobro, firma };
+          await almacen.set('dudosa', dudosa);
+          marcarSinRed();
+          procesando = false;
+          el.cobrar.textContent = 'Cobrar venta';
+          recalcular();
+          aviso('No se pudo confirmar la venta a crédito por la conexión. Al volver internet la caja revisa si quedó registrada; si la vuelves a cobrar igual, no se duplica.', 'error');
+          return;
+        }
+        marcarSinRed();
+      }
+    }
+
+    // Sin conexión (o se cayó al cobrar): la venta queda guardada en el equipo
+    if (!resultado) {
+      const provisional = await siguienteProvisional();
+      cola.push({
+        uuid: uuidCobro, provisional, creada_en: base.fecha,
+        cliente_id: clienteId, cliente: clienteNombre, metodo: metodoVenta, descuento, total,
+        items: items.map(({ presentacion_id, cantidad, precio, etiqueta }) => ({ presentacion_id, cantidad, precio, etiqueta })),
+        vendedor: base.vendedor, error: null
+      });
+      await guardarCola();
+      resultado = { id: provisional, provisional: true };
+    }
 
     procesando = false;
     el.cobrar.textContent = 'Cobrar venta';
     recalcular();
+    descontarLocal(items);
+    uuidVenta = null;
+    if (dudosa && dudosa.uuid === uuidCobro) { dudosa = null; almacen.set('dudosa', null); }
 
-    if (error) {
-      aviso('No se registró la venta: ' + error.message, 'error');
-      return;
-    }
-
-    ultimaVenta = {
-      id: ventaId,
-      fecha: new Date().toISOString(),
-      cliente: clienteId ? el.cliente.selectedOptions[0].textContent : null,
-      vendedor: el.usuario.textContent,
-      metodo,
-      estado: metodo === 'credito' ? 'pendiente_pago' : 'pagada',
-      items: carrito.map((i) => ({ etiqueta: i.etiqueta, cantidad: i.cantidad, precio: i.precio })),
-      subtotal: calcular().subtotal,
-      descuento,
-      total,
-      recibido: metodo === 'efectivo' && Number.isFinite(recibido) ? recibido : null
-    };
-
-    el.dlgTitulo.textContent = `Venta ${ventaId} registrada`;
+    ultimaVenta = { ...base, id: resultado.id, provisional: !!resultado.provisional };
+    el.dlgTitulo.textContent = resultado.provisional
+      ? `Venta guardada sin conexión (${resultado.id})`
+      : `Venta ${resultado.id} registrada`;
     let detalle = `Total: ${cop.format(total)}`;
-    if (metodo === 'efectivo' && Number.isFinite(recibido)) detalle += ` · Cambio: ${cop.format(recibido - total)}`;
-    if (metodo === 'credito') detalle += ' · Queda pendiente de pago';
+    if (base.recibido != null) detalle += ` · Cambio: ${cop.format(base.recibido - total)}`;
+    if (metodoVenta === 'credito') detalle += ' · Queda pendiente de pago';
+    if (resultado.provisional) detalle += ' · Se enviará sola cuando vuelva internet';
     el.dlgDetalle.textContent = detalle;
     el.dlg.showModal();
     $('#nuevaVenta').focus();
@@ -629,6 +994,7 @@
 
   function nuevaVenta() {
     carrito = [];
+    uuidVenta = null;
     el.descuento.value = 0;
     el.recibido.value = '';
     el.cliente.value = '';
@@ -640,6 +1006,104 @@
   $('#nuevaVenta').addEventListener('click', nuevaVenta);
   $('#imprimirRecibo').addEventListener('click', () => ultimaVenta && imprimirRecibo(ultimaVenta));
   el.dlg.addEventListener('close', enfocar);
+
+  // ---------- Envío de las ventas guardadas ----------
+  async function sincronizar() {
+    if (sincronizando || !cola.length) return;
+    const { data } = await db.auth.getSession();
+    if (!data?.session) {
+      aviso(`Hay ${cola.length} ventas sin enviar. Inicia sesión para enviarlas.`, 'error');
+      return;
+    }
+    sincronizando = true;
+    pintarEstado();
+    let enviadas = 0, revisar = 0, conError = 0;
+
+    for (const v of [...cola]) {
+      const res = await conLimite(db.rpc('registrar_venta_caja', {
+        p_uuid: v.uuid,
+        p_items: v.items.map(({ presentacion_id, cantidad, precio }) => ({ presentacion_id, cantidad, precio })),
+        p_cliente_id: v.cliente_id,
+        p_metodo_pago: v.metodo,
+        p_descuento: v.descuento,
+        p_sin_conexion: true,
+        p_creada_en: v.creada_en,
+        p_recibo_provisional: v.provisional
+      }), 15000);
+
+      if (esErrorDeRed(res)) { marcarSinRed(); break; }
+      if (res.error) {
+        v.error = res.error.message;
+        conError++;
+      } else {
+        cola = cola.filter((x) => x.uuid !== v.uuid);
+        enviadas++;
+        if (res.data.revisar) revisar++;
+      }
+      await guardarCola();
+    }
+
+    sincronizando = false;
+    pintarEstado();
+    if (enviadas) {
+      let msg = `${enviadas} ${enviadas === 1 ? 'venta enviada' : 'ventas enviadas'}.`;
+      if (revisar) msg += ` ${revisar} para revisar (stock o precio).`;
+      aviso(msg, revisar ? 'error' : 'info');
+      actualizarCatalogo();
+    }
+    if (conError) aviso(`${conError} ${conError === 1 ? 'venta no se pudo enviar' : 'ventas no se pudieron enviar'}. Revisa el detalle en el indicador de conexión.`, 'error');
+  }
+
+  // ---------- Panel de ventas sin conexión ----------
+  async function pintarCola() {
+    const lista = $('#colaLista');
+    lista.innerHTML = cola.length ? cola.map((v) => `
+      <li>
+        <div><strong>${esc(v.provisional)}</strong> · ${fHora.format(new Date(v.creada_en))}<br>
+          <span class="num">${cop.format(v.total)}</span> · ${esc(v.cliente ?? 'Consumidor final')}
+          ${v.error ? `<div class="falta">${esc(v.error)}</div>` : ''}</div>
+        ${v.error ? `<button type="button" class="btn" data-descartar="${esc(v.uuid)}">Descartar</button>` : ''}
+      </li>`).join('') : '<li class="vacio">No hay ventas pendientes por enviar.</li>';
+    $('#colaCatalogo').textContent = catalogoEn
+      ? `Catálogo guardado en este equipo: ${catalogo.length} productos, actualizado ${fHora.format(new Date(catalogoEn))}`
+      : 'Todavía no hay catálogo guardado en este equipo.';
+    $('#colaEnviar').disabled = !cola.length || !enLinea || sincronizando;
+
+    const rev = $('#revisarLista');
+    if (!enLinea || !haySesion) {
+      rev.innerHTML = '<li class="vacio">Con internet aquí aparecen las ventas sin conexión que hay que revisar.</li>';
+      return;
+    }
+    const res = await conLimite(db.from('v_ventas_revisar').select('*').limit(50), 6000);
+    if (res.error) { rev.innerHTML = `<li class="vacio">No se pudo consultar: ${esc(res.error.message)}</li>`; return; }
+    rev.innerHTML = res.data.length ? res.data.map((v) => `
+      <li>
+        <div><strong>Venta ${v.id}</strong>${v.recibo_provisional ? ` (${esc(v.recibo_provisional)})` : ''} · ${fHora.format(new Date(v.creado_en))}
+          · <span class="num">${cop.format(v.total)}</span><br><span class="falta">${esc(v.nota_revision)}</span></div>
+        <button type="button" class="btn" data-revisada="${v.id}">Revisada</button>
+      </li>`).join('') : '<li class="vacio">No hay ventas por revisar.</li>';
+  }
+
+  el.red.addEventListener('click', () => { el.dlgCola.showModal(); pintarCola(); });
+  $('#colaCerrar').addEventListener('click', () => el.dlgCola.close());
+  $('#colaEnviar').addEventListener('click', () => sincronizar());
+  el.dlgCola.addEventListener('close', enfocar);
+  el.dlgCola.addEventListener('click', async (e) => {
+    const d = e.target.closest('[data-descartar]');
+    if (d) {
+      const v = cola.find((x) => x.uuid === d.dataset.descartar);
+      if (v && confirm(`¿Descartar la venta ${v.provisional} por ${cop.format(v.total)}? No quedará registrada en el sistema.`)) {
+        cola = cola.filter((x) => x.uuid !== v.uuid);
+        await guardarCola();
+      }
+    }
+    const r = e.target.closest('[data-revisada]');
+    if (r) {
+      const res = await db.rpc('marcar_venta_revisada', { p_venta_id: +r.dataset.revisada });
+      if (res.error) aviso('No se pudo marcar: ' + res.error.message, 'error');
+      pintarCola();
+    }
+  });
 
   // ---------- Lector USB/Bluetooth ----------
   // El lector escribe el código como un teclado y termina con Enter.
@@ -656,7 +1120,7 @@
 
   // Si nada tiene el foco y llega una tecla (el lector disparó), va al campo del lector.
   document.addEventListener('keydown', (e) => {
-    if (el.pos.hidden || el.dlg.open) return;
+    if (el.pos.hidden || el.dlg.open || el.dlgCola.open) return;
     const activo = document.activeElement;
     if ((!activo || activo === document.body) && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       el.scan.focus();
@@ -674,6 +1138,7 @@
 
   el.btnCamara.addEventListener('click', async () => {
     if (lectorCamara) { await detenerCamara(); enfocar(); return; }
+    if (typeof Html5Qrcode === 'undefined') { aviso('La cámara no está disponible sin conexión. Usa el lector USB.', 'error'); return; }
     el.lector.hidden = false;
     lectorCamara = new Html5Qrcode('lector');
     try {
@@ -695,12 +1160,33 @@
   });
 
   // ---------- Inicio ----------
-  // onAuthStateChange también avisa la sesión inicial. Las consultas se sacan
-  // del callback con setTimeout para no bloquear el cliente de Supabase.
-  db.auth.onAuthStateChange((evento, s) => {
-    if (evento === 'TOKEN_REFRESHED') return;
-    setTimeout(() => mostrarSesion(s), 0);
-  });
+  // Guarda la app en el equipo para que abra sin internet
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Sin modo sin conexión:', e));
+  }
+
+  (async () => {
+    cola = (await almacen.get('cola')) || [];
+    dudosa = (await almacen.get('dudosa')) || null;
+    await cargarCatalogoLocal();
+    pintarEstado();
+
+    // onAuthStateChange también avisa la sesión inicial. Las consultas se sacan
+    // del callback con setTimeout para no bloquear el cliente de Supabase.
+    let inicio = false;
+    db.auth.onAuthStateChange((evento, s) => {
+      if (evento === 'TOKEN_REFRESHED') { haySesion = !!s; return; }
+      inicio = true;
+      setTimeout(() => mostrarSesion(s), 0);
+    });
+    // Si Supabase no responde (sin internet), no dejar la caja en blanco
+    setTimeout(async () => {
+      if (inicio) return;
+      const perfil = await almacen.get('perfil');
+      if (perfil) { enLinea = false; entrarSinSesion(perfil); }
+      else { el.login.hidden = false; }
+    }, 4000);
+  })();
 </script>
 </body>
 </html>
