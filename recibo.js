@@ -13,7 +13,9 @@
   window.imprimirRecibo = function (v) {
     const cfg = window.APP_CONFIG || {};
     const n = cfg.NEGOCIO || {};
-    const ancho = cfg.ANCHO_RECIBO || '80mm';
+    const ancho = cfg.ANCHO_RECIBO || '58mm';
+    // Ancho que de verdad imprime el cabezal: 58 mm -> 48 mm útiles, 80 mm -> 72 mm
+    const util = cfg.ANCHO_IMPRESION || (ancho === '58mm' ? '48mm' : '72mm');
 
     const lineas = v.items.map((i) => `
       <tr><td colspan="2" class="prod">${esc(i.etiqueta)}</td></tr>
@@ -26,7 +28,7 @@
       filas.push(`<tr><td>Descuento</td><td class="der">-${cop.format(v.descuento)}</td></tr>`);
     }
     filas.push(`<tr class="total"><td>TOTAL</td><td class="der">${cop.format(v.total)}</td></tr>`);
-    filas.push(`<tr><td>Forma de pago</td><td class="der">${METODOS[v.metodo] ?? v.metodo}</td></tr>`);
+    filas.push(`<tr><td>Pago</td><td class="der">${METODOS[v.metodo] ?? v.metodo}</td></tr>`);
     if (v.metodo === 'efectivo' && v.recibido != null) {
       filas.push(`<tr><td>Recibido</td><td class="der">${cop.format(v.recibido)}</td></tr>`);
       filas.push(`<tr><td>Cambio</td><td class="der">${cop.format(v.recibido - v.total)}</td></tr>`);
@@ -35,10 +37,10 @@
     const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
       <title>Recibo ${v.id}</title>
       <style>
-        @page { size: ${ancho} auto; margin: 2mm; }
+        @page { size: ${ancho} auto; margin: 0; }
         * { box-sizing: border-box; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         /* Térmica: negro puro, letra gruesa y nada de grises (salen pálidos) */
-        body { margin: 0; width: calc(${ancho} - 4mm); background: #fff;
+        body { margin: 0 auto; padding: 1mm 0 3mm; width: ${util}; background: #fff;
                font: 700 ${ancho === '58mm' ? 12 : 13.5}px/1.35 Arial, Helvetica, sans-serif;
                letter-spacing: .01em; -webkit-font-smoothing: none; }
         h1 { font-size: ${ancho === '58mm' ? 16 : 19}px; font-weight: 900; text-align: center; margin: 0 0 3px; }
@@ -47,7 +49,7 @@
         table { width: 100%; border-collapse: collapse; }
         td { padding: 1px 0; vertical-align: top; font-weight: 700; }
         .der { text-align: right; white-space: nowrap; padding-left: 6px; }
-        .prod { padding-top: 5px; }
+        .prod { padding-top: 5px; overflow-wrap: anywhere; }
         .total td { font-size: ${ancho === '58mm' ? 16 : 19}px; font-weight: 900; padding-top: 5px; }
         .nota { font-size: ${ancho === '58mm' ? 10.5 : 11.5}px; margin-top: 4px; }
       </style></head><body>
@@ -57,6 +59,7 @@
       ${n.TELEFONO ? `<div class="c">Tel. ${esc(n.TELEFONO)}</div>` : ''}
       <hr>
       <div>Recibo N.° ${v.id}${v.copia ? ' (copia)' : ''}</div>
+      ${v.provisional ? '<div><b>PROVISIONAL:</b> registrado sin conexión. Se asienta al volver internet.</div>' : ''}
       <div>${fHora.format(new Date(v.fecha))}</div>
       <div>Cliente: ${esc(v.cliente || 'Consumidor final')}</div>
       ${v.vendedor ? `<div>Atendió: ${esc(v.vendedor)}</div>` : ''}
