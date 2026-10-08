@@ -16,5 +16,5 @@ window.APP_CONFIG = {
     TELEFONO: '',
     PIE: 'Gracias por su compra'
   },
-  ANCHO_RECIBO: '80mm'   // '58mm' para impresoras térmicas pequeñas
+  ANCHO_RECIBO: '58mm'   // '58mm' para impresoras térmicas pequeñas
 };
