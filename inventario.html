@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="config.js"></script>
+<script src="etiquetas.js"></script>
 <style>
   :root {
     --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
@@ -65,7 +66,7 @@
   main { max-width: 78rem; margin: 0 auto; padding: 1.25rem; }
 
   /* Pestañas */
-  .pestanas { display: flex; gap: .25rem; border-bottom: 1px solid var(--linea); margin-bottom: 1.25rem; overflow-x: auto; }
+  .pestanas { display: flex; gap: .25rem; border-bottom: 1px solid var(--linea); margin-bottom: 1.25rem; overflow-x: auto; overflow-y: hidden; }
   .pestanas button {
     border: 0; background: none; color: var(--suave); padding: .7rem 1rem;
     font-weight: 600; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap;
@@ -142,6 +143,19 @@
   .pres .campo label { font-size: .85rem; }
   .pres .check { padding-bottom: .55rem; }
   .pres-cab { display: flex; justify-content: space-between; align-items: center; }
+
+  /* Etiquetas */
+  .acciones-fila { display: flex; gap: .15rem; justify-content: flex-end; white-space: nowrap; }
+  #dlgEtiquetas { width: min(30rem, calc(100% - 1.5rem)); }
+  .et-prod { border-left: 4px solid var(--acento); padding-left: .8rem; }
+  .et-prod strong { display: block; }
+  .et-prod span { color: var(--suave); font-variant-numeric: tabular-nums; }
+  .et-vista { display: flex; justify-content: center; align-items: center; padding: 1rem; background: #fff; border: 1px solid var(--linea); border-radius: var(--radio); min-height: 7rem; }
+  .et-vista .papel { background: #fff; outline: 1px dashed #8E938E; display: flex; align-items: center; justify-content: center; }
+  .et-campos { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+  .et-otra { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+  .et-nota { color: var(--suave); font-size: .92rem; margin: 0; }
+  .et-nota.error { color: var(--alerta); font-weight: 600; }
 
   #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
   #aviso.error { background: var(--alerta); color: #fff; }
@@ -248,6 +262,7 @@
       <input type="search" id="buscarCat" placeholder="Buscar por nombre, marca, color o código" aria-label="Buscar en el catálogo">
       <label class="check"><input type="checkbox" id="soloBajo"> Solo stock bajo</label>
       <label class="check"><input type="checkbox" id="verInactivos"> Ver inactivos</label>
+      <label class="check"><input type="checkbox" id="sinCodigo"> Sin código de barras</label>
       <button class="btn btn-primario" id="nuevoProducto" type="button">Nuevo producto</button>
     </div>
     <div class="tabla-caja">
@@ -410,6 +425,42 @@
   </form>
 </dialog>
 
+<!-- ============ DIÁLOGO ETIQUETAS ============ -->
+<dialog id="dlgEtiquetas" aria-labelledby="tituloEtiquetas">
+  <form id="frmEtiquetas">
+    <div class="dlg-cuerpo">
+      <h2 id="tituloEtiquetas">Imprimir etiquetas</h2>
+      <div class="et-prod"><strong id="etNombre"></strong><span id="etCodigo"></span></div>
+      <div class="et-vista" id="etVista" aria-label="Vista previa de la etiqueta"></div>
+      <p class="et-nota" id="etNota" role="status"></p>
+      <div class="et-campos">
+        <div class="campo"><label for="etCantidad">Cantidad</label><input id="etCantidad" type="number" min="1" max="500" step="1" class="num" required></div>
+        <div class="campo"><label for="etMedida">Tamaño</label>
+          <select id="etMedida">
+            <option value="58x30">Rollo de 58 mm · 30 mm de alto</option>
+            <option value="58x40">Rollo de 58 mm · 40 mm de alto</option>
+            <option value="40x30">40 × 30 mm</option>
+            <option value="50x30">50 × 30 mm</option>
+            <option value="50x25">50 × 25 mm</option>
+            <option value="50x40">50 × 40 mm</option>
+            <option value="60x40">60 × 40 mm</option>
+            <option value="70x50">70 × 50 mm</option>
+            <option value="otra">Otra medida</option>
+          </select>
+        </div>
+      </div>
+      <div class="et-otra" id="etOtra" hidden>
+        <div class="campo"><label for="etAncho">Ancho (mm)</label><input id="etAncho" type="number" min="20" max="80" step="1" class="num"></div>
+        <div class="campo"><label for="etAlto">Alto (mm)</label><input id="etAlto" type="number" min="10" max="120" step="1" class="num"></div>
+      </div>
+    </div>
+    <div class="dlg-pie">
+      <button type="button" class="btn" id="cerrarEtiquetas">Cancelar</button>
+      <button type="submit" class="btn btn-primario" id="imprimirEtiquetas">Imprimir</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="aviso" role="status" hidden></div>
 
 <style>.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}</style>
@@ -549,9 +600,11 @@
     const q = norm($('#buscarCat').value.trim());
     const soloBajo = $('#soloBajo').checked;
     const verInactivos = $('#verInactivos').checked;
+    const sinCodigo = $('#sinCodigo').checked;
     const filas = catalogo.filter((p) =>
       (verInactivos || p.activo) &&
       (!soloBajo || (p.activo && Number(p.stock) <= Number(p.stock_minimo))) &&
+      (!sinCodigo || !p.codigo_barras) &&
       (!q || norm(`${p.etiqueta} ${p.categoria ?? ''} ${p.codigo_barras ?? ''} ${p.sku ?? ''}`).includes(q)));
 
     if (!catalogo.length) {
@@ -571,13 +624,18 @@
         <td class="der num">${cop.format(p.precio_venta)}</td>
         <td class="der num">${cop.format(p.costo)}</td>
         <td class="der num ${bajo ? 'bajo' : ''}">${Number(p.stock)}${bajo ? `<small>Mínimo ${Number(p.stock_minimo)}</small>` : ''}</td>
-        <td><button type="button" class="btn-texto" data-producto="${p.producto_id}">Editar</button></td>
+        <td><div class="acciones-fila">
+          <button type="button" class="btn-texto" data-etiqueta="${p.id}">${p.codigo_barras ? 'Etiquetas' : 'Crear código'}</button>
+          <button type="button" class="btn-texto" data-producto="${p.producto_id}">Editar</button>
+        </div></td>
       </tr>`;
     }).join('');
   }
 
-  ['#buscarCat', '#soloBajo', '#verInactivos'].forEach((s) => $(s).addEventListener('input', pintarCatalogo));
+  ['#buscarCat', '#soloBajo', '#verInactivos', '#sinCodigo'].forEach((s) => $(s).addEventListener('input', pintarCatalogo));
   $('#tbCatalogo').addEventListener('click', (e) => {
+    const et = e.target.closest('[data-etiqueta]');
+    if (et) return abrirEtiquetas(+et.dataset.etiqueta);
     const b = e.target.closest('[data-producto]');
     if (b) abrirProducto(+b.dataset.producto);
   });
@@ -747,6 +805,113 @@
       if (creado) seleccionar(creado);
     }
   }
+
+  // ---------- Etiquetas de código de barras ----------
+  // Los productos sin código reciben uno propio (EAN-13 que empieza por 20,
+  // ver etiquetas.js). Queda guardado en la presentación y la caja lo lee
+  // con el lector como cualquier otro.
+  const dlgEt = $('#dlgEtiquetas');
+  let etPres = null;
+
+  function leerMedidaGuardada() {
+    try { return JSON.parse(localStorage.getItem('rebas-etiqueta') || 'null'); } catch (_) { return null; }
+  }
+  function guardarMedida(m) {
+    try { localStorage.setItem('rebas-etiqueta', JSON.stringify(m)); } catch (_) {}
+  }
+
+  function medidaElegida() {
+    const v = $('#etMedida').value;
+    if (v !== 'otra') {
+      const [ancho, alto] = v.split('x').map(Number);
+      return { ancho, alto, valor: v };
+    }
+    return { ancho: Number($('#etAncho').value) || 0, alto: Number($('#etAlto').value) || 0, valor: 'otra' };
+  }
+
+  function codigoEtiqueta() {
+    return etPres.codigo_barras || codigoInterno(etPres.id);
+  }
+
+  function pintarVistaEtiqueta() {
+    const m = medidaElegida();
+    $('#etOtra').hidden = m.valor !== 'otra';
+    const nota = $('#etNota');
+    const boton = $('#imprimirEtiquetas');
+    if (m.ancho < 20 || m.alto < 10) {
+      $('#etVista').innerHTML = '';
+      nota.textContent = 'Escribe el ancho y el alto de la etiqueta en milímetros.';
+      nota.className = 'et-nota error';
+      boton.disabled = true;
+      return;
+    }
+    const codigo = codigoEtiqueta();
+    const r = svgCodigo(codigo, { anchoMm: anchoUtil(m.ancho), altoMm: m.alto - 3 });
+    $('#etVista').innerHTML = `<div class="papel" style="width:${m.ancho}mm;height:${m.alto}mm">${r.svg}</div>`;
+    if (!r.cabe) {
+      nota.textContent = `El código no cabe en ${m.ancho} mm de ancho sin perder lectura. Usa una etiqueta más ancha.`;
+      nota.className = 'et-nota error';
+      boton.disabled = true;
+      return;
+    }
+    nota.className = 'et-nota';
+    nota.textContent = etPres.codigo_barras
+      ? ''
+      : 'Este producto no tiene código. Al imprimir se le asigna este y queda guardado.';
+    boton.disabled = false;
+  }
+
+  function abrirEtiquetas(presId) {
+    etPres = catalogo.find((c) => c.id === presId);
+    if (!etPres) return;
+    $('#etNombre').textContent = etPres.etiqueta;
+    $('#etCodigo').textContent = etPres.codigo_barras || `Código nuevo: ${codigoInterno(etPres.id)}`;
+    $('#tituloEtiquetas').textContent = etPres.codigo_barras ? 'Imprimir etiquetas' : 'Crear código e imprimir';
+    $('#imprimirEtiquetas').textContent = etPres.codigo_barras ? 'Imprimir' : 'Crear código e imprimir';
+    $('#etCantidad').value = Math.min(500, Math.max(1, Math.ceil(Number(etPres.stock) || 0)));
+
+    const g = leerMedidaGuardada();
+    if (g) {
+      $('#etMedida').value = g.valor;
+      if (g.valor === 'otra') { $('#etAncho').value = g.ancho; $('#etAlto').value = g.alto; }
+    }
+    pintarVistaEtiqueta();
+    dlgEt.showModal();
+    $('#etCantidad').select();
+  }
+
+  ['#etMedida', '#etAncho', '#etAlto'].forEach((s) => $(s).addEventListener('input', pintarVistaEtiqueta));
+  $('#cerrarEtiquetas').addEventListener('click', () => dlgEt.close());
+
+  $('#frmEtiquetas').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const cantidad = Math.trunc(Number($('#etCantidad').value));
+    if (!(cantidad >= 1 && cantidad <= 500)) return aviso('La cantidad debe estar entre 1 y 500.', 'error');
+    const m = medidaElegida();
+    const boton = $('#imprimirEtiquetas');
+    boton.disabled = true;
+    try {
+      if (!etPres.codigo_barras) {
+        const nuevo = codigoInterno(etPres.id);
+        // Solo si sigue sin código (otro equipo pudo asignarle uno mientras tanto)
+        const { data, error } = await db.from('presentaciones')
+          .update({ codigo_barras: nuevo }).eq('id', etPres.id).is('codigo_barras', null).select('codigo_barras');
+        if (error) return aviso(mensajeError(error), 'error');
+        if (!data.length) {
+          await cargarCatalogo();
+          dlgEt.close();
+          return aviso('Este producto ya tenía código asignado. Ábrelo de nuevo para imprimir.', 'error');
+        }
+        etPres.codigo_barras = nuevo;
+        pintarCatalogo();
+      }
+      guardarMedida(m);
+      imprimirEtiquetas(etPres.codigo_barras, cantidad, m);
+      dlgEt.close();
+    } finally {
+      boton.disabled = false;
+    }
+  });
 
   // ---------- Entradas ----------
   function buscarEntrada(texto) {
