@@ -172,8 +172,56 @@
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
   }
-  /* En celular la navegación baja a su propia fila */
-  @media (max-width: 700px) { .barra { flex-wrap: wrap; } .nav { order: 3; width: 100%; overflow-x: auto; flex-wrap: nowrap; } .nav a { white-space: nowrap; padding-inline: .5rem; } }
+
+  /* ===================== Responsivo (común a todas las pantallas) ===================== */
+  html { -webkit-text-size-adjust: 100%; }
+  img, canvas, svg, video { max-width: 100%; }
+  input, select, textarea { max-width: 100%; }
+  /* Los hijos de rejillas no se estiran por su contenido (tablas anchas, textos largos) */
+  main > *, .cuerpo > *, .entradas > *, .clientes > *, .tres > *, .rejilla > *, .pie-editor > *, #pos > *,
+  #detContenido > *, .detalle > *, .panel > *, .bloque > *, #vista > *, #editor > *, .abono > *,
+  dialog form > *, .dlg-cuerpo > *, .contenido > * { min-width: 0; }
+  .segmentos button, .metodos button { white-space: normal; line-height: 1.2; }
+  .tabla-caja { position: relative; max-width: 100%; -webkit-overflow-scrolling: touch; }
+  td.num, th, td.der { white-space: nowrap; }
+  /* Barra superior: si no cabe en una línea, el menú baja a su propia fila */
+  @media (max-width: 1180px) {
+    .barra { flex-wrap: wrap; row-gap: .55rem; }
+    .nav { order: 3; width: 100%; flex-wrap: wrap; overflow: visible; }
+    .nav a { white-space: nowrap; }
+  }
+  /* Celular */
+  @media (max-width: 700px) {
+    .barra { padding: .6rem 1rem; gap: .5rem .6rem; }
+    .tienda { font-size: 1.25rem; }
+    #usuario { display: none; }
+    #salir { padding: .4rem .7rem; font-size: .9rem; }
+    .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; }
+    .nav a { text-align: center; padding: .5rem .2rem; background: var(--fondo); font-size: .95rem; }
+    .nav a[aria-current="page"] { background: var(--acento); color: var(--acento-tinta); box-shadow: none; }
+    main { padding: 1rem; }
+    dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
+    .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
+    #aviso { left: .75rem; right: .75rem; transform: none; max-width: none; bottom: .75rem; }
+    #login { margin: 6vh 1rem 0; }
+  }
+  @media (max-width: 420px) {
+    .segmentos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .resumen { gap: .4rem 1.5rem; }
+    .resumen strong { font-size: 1.65rem; }
+  }
+
+  /* Pedidos */
+  .tabla-caja th:first-child, .tabla-caja td:first-child { min-width: 11rem; white-space: normal; }
+  @media (max-width: 700px) {
+    .panel { padding: 1rem; }
+    .acciones { gap: .4rem; }
+    .acciones > .btn { flex: 1 1 calc(50% - .4rem); text-align: center; }
+    .cinta { padding: .85rem 1rem .95rem; }
+    .cinta .fila { flex-wrap: wrap; }
+    .cinta input { flex: 1 1 12rem; }
+    .metodos { grid-template-columns: 1fr 1fr; }
+  }
 </style>
 </head>
 <body>
