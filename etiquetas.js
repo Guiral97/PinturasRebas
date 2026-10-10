@@ -114,8 +114,11 @@
       }
     }
 
+    const interior = `<g fill="#000" shape-rendering="crispEdges">${barras}</g>
+        <g fill="#000" font-family="Arial, Helvetica, sans-serif" font-weight="700">${numeros}</g>`;
     return {
       ancho,
+      interior,
       cabe: ancho <= anchoMm + 0.01,
       svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${ancho.toFixed(3)}mm" height="${altoMm}mm"
         viewBox="0 0 ${ancho.toFixed(3)} ${altoMm}" shape-rendering="crispEdges">
@@ -124,13 +127,78 @@
     };
   }
 
+  const escXml = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
+  const limitar = (v, min, max) => Math.max(min, Math.min(max, v));
+  const pesos = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+
+  // Parte el nombre en máximo `max` líneas que quepan en el ancho; si sobra, termina en "…"
+  function partirNombre(nombre, anchoMm, fs, max) {
+    const porLinea = Math.max(6, Math.floor(anchoMm / (fs * 0.64)));
+    const palabras = String(nombre).trim().split(/\s+/);
+    const lineas = [];
+    let actual = '';
+    for (let i = 0; i < palabras.length; i++) {
+      let p = palabras[i];
+      if (p.length > porLinea) p = p.slice(0, porLinea);
+      const prueba = actual ? `${actual} ${p}` : p;
+      if (prueba.length <= porLinea) { actual = prueba; continue; }
+      lineas.push(actual);
+      actual = p;
+      if (lineas.length === max) { actual = ''; break; }
+    }
+    if (actual && lineas.length < max) lineas.push(actual);
+    const usadas = lineas.join(' ').split(/\s+/).filter(Boolean).length;
+    if (usadas < palabras.length && lineas.length) {
+      const u = lineas.length - 1;
+      lineas[u] = (lineas[u].length >= porLinea ? lineas[u].slice(0, porLinea - 1) : lineas[u]) + '…';
+    }
+    return lineas;
+  }
+
+  // Etiqueta completa: código solo, o con nombre del producto y/o precio.
+  // contenido: { nombre?: string, precio?: number }
+  function svgEtiqueta(codigo, { anchoMm, altoMm, nombre = '', precio = null }) {
+    const conNombre = !!String(nombre || '').trim();
+    const conPrecio = precio != null && precio !== '' && !Number.isNaN(Number(precio));
+    if (!conNombre && !conPrecio) return svgCodigo(codigo, { anchoMm, altoMm });
+
+    const fsN = limitar(altoMm * 0.12, 2.2, 3.4);
+    const lineas = conNombre ? partirNombre(nombre, anchoMm, fsN, 2) : [];
+    const altoNombre = lineas.length ? lineas.length * fsN * 1.18 + 0.5 : 0;
+    const fsP = limitar(altoMm * 0.17, 3, 5.5);
+    const altoPrecio = conPrecio ? fsP * 1.05 + 0.5 : 0;
+    const altoCod = altoMm - altoNombre - altoPrecio;
+    const c = svgCodigo(codigo, { anchoMm, altoMm: Math.max(altoCod, 4) });
+    const W = anchoMm;
+    const x0 = Math.max(0, (W - c.ancho) / 2);
+
+    // Si una línea queda más ancha que la etiqueta (letras anchas), se comprime para que quepa
+    const ajuste = (txt, fs) => (txt.length * fs * 0.66 > W * 0.98
+      ? ` textLength="${(W * 0.98).toFixed(2)}" lengthAdjust="spacingAndGlyphs"` : '');
+    const textoNombre = lineas.map((l, i) =>
+      `<text x="${(W / 2).toFixed(2)}" y="${((i + 1) * fsN * 1.18 - fsN * 0.22).toFixed(2)}" font-size="${fsN.toFixed(2)}" text-anchor="middle"${ajuste(l, fsN)}>${escXml(l)}</text>`).join('');
+    const textoPrecio = conPrecio
+      ? `<text x="${(W / 2).toFixed(2)}" y="${(altoMm - 0.3).toFixed(2)}" font-size="${fsP.toFixed(2)}" font-weight="900" text-anchor="middle">${escXml(pesos.format(Number(precio)))}</text>`
+      : '';
+
+    return {
+      ancho: W,
+      cabe: c.cabe && altoCod >= 8,
+      motivo: altoCod < 8 ? 'alto' : (!c.cabe ? 'ancho' : ''),
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(3)}mm" height="${altoMm}mm" viewBox="0 0 ${W.toFixed(3)} ${altoMm}">
+        <g fill="#000" font-family="Arial, Helvetica, sans-serif" font-weight="700">${textoNombre}${textoPrecio}</g>
+        <g transform="translate(${x0.toFixed(3)} ${altoNombre.toFixed(3)})">${c.interior}</g></svg>`
+    };
+  }
+
   // Ancho que de verdad imprime el cabezal. En rollos de 58 y 80 mm (impresoras
   // de tickets como la DIG-M220) el cabezal cubre 48 y 72 mm, centrados.
   const anchoUtil = (ancho) => (ancho === 58 ? 48 : ancho === 80 ? 72 : ancho - 3);
 
-  function htmlEtiquetas(codigo, cantidad, { ancho = 40, alto = 30 } = {}) {
+  function htmlEtiquetas(codigo, cantidad, { ancho = 40, alto = 30 } = {}, contenido = {}) {
     const margen = 1.5;
-    const { svg } = svgCodigo(codigo, { anchoMm: anchoUtil(ancho), altoMm: alto - 2 * margen });
+    const { svg } = svgEtiqueta(codigo, { anchoMm: anchoUtil(ancho), altoMm: alto - 2 * margen, ...contenido });
     const una = `<div class="et">${svg}</div>`;
     return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Etiquetas ${codigo}</title>
       <style>
@@ -145,14 +213,14 @@
       </style></head><body>${una.repeat(cantidad)}</body></html>`;
   }
 
-  function imprimirEtiquetas(codigo, cantidad, medida) {
+  function imprimirEtiquetas(codigo, cantidad, medida, contenido = {}) {
     const marco = document.createElement('iframe');
     marco.setAttribute('aria-hidden', 'true');
     marco.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
     document.body.appendChild(marco);
     const doc = marco.contentDocument;
     doc.open();
-    doc.write(htmlEtiquetas(codigo, cantidad, medida));
+    doc.write(htmlEtiquetas(codigo, cantidad, medida, contenido));
     doc.close();
     const quitar = () => setTimeout(() => marco.remove(), 500);
     marco.contentWindow.addEventListener('afterprint', quitar);
@@ -163,5 +231,5 @@
     }, 250);
   }
 
-  Object.assign(window, { anchoUtil, codigoInterno, esEan13, esInterno, svgCodigo, htmlEtiquetas, imprimirEtiquetas });
+  Object.assign(window, { anchoUtil, codigoInterno, esEan13, esInterno, svgCodigo, svgEtiqueta, htmlEtiquetas, imprimirEtiquetas });
 })();

@@ -459,6 +459,13 @@
         <div class="campo"><label for="etAncho">Ancho (mm)</label><input id="etAncho" type="number" min="20" max="80" step="1" class="num"></div>
         <div class="campo"><label for="etAlto">Alto (mm)</label><input id="etAlto" type="number" min="10" max="120" step="1" class="num"></div>
       </div>
+      <div class="campo"><label for="etContenido">Qué lleva la etiqueta</label>
+        <select id="etContenido">
+          <option value="codigo">Solo el código</option>
+          <option value="nombre">Código y nombre</option>
+          <option value="precio">Código, nombre y precio</option>
+        </select>
+      </div>
       <div class="et-directo" id="etDirecto" hidden>
         <div class="fila">
           <span>Imprimir directo, sin driver</span>
@@ -843,6 +850,21 @@
     return { ancho: Number($('#etAncho').value) || 0, alto: Number($('#etAlto').value) || 0, valor: 'otra' };
   }
 
+  function leerContenidoGuardado() {
+    try { return localStorage.getItem('rebas-etiqueta-contenido') || 'codigo'; } catch (_) { return 'codigo'; }
+  }
+  function guardarContenido(v) {
+    try { localStorage.setItem('rebas-etiqueta-contenido', v); } catch (_) {}
+  }
+  // Nombre y precio que van impresos, según lo elegido
+  function contenidoEtiqueta() {
+    const v = $('#etContenido').value;
+    return {
+      nombre: v === 'codigo' ? '' : etPres.etiqueta,
+      precio: v === 'precio' ? Number(etPres.precio_venta) : null
+    };
+  }
+
   function codigoEtiqueta() {
     return etPres.codigo_barras || codigoInterno(etPres.id);
   }
@@ -859,10 +881,12 @@
       return;
     }
     const codigo = codigoEtiqueta();
-    const r = svgCodigo(codigo, { anchoMm: anchoUtil(m.ancho), altoMm: m.alto - 3 });
+    const r = svgEtiqueta(codigo, { anchoMm: anchoUtil(m.ancho), altoMm: m.alto - 3, ...contenidoEtiqueta() });
     $('#etVista').innerHTML = `<div class="papel" style="width:${m.ancho}mm;height:${m.alto}mm">${r.svg}</div>`;
     if (!r.cabe) {
-      nota.textContent = `El código no cabe en ${m.ancho} mm de ancho sin perder lectura. Usa una etiqueta más ancha.`;
+      nota.textContent = r.motivo === 'alto'
+        ? `Con nombre o precio no queda espacio para el código en ${m.alto} mm de alto. Usa una etiqueta más alta o menos información.`
+        : `El código no cabe en ${m.ancho} mm de ancho sin perder lectura. Usa una etiqueta más ancha.`;
       nota.className = 'et-nota error';
       habilitarImpresion(false);
       return;
@@ -895,12 +919,14 @@
       $('#etMedida').value = g.valor;
       if (g.valor === 'otra') { $('#etAncho').value = g.ancho; $('#etAlto').value = g.alto; }
     }
+    $('#etContenido').value = leerContenidoGuardado();
     pintarVistaEtiqueta();
     dlgEt.showModal();
     $('#etCantidad').select();
   }
 
-  ['#etMedida', '#etAncho', '#etAlto'].forEach((s) => $(s).addEventListener('input', pintarVistaEtiqueta));
+  ['#etMedida', '#etAncho', '#etAlto', '#etContenido'].forEach((s) => $(s).addEventListener('input', pintarVistaEtiqueta));
+  $('#etContenido').addEventListener('change', () => guardarContenido($('#etContenido').value));
   $('#cerrarEtiquetas').addEventListener('click', () => dlgEt.close());
 
   // Asigna el código propio si el producto no tiene. Devuelve false si no se pudo.
@@ -938,7 +964,7 @@
     try {
       if (!(await asegurarCodigo())) return;
       guardarMedida(m);
-      imprimirEtiquetas(etPres.codigo_barras, cantidad, m);
+      imprimirEtiquetas(etPres.codigo_barras, cantidad, m, contenidoEtiqueta());
       dlgEt.close();
     } finally {
       boton.disabled = false;
@@ -974,7 +1000,7 @@
       if (!(await asegurarCodigo())) return;
       guardarMedida(m);
       const nombre = await ID.imprimirDirecto(tipo, etPres.codigo_barras, cantidad, m,
-        (f) => estadoDirecto(`Enviando a ${c.nombre}… ${Math.round(f * 100)} %`));
+        (f) => estadoDirecto(`Enviando a ${c.nombre}… ${Math.round(f * 100)} %`), contenidoEtiqueta());
       estadoDirecto(`Listo: ${cantidad} ${cantidad === 1 ? 'etiqueta enviada' : 'etiquetas enviadas'} a ${nombre}.`);
       aviso('Etiquetas enviadas a la impresora.');
     } catch (err) {

@@ -36,8 +36,8 @@
 
     const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
       <title>Recibo ${v.id}</title>
-      <style>
-        @page { size: ${ancho} auto; margin: 0; }
+      <style id="estilo">
+        @page { size: ${ancho} 100mm; margin: 0; }
         * { box-sizing: border-box; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         /* Térmica: negro puro, letra gruesa y nada de grises (salen pálidos) */
         body { margin: 0 auto; padding: 1mm 0 3mm; width: ${util}; background: #fff;
@@ -76,7 +76,8 @@
 
     const marco = document.createElement('iframe');
     marco.setAttribute('aria-hidden', 'true');
-    marco.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+    // Fuera de la vista pero con ancho real: así se puede medir el alto del recibo
+    marco.style.cssText = 'position:fixed;left:-10000px;top:0;width:420px;height:200px;border:0;visibility:hidden;';
     document.body.appendChild(marco);
     const doc = marco.contentDocument;
     doc.open();
@@ -86,6 +87,14 @@
     const quitar = () => setTimeout(() => marco.remove(), 500);
     marco.contentWindow.addEventListener('afterprint', quitar);
     setTimeout(() => {
+      // Papel continuo: la hoja mide exactamente lo que mide el contenido.
+      // Sin esto, el navegador usa la hoja del driver (a veces A4 o 3 metros)
+      // y la impresora bota papel en blanco o deja el texto al final.
+      const estilo = doc.getElementById('estilo');
+      if (estilo) {
+        const mm = Math.ceil(doc.documentElement.scrollHeight * 25.4 / 96) + 3;
+        estilo.textContent = estilo.textContent.replace(/size:\s*(\S+)\s+100mm/, `size: $1 ${mm}mm`);
+      }
       marco.contentWindow.focus();
       marco.contentWindow.print();
       setTimeout(() => marco.isConnected && marco.remove(), 60000);   // respaldo si no llega afterprint

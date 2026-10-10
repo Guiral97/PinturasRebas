@@ -41,12 +41,12 @@
   }
 
   // Devuelve un canvas del ancho del cabezal con la etiqueta centrada
-  async function canvasEtiqueta(codigo, { ancho = 58, alto = 30 } = {}) {
+  async function canvasEtiqueta(codigo, { ancho = 58, alto = 30 } = {}, contenido = {}) {
     const anchoCabezalMm = PUNTOS_CABEZAL / PUNTOS_MM;
     const util = Math.min(window.anchoUtil(ancho), anchoCabezalMm);
     const margenV = 1.5;
-    const r = window.svgCodigo(codigo, { anchoMm: util, altoMm: alto - 2 * margenV });
-    if (!r.cabe) throw new Error('El código no cabe en esa etiqueta');
+    const r = window.svgEtiqueta(codigo, { anchoMm: util, altoMm: alto - 2 * margenV, ...contenido });
+    if (!r.cabe) throw new Error('El contenido no cabe en esa etiqueta');
     const img = await cargarImagen(r.svg);
 
     const c = document.createElement('canvas');
@@ -98,8 +98,8 @@
   // Rollo continuo (58/80 mm) o etiquetas troqueladas con separación
   const esContinuo = (medida) => Number(medida?.ancho) === 58 || Number(medida?.ancho) === 80;
 
-  async function bytesEtiquetas(codigo, cantidad, medida) {
-    const una = unir(rasterEscPos(await canvasEtiqueta(codigo, medida)));
+  async function bytesEtiquetas(codigo, cantidad, medida, contenido = {}) {
+    const una = unir(rasterEscPos(await canvasEtiqueta(codigo, medida, contenido)));
     const partes = [new Uint8Array([0x1b, 0x40])];               // ESC @: reiniciar
     if (esContinuo(medida)) {
       for (let i = 0; i < cantidad; i++) partes.push(una);
@@ -206,9 +206,9 @@
     return conexion;
   }
 
-  async function imprimirDirecto(tipo, codigo, cantidad, medida, progreso) {
+  async function imprimirDirecto(tipo, codigo, cantidad, medida, progreso, contenido = {}) {
     const c = await conectar(tipo);   // primero: el navegador exige que el clic sea reciente
-    const bytes = await bytesEtiquetas(codigo, cantidad, medida);
+    const bytes = await bytesEtiquetas(codigo, cantidad, medida, contenido);
     try {
       await c.enviar(bytes, progreso);
     } catch (e) {
