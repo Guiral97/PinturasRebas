@@ -95,13 +95,28 @@
     return out;
   }
 
+  // Rollo continuo (58/80 mm) o etiquetas troqueladas con separación
+  const esContinuo = (medida) => Number(medida?.ancho) === 58 || Number(medida?.ancho) === 80;
+
   async function bytesEtiquetas(codigo, cantidad, medida) {
-    const una = rasterEscPos(await canvasEtiqueta(codigo, medida));
+    const una = unir(rasterEscPos(await canvasEtiqueta(codigo, medida)));
     const partes = [new Uint8Array([0x1b, 0x40])];               // ESC @: reiniciar
-    for (let i = 0; i < cantidad; i++) partes.push(...una);
-    // Papel continuo: avanzar para cortar. Etiquetas troqueladas: la impresora
-    // se ubica sola en la siguiente etiqueta, avanzar desperdiciaría una.
-    if (Number(medida?.ancho) === 58 || Number(medida?.ancho) === 80) partes.push(new Uint8Array([0x1b, 0x64, 0x04]));
+    if (esContinuo(medida)) {
+      for (let i = 0; i < cantidad; i++) partes.push(una);
+      partes.push(new Uint8Array([0x1b, 0x64, 0x04]));           // ESC d 4: avanzar para cortar
+      return unir(partes);
+    }
+    // Etiquetas troqueladas (DIG-M220 / Phomemo M220 y similares): cada etiqueta va
+    // completa entre una cabecera (tipo de papel: con separación) y un cierre que
+    // le dice a la impresora que la etiqueta terminó. Sin esto, imprime por pedazos
+    // y salta a la siguiente etiqueta con cada pedazo que le llega.
+    const cabecera = new Uint8Array([
+      0x1b, 0x4e, 0x0d, 0x05,     // velocidad
+      0x1b, 0x4e, 0x04, 0x0a,     // oscuridad
+      0x1f, 0x11, 0x0a            // papel: etiquetas con separación
+    ]);
+    const cierre = new Uint8Array([0x1f, 0xf0, 0x05, 0x00, 0x1f, 0xf0, 0x03, 0x00]);
+    for (let i = 0; i < cantidad; i++) partes.push(cabecera, una, cierre);
     return unir(partes);
   }
 
@@ -149,7 +164,7 @@
           i += trozo.length;
           progreso?.(i / bytes.length);
           // Pausa corta para no llenar la memoria de la impresora
-          if (sinRespuesta) await espera(tam > 20 ? 12 : 4);
+          if (sinRespuesta) await espera(tam > 20 ? 4 : 2);
         }
       },
       cerrar() { try { dispositivo.gatt.disconnect(); } catch (_) {} }
@@ -166,10 +181,11 @@
       async enviar(bytes, progreso) {
         const w = puerto.writable.getWriter();
         try {
-          for (let i = 0; i < bytes.length; i += 512) {
-            await w.write(bytes.subarray(i, i + 512));
-            progreso?.(Math.min(1, (i + 512) / bytes.length));
-          }
+          // Todo de una vez: si llega por pedazos con pausas, la impresora de
+          // etiquetas imprime cada pedazo en una etiqueta distinta
+          progreso?.(0.1);
+          await w.write(bytes);
+          progreso?.(1);
         } finally { w.releaseLock(); }
       },
       async cerrar() { try { await puerto.close(); } catch (_) {} }

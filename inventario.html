@@ -879,9 +879,10 @@
   }
 
   function abrirEtiquetas(presId) {
+    if (!window.codigoInterno) return aviso('Falta subir el archivo etiquetas.js al repositorio.', 'error');
     etPres = catalogo.find((c) => c.id === presId);
     if (!etPres) return;
-    const cd = window.impresoraDirecta.conectada();
+    const cd = window.impresoraDirecta?.conectada();
     estadoDirecto(cd ? `Conectada: ${cd.nombre}` : '');
     $('#etNombre').textContent = etPres.etiqueta;
     $('#etCodigo').textContent = etPres.codigo_barras || `Código nuevo: ${codigoInterno(etPres.id)}`;
@@ -945,10 +946,11 @@
   });
 
   // Impresión directa por Bluetooth o puerto COM (impresora-directa.js)
+  // Si falta impresora-directa.js, la página sigue funcionando sin esta opción
   const ID = window.impresoraDirecta;
-  $('[data-directo="ble"]').hidden = !ID.soportaBluetooth();
-  $('[data-directo="serial"]').hidden = !ID.soportaSerial();
-  $('#etDirecto').hidden = !ID.soportaBluetooth() && !ID.soportaSerial();
+  $('[data-directo="ble"]').hidden = !ID?.soportaBluetooth();
+  $('[data-directo="serial"]').hidden = !ID?.soportaSerial();
+  $('#etDirecto').hidden = !ID || (!ID.soportaBluetooth() && !ID.soportaSerial());
 
   function estadoDirecto(texto, error = false) {
     const p = $('#etDirectoEstado');

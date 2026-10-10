@@ -124,16 +124,14 @@
     };
   }
 
-  // Ancho aprovechable de la etiqueta: se descuenta el margen de los dos lados
-  const MARGEN_ETIQUETA = 1.5;   // mm
-  function anchoUtil(anchoMm) {
-    return Math.max(0, anchoMm - 2 * MARGEN_ETIQUETA);
-  }
-  
+  // Ancho que de verdad imprime el cabezal. En rollos de 58 y 80 mm (impresoras
+  // de tickets como la DIG-M220) el cabezal cubre 48 y 72 mm, centrados.
+  const anchoUtil = (ancho) => (ancho === 58 ? 48 : ancho === 80 ? 72 : ancho - 3);
+
   function htmlEtiquetas(codigo, cantidad, { ancho = 40, alto = 30 } = {}) {
-    const margen = MARGEN_ETIQUETA;
+    const margen = 1.5;
     const { svg } = svgCodigo(codigo, { anchoMm: anchoUtil(ancho), altoMm: alto - 2 * margen });
-    
+    const una = `<div class="et">${svg}</div>`;
     return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Etiquetas ${codigo}</title>
       <style>
         @page { size: ${ancho}mm ${alto}mm; margin: 0; }
@@ -165,5 +163,5 @@
     }, 250);
   }
 
-  Object.assign(window, { codigoInterno, esEan13, esInterno, svgCodigo, anchoUtil, htmlEtiquetas, imprimirEtiquetas });
+  Object.assign(window, { anchoUtil, codigoInterno, esEan13, esInterno, svgCodigo, htmlEtiquetas, imprimirEtiquetas });
 })();
