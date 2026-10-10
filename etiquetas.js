@@ -131,9 +131,9 @@
   }
   
   function htmlEtiquetas(codigo, cantidad, { ancho = 40, alto = 30 } = {}) {
-    const margen = 1.5;
-    const { svg } = svgCodigo(codigo, { anchoMm: ancho - 2 * margen, altoMm: alto - 2 * margen });
-    const una = `<div class="et">${svg}</div>`;
+    const margen = MARGEN_ETIQUETA;
+    const { svg } = svgCodigo(codigo, { anchoMm: anchoUtil(ancho), altoMm: alto - 2 * margen });
+    
     return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Etiquetas ${codigo}</title>
       <style>
         @page { size: ${ancho}mm ${alto}mm; margin: 0; }
@@ -165,5 +165,5 @@
     }, 250);
   }
 
-  Object.assign(window, { codigoInterno, esEan13, esInterno, svgCodigo, htmlEtiquetas, imprimirEtiquetas });
+  Object.assign(window, { codigoInterno, esEan13, esInterno, svgCodigo, anchoUtil, htmlEtiquetas, imprimirEtiquetas });
 })();
