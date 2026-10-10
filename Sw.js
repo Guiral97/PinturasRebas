@@ -2,7 +2,7 @@
 // caja abra y venda sin internet. Las consultas a Supabase NO se guardan aquí
 // (la caja maneja su propio catálogo y su cola de ventas en IndexedDB).
 // Al cambiar archivos de la app, sube este número para forzar la actualización.
-const VERSION = 'rebas-v2';
+const VERSION = 'rebas-v4';
 
 const APP = ['./', 'index.html', 'config.js', 'recibo.js'];
 const LIBRERIAS = [
