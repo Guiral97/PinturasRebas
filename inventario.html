@@ -10,8 +10,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="config.js"></script>
-<script src="etiquetas.js"></script>
-<script src="impresora-directa.js"></script>
+<script src="etiquetas.js?v=20261010b"></script>
+<script src="impresora-directa.js?v=20261010b"></script>
 <style>
   :root {
     --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
@@ -881,6 +881,13 @@
       return;
     }
     const codigo = codigoEtiqueta();
+    if (!window.svgEtiqueta) {
+      $('#etVista').innerHTML = '';
+      nota.textContent = 'El archivo etiquetas.js del repositorio está desactualizado. Súbelo de nuevo y recarga con Ctrl + F5.';
+      nota.className = 'et-nota error';
+      habilitarImpresion(false);
+      return;
+    }
     const r = svgEtiqueta(codigo, { anchoMm: anchoUtil(m.ancho), altoMm: m.alto - 3, ...contenidoEtiqueta() });
     $('#etVista').innerHTML = `<div class="papel" style="width:${m.ancho}mm;height:${m.alto}mm">${r.svg}</div>`;
     if (!r.cabe) {
