@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gastos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  :root {
+    --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
+    --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
+    --cinta: #E8D08A; --cinta-borde: #C9AE66; --alerta: #A1281F; --ok: #2F6B3A; --radio: 6px;
+    font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
+      --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
+      --cinta: #C4AB68; --cinta-borde: #9E8850; --alerta: #E57B72; --ok: #7FC08A;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font-size: 16px; line-height: 1.45; }
+  [hidden] { display: none !important; }
+  .num { font-variant-numeric: tabular-nums; }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  input, select, textarea { font: inherit; color: var(--tinta); background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: .5rem .65rem; width: 100%; }
+  textarea { resize: vertical; min-height: 4.5rem; }
+  label, legend { font-weight: 500; }
+  .campo { display: grid; gap: .3rem; align-content: start; }
+  .campo small { color: var(--suave); }
+  .btn { border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .5rem .9rem; border-radius: var(--radio); white-space: nowrap; text-decoration: none; display: inline-block; }
+  .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-texto { border: 0; background: none; color: var(--acento); padding: .2rem .3rem; font-weight: 600; }
+  .btn-texto.peligro { color: var(--alerta); }
+  h2, h3 { font-family: "Barlow Condensed", sans-serif; font-weight: 600; margin: 0; }
+  h2 { font-size: 1.6rem; } h3 { font-size: 1.25rem; }
+
+  .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
+  .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; margin-right: auto; }
+  #usuario { color: var(--suave); }
+  .nav { display: flex; gap: .25rem; }
+  .nav a { color: var(--tinta); text-decoration: none; padding: .4rem .7rem; border-radius: var(--radio); font-weight: 500; }
+  .nav a[aria-current="page"] { background: var(--fondo); box-shadow: inset 0 -3px 0 var(--acento); }
+
+  #login { max-width: 22rem; margin: 12vh auto 0; padding: 1.5rem; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: 1rem; }
+  #login h1 { font-family: "Barlow Condensed", sans-serif; font-size: 1.8rem; margin: 0; }
+  #loginError { color: var(--alerta); margin: 0; min-height: 1.4em; }
+
+  main { max-width: 80rem; margin: 0 auto; padding: 1.25rem; }
+
+  /* Resumen del mes */
+  .resumen { display: flex; flex-wrap: wrap; gap: .5rem 2.5rem; align-items: baseline; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 2px solid var(--tinta); }
+  .resumen div { display: grid; }
+  .resumen span { color: var(--suave); }
+  .resumen strong { font-family: "Barlow Condensed", sans-serif; font-size: 2.3rem; line-height: 1.05; font-weight: 700; }
+  .resumen .alerta strong { color: var(--alerta); }
+
+  /* Pestañas */
+  .pestanas { display: flex; gap: .25rem; border-bottom: 1px solid var(--linea); margin-bottom: 1.25rem; overflow-x: auto; overflow-y: hidden; }
+  .pestanas button { border: 0; background: none; color: var(--suave); padding: .7rem 1rem; font-weight: 600; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+  .pestanas button[aria-selected="true"] { color: var(--tinta); border-bottom-color: var(--acento); }
+  .pestanas .cuenta { display: inline-block; min-width: 1.4rem; padding: 0 .35rem; margin-left: .3rem; border-radius: 999px; background: var(--alerta); color: #fff; font-size: .8rem; text-align: center; }
+
+  .cuerpo { display: grid; grid-template-columns: 24rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .tarjeta { background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: 1.25rem; display: grid; gap: 1rem; }
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+  .con-boton { display: flex; gap: .4rem; }
+  fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+  legend { padding: 0; margin-bottom: .3rem; }
+  .segmentos { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+  .segmentos.dos-op { grid-template-columns: repeat(2, 1fr); }
+  .segmentos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
+  .ayuda { color: var(--suave); font-size: .92rem; margin: 0; }
+  .fijo-chip { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .55rem .75rem; background: var(--cinta); color: #1A2127; border: 1px solid var(--cinta-borde); border-radius: var(--radio); font-weight: 600; }
+  .fijo-chip .btn-texto { color: #1A2127; text-decoration: underline; }
+  .foto { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+  .foto input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .foto .nombre-archivo { color: var(--suave); font-size: .92rem; overflow-wrap: anywhere; }
+
+  .herramientas { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; margin-bottom: .9rem; }
+  .herramientas .campo { min-width: 10rem; flex: 0 1 13rem; }
+  .check { display: inline-flex; align-items: center; gap: .4rem; font-weight: 500; padding-bottom: .5rem; }
+  .check input { width: auto; }
+
+  .tabla-caja { overflow-x: auto; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: .6rem .75rem; border-bottom: 1px solid var(--linea); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  th { font-weight: 600; color: var(--suave); font-size: .9rem; }
+  td.der, th.der { text-align: right; }
+  td small { display: block; color: var(--suave); }
+  tr.anulado td { color: var(--suave); text-decoration: line-through; }
+  tr.anulado td.acc, tr.anulado td small { text-decoration: none; }
+  tfoot td { font-weight: 700; border-top: 2px solid var(--tinta); border-bottom: 0; }
+  .acc { white-space: nowrap; text-align: right; }
+  .vacio { color: var(--suave); padding: 1.25rem .9rem; margin: 0; }
+  .estado-ok { color: var(--ok); font-weight: 600; }
+  .estado-mal { color: var(--alerta); font-weight: 600; }
+  .estado-pend { color: var(--suave); font-weight: 600; }
+
+  /* Socios */
+  .socios { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .socio { background: var(--panel); border: 1px solid var(--linea); border-left: 4px solid var(--acento); border-radius: var(--radio); padding: 1rem 1.1rem; display: grid; gap: .35rem; }
+  .socio h3 { font-size: 1.35rem; }
+  .socio dl { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: .2rem 1rem; }
+  .socio dt { color: var(--suave); }
+  .socio dd { margin: 0; font-weight: 600; text-align: right; }
+  .socio .debe { color: var(--alerta); }
+
+  dialog { border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); color: var(--tinta); padding: 1.4rem; width: min(30rem, calc(100% - 1.5rem)); }
+  dialog::backdrop { background: rgba(10, 14, 18, .45); }
+  dialog form { display: grid; gap: 1rem; }
+  .dlg-acciones { display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
+
+  #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
+  #aviso.error { background: var(--alerta); color: #fff; }
+
+  @media (max-width: 1000px) {
+    .cuerpo { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .resumen strong { font-size: 1.9rem; }
+  }
+
+  /* ===================== Responsivo (común a todas las pantallas) ===================== */
+  html { -webkit-text-size-adjust: 100%; }
+  img, canvas, svg, video { max-width: 100%; }
+  input, select, textarea { max-width: 100%; }
+  main > *, .cuerpo > *, .entradas > *, .clientes > *, .tres > *, .rejilla > *, .pie-editor > *, #pos > *,
+  #detContenido > *, .detalle > *, .panel > *, .bloque > *, #vista > *, #editor > *, .abono > *,
+  dialog form > *, .dlg-cuerpo > *, .contenido > *, .tarjeta > *, .dos > *, section > * { min-width: 0; }
+  .segmentos button, .metodos button { white-space: normal; line-height: 1.2; }
+  .tabla-caja { position: relative; max-width: 100%; -webkit-overflow-scrolling: touch; }
+  td.num, th, td.der { white-space: nowrap; }
+  @media (max-width: 1180px) {
+    .barra { flex-wrap: wrap; row-gap: .55rem; }
+    .nav { order: 3; width: 100%; flex-wrap: wrap; overflow: visible; }
+    .nav a { white-space: nowrap; }
+  }
+  @media (max-width: 700px) {
+    .barra { padding: .6rem 1rem; gap: .5rem .6rem; }
+    .tienda { font-size: 1.25rem; }
+    #usuario { display: none; }
+    #salir { padding: .4rem .7rem; font-size: .9rem; }
+    .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; }
+    .nav a { text-align: center; padding: .5rem .2rem; background: var(--fondo); font-size: .95rem; }
+    .nav a[aria-current="page"] { background: var(--acento); color: var(--acento-tinta); box-shadow: none; }
+    .nav a:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
+    main { padding: 1rem; }
+    dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
+    .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
+    #aviso { left: .75rem; right: .75rem; transform: none; max-width: none; bottom: .75rem; }
+    #login { margin: 6vh 1rem 0; }
+  }
+  @media (max-width: 420px) {
+    .resumen { gap: .4rem 1.5rem; }
+    .resumen strong { font-size: 1.65rem; }
+  }
+
+  /* Gastos */
+  .tabla-caja table { min-width: 36rem; }
+  @media (max-width: 700px) {
+    .pestanas button { flex: 1 0 auto; }
+    .tarjeta { padding: 1rem; }
+    .herramientas .campo { flex: 1 1 9rem; }
+  }
+  .solo-movil { display: none; }
+  @media (max-width: 700px) {
+    /* En celular las tablas no se deslizan: se esconde una columna y su dato pasa debajo del nombre */
+    .tabla-caja table { min-width: 0; }
+    .ocultar-movil { display: none; }
+    .solo-movil { display: block; }
+    th, td { padding: .55rem .5rem; }
+    td.acc { white-space: normal; }
+    td.acc .btn-texto { display: block; margin-left: auto; padding: .25rem 0; }
+  }
+  @media (max-width: 420px) {
+    .dos { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <span class="tienda" id="nombreTienda">Pinturas</span>
+  <nav class="nav" aria-label="Secciones">
+    <a href="index.html">Caja</a>
+    <a href="cotizaciones.html">Cotizaciones</a>
+    <a href="pedidos.html">Pedidos</a>
+    <a href="inventario.html">Inventario</a>
+    <a href="cartera.html">Cartera</a>
+    <a href="gastos.html" aria-current="page">Gastos</a>
+    <a href="tablero.html">Tablero</a>
+  </nav>
+  <span id="usuario"></span>
+  <button class="btn" id="salir" hidden>Cerrar sesión</button>
+</header>
+
+<form id="login" hidden>
+  <h1>Iniciar sesión</h1>
+  <div class="campo"><label for="email">Correo</label><input id="email" type="email" autocomplete="username" required></div>
+  <div class="campo"><label for="clave">Contraseña</label><input id="clave" type="password" autocomplete="current-password" required></div>
+  <p id="loginError" role="alert"></p>
+  <button class="btn btn-primario" type="submit">Entrar</button>
+</form>
+
+<main id="app" hidden>
+  <section class="resumen num" aria-label="Resumen del mes">
+    <div><span id="resMesTitulo">Gastos del mes</span><strong id="resMes">$ 0</strong></div>
+    <div id="resFijosCaja"><span>Fijos por pagar</span><strong id="resFijos">$ 0</strong></div>
+    <div id="resDeudaCaja"><span>Por reembolsar a socios</span><strong id="resDeuda">$ 0</strong></div>
+    <div><span>Retiros de socios este mes</span><strong id="resRetiros">$ 0</strong></div>
+  </section>
+
+  <div class="pestanas" role="tablist">
+    <button role="tab" id="t-gastos" aria-controls="p-gastos" aria-selected="true">Gastos</button>
+    <button role="tab" id="t-fijos" aria-controls="p-fijos" aria-selected="false">Fijos del mes<span class="cuenta" id="cuentaFijos" hidden></span></button>
+    <button role="tab" id="t-socios" aria-controls="p-socios" aria-selected="false">Socios</button>
+  </div>
+
+  <!-- ============ GASTOS ============ -->
+  <section id="p-gastos" role="tabpanel" aria-labelledby="t-gastos">
+    <div class="cuerpo">
+      <form class="tarjeta" id="frmGasto">
+        <h2>Registrar gasto</h2>
+        <div class="fijo-chip" id="chipFijo" hidden>
+          <span id="chipFijoTexto"></span>
+          <button type="button" class="btn-texto" id="quitarFijo">Quitar</button>
+        </div>
+        <div class="dos">
+          <div class="campo"><label for="gValor">Valor</label><input id="gValor" type="number" min="1" step="1" inputmode="numeric" class="num" required></div>
+          <div class="campo"><label for="gFecha">Fecha</label><input id="gFecha" type="date" required></div>
+        </div>
+        <div class="campo">
+          <label for="gCategoria">Categoría</label>
+          <div class="con-boton"><select id="gCategoria" required></select><button type="button" class="btn" id="nuevaCategoria">Nueva</button></div>
+        </div>
+        <div class="campo"><label for="gDesc">Descripción</label><input id="gDesc" required placeholder="Ej: Recibo de luz de septiembre" maxlength="200"></div>
+        <div class="campo"><label for="gProveedor">Proveedor o a quién se le pagó</label><input id="gProveedor" placeholder="Opcional" maxlength="120"></div>
+        <fieldset>
+          <legend>¿De dónde salió la plata?</legend>
+          <div class="segmentos" id="gOrigen">
+            <button type="button" class="btn" data-origen="caja" aria-pressed="true">Caja (efectivo)</button>
+            <button type="button" class="btn" data-origen="cuenta" aria-pressed="false">Cuenta del negocio</button>
+            <button type="button" class="btn" data-origen="socio" aria-pressed="false">Un socio lo pagó</button>
+          </div>
+        </fieldset>
+        <div class="campo" id="campoSocio" hidden>
+          <label for="gSocio">¿Qué socio lo pagó?</label>
+          <select id="gSocio"></select>
+          <small>El negocio le queda debiendo este valor hasta que se le reembolse.</small>
+        </div>
+        <div class="campo">
+          <span id="fotoEtiqueta" style="font-weight:500">Foto de la factura</span>
+          <div class="foto">
+            <label class="btn" for="gFoto" id="btnFoto">Tomar o elegir foto</label>
+            <input id="gFoto" type="file" accept="image/*,application/pdf" aria-labelledby="fotoEtiqueta">
+            <span class="nombre-archivo" id="gFotoNombre">Opcional</span>
+            <button type="button" class="btn-texto" id="quitarFoto" hidden>Quitar</button>
+          </div>
+        </div>
+        <button class="btn btn-primario" type="submit" id="btnGasto">Registrar gasto</button>
+        <p class="ayuda">La compra de mercancía para vender no va aquí: regístrala en Inventario › Entradas de mercancía.</p>
+      </form>
+
+      <section aria-label="Gastos registrados">
+        <div class="herramientas">
+          <div class="campo"><label for="fMes">Mes</label><input id="fMes" type="month"></div>
+          <div class="campo"><label for="fCategoria">Categoría</label><select id="fCategoria"></select></div>
+          <label class="check"><input type="checkbox" id="fAnulados"> Ver anulados</label>
+        </div>
+        <div class="tabla-caja">
+          <table>
+            <thead><tr><th class="ocultar-movil">Fecha</th><th>Gasto</th><th class="ocultar-movil">Pagado con</th><th class="der">Valor</th><th class="acc"><span class="visually-hidden">Acciones</span></th></tr></thead>
+            <tbody id="tbGastos"></tbody>
+            <tfoot><tr><td class="ocultar-movil"></td><td>Total</td><td class="ocultar-movil"></td><td class="der num" id="totGastos">$ 0</td><td></td></tr></tfoot>
+          </table>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ============ FIJOS ============ -->
+  <section id="p-fijos" role="tabpanel" aria-labelledby="t-fijos" hidden>
+    <div class="cuerpo">
+      <form class="tarjeta" id="frmFijo">
+        <h2 id="tituloFijo">Nuevo gasto fijo</h2>
+        <p class="ayuda">Arriendo, servicios, internet, pagos mensuales. Se define una vez y cada mes aparece en la lista para pagarlo.</p>
+        <div class="campo"><label for="fjNombre">Nombre</label><input id="fjNombre" required maxlength="80" placeholder="Ej: Arriendo del local"></div>
+        <div class="campo"><label for="fjCategoria">Categoría</label><select id="fjCategoria" required></select></div>
+        <div class="dos">
+          <div class="campo"><label for="fjValor">Valor aproximado</label><input id="fjValor" type="number" min="0" step="1" inputmode="numeric" class="num" required></div>
+          <div class="campo"><label for="fjDia">Día de pago</label><input id="fjDia" type="number" min="1" max="31" step="1" inputmode="numeric" class="num" required></div>
+        </div>
+        <label class="check" id="fjActivoCampo" hidden><input type="checkbox" id="fjActivo" checked> Activo (desmárcalo si ya no se paga)</label>
+        <div class="con-boton">
+          <button class="btn btn-primario" type="submit" id="btnFijo">Guardar gasto fijo</button>
+          <button class="btn" type="button" id="cancelarFijo" hidden>Cancelar</button>
+        </div>
+      </form>
+
+      <section aria-label="Gastos fijos del mes">
+        <h3 id="tituloFijosMes" style="margin-bottom:.6rem">Este mes</h3>
+        <div class="tabla-caja">
+          <table>
+            <thead><tr><th>Gasto fijo</th><th class="ocultar-movil">Vence</th><th class="der">Valor</th><th class="ocultar-movil">Estado</th><th class="acc"><span class="visually-hidden">Acciones</span></th></tr></thead>
+            <tbody id="tbFijos"></tbody>
+          </table>
+        </div>
+        <details style="margin-top:1rem">
+          <summary style="cursor:pointer;font-weight:600">Fijos desactivados</summary>
+          <ul id="listaInactivos" style="margin:.5rem 0 0;padding-left:1.2rem"></ul>
+        </details>
+      </section>
+    </div>
+  </section>
+
+  <!-- ============ SOCIOS ============ -->
+  <section id="p-socios" role="tabpanel" aria-labelledby="t-socios" hidden>
+    <div class="socios" id="tarjetasSocios"></div>
+    <div class="cuerpo">
+      <form class="tarjeta" id="frmMov">
+        <h2>Retiro o reembolso</h2>
+        <fieldset>
+          <legend>Tipo</legend>
+          <div class="segmentos dos-op" id="mTipo">
+            <button type="button" class="btn" data-tipo="retiro" aria-pressed="true">Retiro</button>
+            <button type="button" class="btn" data-tipo="reembolso" aria-pressed="false">Reembolso</button>
+          </div>
+        </fieldset>
+        <p class="ayuda" id="mAyuda"></p>
+        <div class="campo"><label for="mSocio">Socio</label><select id="mSocio" required></select></div>
+        <div class="dos">
+          <div class="campo">
+            <label for="mValor">Valor</label>
+            <input id="mValor" type="number" min="1" step="1" inputmode="numeric" class="num" required>
+          </div>
+          <div class="campo"><label for="mFecha">Fecha</label><input id="mFecha" type="date" required></div>
+        </div>
+        <button type="button" class="btn" id="mTodo" hidden>Reembolsar todo lo que se le debe</button>
+        <fieldset>
+          <legend>¿De dónde sale la plata?</legend>
+          <div class="segmentos dos-op" id="mOrigen">
+            <button type="button" class="btn" data-origen="caja" aria-pressed="true">Caja (efectivo)</button>
+            <button type="button" class="btn" data-origen="cuenta" aria-pressed="false">Cuenta del negocio</button>
+          </div>
+        </fieldset>
+        <div class="campo"><label for="mNota">Nota</label><input id="mNota" placeholder="Opcional" maxlength="200"></div>
+        <button class="btn btn-primario" type="submit" id="btnMov">Registrar retiro</button>
+      </form>
+
+      <section aria-label="Movimientos de socios">
+        <h3 style="margin-bottom:.6rem">Movimientos recientes</h3>
+        <div class="tabla-caja">
+          <table>
+            <thead><tr><th class="ocultar-movil">Fecha</th><th class="ocultar-movil">Socio</th><th>Movimiento</th><th class="der">Valor</th><th class="acc"><span class="visually-hidden">Acciones</span></th></tr></thead>
+            <tbody id="tbMovs"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<!-- ============ ANULAR ============ -->
+<dialog id="dlgAnular" aria-labelledby="anTitulo">
+  <form id="frmAnular">
+    <h2 id="anTitulo">Anular</h2>
+    <p class="ayuda" id="anDetalle"></p>
+    <div class="campo"><label for="anMotivo">Motivo</label><textarea id="anMotivo" required maxlength="300" placeholder="Ej: se registró dos veces"></textarea></div>
+    <div class="dlg-acciones">
+      <button type="button" class="btn" id="anCancelar">Cancelar</button>
+      <button type="submit" class="btn btn-primario" id="anConfirmar">Anular</button>
+    </div>
+  </form>
+</dialog>
+
+<input type="file" id="fotoTardia" accept="image/*,application/pdf" hidden>
+<div id="aviso" role="status" hidden></div>
+<style>.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;left:0;top:0}</style>
+
+<script>
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, NOMBRE_TIENDA } = window.APP_CONFIG;
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => [...document.querySelectorAll(s)];
+  const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+  const fCorta = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short' });
+  const fMesLargo = new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric' });
+  const BUCKET = 'facturas-gastos';
+  const ORIGENES = { caja: 'Caja', cuenta: 'Cuenta', socio: 'Socio' };
+
+  document.title = `Gastos | ${NOMBRE_TIENDA}`;
+  $('#nombreTienda').textContent = NOMBRE_TIENDA;
+
+  // ---------- Estado ----------
+  let categorias = [], socios = [], gastos = [], fijosMes = [], fijosTodos = [], saldos = [], movs = [];
+  let origenGasto = 'caja';
+  let fijoElegido = null;       // fila de v_fijos_mes que se está pagando
+  let archivoFactura = null;    // File elegido para el gasto nuevo
+  let tipoMov = 'retiro', origenMov = 'caja';
+  let fijoEditando = null;
+  let anulando = null;          // { tipo: 'gasto'|'mov', id }
+  let gastoFoto = null;         // id del gasto al que se le adjunta foto después
+
+  // ---------- Utilidades ----------
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fechaLocal = (d) => { const [a, m, dd] = d.split('-').map(Number); return new Date(a, m - 1, dd); };
+  // Fecha de hoy en Colombia como 'AAAA-MM-DD'
+  const hoy = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
+  const mesDe = (d) => d.slice(0, 7);
+  function limitesMes(mes) {
+    const [a, m] = mes.split('-').map(Number);
+    const fin = new Date(a, m, 0).getDate();
+    return [`${mes}-01`, `${mes}-${String(fin).padStart(2, '0')}`];
+  }
+  const errorLegible = (e) => (e?.message || String(e)).replace(/^.*?ERROR:\s*/, '');
+
+  let tAviso;
+  function aviso(texto, tipo = 'info') {
+    const a = $('#aviso');
+    a.textContent = texto;
+    a.className = tipo === 'error' ? 'error' : '';
+    a.hidden = false;
+    clearTimeout(tAviso);
+    tAviso = setTimeout(() => (a.hidden = true), tipo === 'error' ? 6000 : 3500);
+  }
+
+  function opciones(lista, vacio, sel, etiqueta = (x) => x.nombre) {
+    return (vacio != null ? `<option value="">${vacio}</option>` : '') + lista.map((x) =>
+      `<option value="${esc(x.id)}" ${String(x.id) === String(sel ?? '') ? 'selected' : ''}>${esc(etiqueta(x))}</option>`).join('');
+  }
+
+  function segmentos(contenedor, attr, alElegir) {
+    $(contenedor).addEventListener('click', (e) => {
+      const b = e.target.closest(`[data-${attr}]`);
+      if (!b) return;
+      $$(`${contenedor} [data-${attr}]`).forEach((x) => x.setAttribute('aria-pressed', x === b));
+      alElegir(b.dataset[attr]);
+    });
+  }
+  function marcarSegmento(contenedor, attr, valor) {
+    $$(`${contenedor} [data-${attr}]`).forEach((x) => x.setAttribute('aria-pressed', x.dataset[attr] === valor));
+  }
+
+  // ---------- Sesión ----------
+  async function mostrarSesion(session) {
+    const con = !!session;
+    $('#login').hidden = con;
+    $('#app').hidden = !con;
+    $('#salir').hidden = !con;
+    if (!con) return;
+    const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
+    if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
+    $('#usuario').textContent = perfil?.nombre ?? session.user.email;
+    await cargarMaestros();
+    await Promise.all([cargarGastos(), cargarFijos(), cargarSocios()]);
+  }
+
+  $('#login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('#loginError').textContent = '';
+    const { error } = await db.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#clave').value });
+    if (error) $('#loginError').textContent = 'Correo o contraseña incorrectos.';
+  });
+  $('#salir').addEventListener('click', () => db.auth.signOut());
+
+  // ---------- Pestañas ----------
+  const tabs = ['gastos', 'fijos', 'socios'];
+  function abrirPestana(nombre) {
+    tabs.forEach((t) => {
+      $(`#t-${t}`).setAttribute('aria-selected', t === nombre);
+      $(`#p-${t}`).hidden = t !== nombre;
+    });
+  }
+  tabs.forEach((t) => $(`#t-${t}`).addEventListener('click', () => abrirPestana(t)));
+
+  // ---------- Datos base ----------
+  async function cargarMaestros() {
+    const [c, s] = await Promise.all([
+      db.from('categorias_gasto').select('id, nombre, activo').order('nombre'),
+      db.from('perfiles').select('id, nombre, rol, activo').eq('rol', 'socio').eq('activo', true).order('nombre')
+    ]);
+    if (c.error) {
+      aviso(/categorias_gasto/.test(c.error.message)
+        ? 'Falta ejecutar 07_gastos.sql en Supabase.' : 'No se pudieron cargar las categorías: ' + c.error.message, 'error');
+      return;
+    }
+    categorias = c.data;
+    socios = s.data || [];
+    pintarCategorias();
+    $('#gSocio').innerHTML = opciones(socios, socios.length ? null : 'No hay socios activos');
+    $('#mSocio').innerHTML = opciones(socios, socios.length ? null : 'No hay socios activos');
+  }
+
+  function pintarCategorias(sel) {
+    const activas = categorias.filter((c) => c.activo);
+    const actual = sel ?? $('#gCategoria').value;
+    $('#gCategoria').innerHTML = opciones(activas, 'Elige una categoría', actual);
+    $('#fjCategoria').innerHTML = opciones(activas, 'Elige una categoría', $('#fjCategoria').value);
+    $('#fCategoria').innerHTML = opciones(categorias, 'Todas', $('#fCategoria').value);
+  }
+
+  $('#nuevaCategoria').addEventListener('click', async () => {
+    const nombre = prompt('Nombre de la nueva categoría de gasto:');
+    if (!nombre || !nombre.trim()) return;
+    const { data, error } = await db.rpc('guardar_categoria_gasto', { p_nombre: nombre.trim() });
+    if (error) return aviso(errorLegible(error), 'error');
+    await cargarMaestros();
+    pintarCategorias(data);
+  });
+
+  // ---------- Gastos: listado ----------
+  async function cargarGastos() {
+    const mes = $('#fMes').value || mesDe(hoy());
+    const [desde, hasta] = limitesMes(mes);
+    const { data, error } = await db.from('v_gastos').select('*')
+      .gte('fecha', desde).lte('fecha', hasta)
+      .order('fecha', { ascending: false }).order('id', { ascending: false }).limit(1000);
+    if (error) return aviso('No se pudieron cargar los gastos: ' + error.message, 'error');
+    gastos = data;
+    pintarGastos();
+  }
+
+  function pintarGastos() {
+    const mes = $('#fMes').value || mesDe(hoy());
+    const cat = $('#fCategoria').value;
+    const verAnulados = $('#fAnulados').checked;
+    const filas = gastos.filter((g) => (verAnulados || g.estado === 'activo') && (!cat || String(g.categoria_id) === cat));
+    const activos = gastos.filter((g) => g.estado === 'activo');
+
+    const nombreMes = fMesLargo.format(fechaLocal(`${mes}-01`));
+    $('#resMesTitulo').textContent = mes === mesDe(hoy()) ? 'Gastos del mes' : `Gastos de ${nombreMes}`;
+    $('#resMes').textContent = cop.format(activos.reduce((s, g) => s + Number(g.valor), 0));
+    $('#totGastos').textContent = cop.format(filas.filter((g) => g.estado === 'activo').reduce((s, g) => s + Number(g.valor), 0));
+
+    if (!filas.length) {
+      $('#tbGastos').innerHTML = `<tr><td colspan="5" class="vacio">No hay gastos registrados en ${esc(nombreMes)}${cat ? ' con esa categoría' : ''}.</td></tr>`;
+      return;
+    }
+    $('#tbGastos').innerHTML = filas.map((g) => {
+      const anulado = g.estado === 'anulado';
+      const pago = g.origen === 'socio' ? `Socio: ${esc(g.socio)}` : ORIGENES[g.origen];
+      const detalle = [g.categoria, g.proveedor, g.gasto_fijo ? 'Gasto fijo' : ''].filter(Boolean).map(esc).join(' · ');
+      return `<tr class="${anulado ? 'anulado' : ''}">
+        <td class="num ocultar-movil">${fCorta.format(fechaLocal(g.fecha))}</td>
+        <td>${esc(g.descripcion)}<small>${detalle}${anulado ? ` · Anulado: ${esc(g.motivo_anulacion)}` : ''}</small><small class="solo-movil">${fCorta.format(fechaLocal(g.fecha))} · ${pago}</small></td>
+        <td class="ocultar-movil">${pago}</td>
+        <td class="der num">${cop.format(g.valor)}</td>
+        <td class="acc">
+          ${g.factura_path ? `<button type="button" class="btn-texto" data-ver="${esc(g.factura_path)}">Factura</button>`
+            : (!anulado ? `<button type="button" class="btn-texto" data-adjuntar="${g.id}">Adjuntar</button>` : '')}
+          ${!anulado ? `<button type="button" class="btn-texto peligro" data-anular-gasto="${g.id}">Anular</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  $('#fMes').value = mesDe(hoy());
+  $('#fMes').addEventListener('change', cargarGastos);
+  ['#fCategoria', '#fAnulados'].forEach((s) => $(s).addEventListener('input', pintarGastos));
+
+  $('#tbGastos').addEventListener('click', async (e) => {
+    const ver = e.target.closest('[data-ver]');
+    if (ver) return verFactura(ver.dataset.ver);
+    const adj = e.target.closest('[data-adjuntar]');
+    if (adj) { gastoFoto = +adj.dataset.adjuntar; $('#fotoTardia').value = ''; $('#fotoTardia').click(); return; }
+    const an = e.target.closest('[data-anular-gasto]');
+    if (an) {
+      const g = gastos.find((x) => x.id === +an.dataset.anularGasto);
+      abrirAnular('gasto', g.id, `Gasto: ${g.descripcion} por ${cop.format(g.valor)}. Deja de sumar en los totales, pero queda en el historial.`);
+    }
+  });
+
+  // ---------- Fotos de facturas ----------
+  // Reduce las fotos a 1600 px y JPEG para no gastar el almacenamiento gratis
+  async function prepararArchivo(archivo) {
+    if (archivo.type === 'application/pdf') {
+      if (archivo.size > 5 * 1024 * 1024) throw new Error('El PDF pesa más de 5 MB.');
+      return { blob: archivo, ext: 'pdf', tipo: 'application/pdf' };
+    }
+    if (!archivo.type.startsWith('image/')) throw new Error('Elige una foto o un PDF.');
+    const bmp = await createImageBitmap(archivo).catch(() => null);
+    if (!bmp) {
+      if (archivo.size > 5 * 1024 * 1024) throw new Error('La imagen pesa más de 5 MB.');
+      return { blob: archivo, ext: (archivo.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg'), tipo: archivo.type };
+    }
+    const escala = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * escala);
+    c.height = Math.round(bmp.height * escala);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.75));
+    return { blob, ext: 'jpg', tipo: 'image/jpeg' };
+  }
+
+  async function subirFactura(archivo, fecha) {
+    const { blob, ext, tipo } = await prepararArchivo(archivo);
+    const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
+    const ruta = `gastos/${fecha.slice(0, 4)}/${fecha.slice(5, 7)}/${id}.${ext}`;
+    const { error } = await db.storage.from(BUCKET).upload(ruta, blob, { contentType: tipo, upsert: false });
+    if (error) throw new Error('No se pudo subir la factura: ' + error.message);
+    return ruta;
+  }
+
+  async function verFactura(ruta) {
+    const ventana = window.open('', '_blank');   // se abre ya, para que el navegador no la bloquee
+    const { data, error } = await db.storage.from(BUCKET).createSignedUrl(ruta, 600);
+    if (error || !data?.signedUrl) {
+      ventana?.close();
+      return aviso('No se pudo abrir la factura: ' + (error?.message || ''), 'error');
+    }
+    if (ventana) ventana.location = data.signedUrl; else location.href = data.signedUrl;
+  }
+
+  $('#gFoto').addEventListener('change', () => {
+    archivoFactura = $('#gFoto').files[0] || null;
+    $('#gFotoNombre').textContent = archivoFactura ? archivoFactura.name : 'Opcional';
+    $('#quitarFoto').hidden = !archivoFactura;
+    $('#btnFoto').textContent = archivoFactura ? 'Cambiar' : 'Tomar o elegir foto';
+  });
+  $('#quitarFoto').addEventListener('click', () => { $('#gFoto').value = ''; $('#gFoto').dispatchEvent(new Event('change')); });
+
+  $('#fotoTardia').addEventListener('change', async () => {
+    const archivo = $('#fotoTardia').files[0];
+    const g = gastos.find((x) => x.id === gastoFoto);
+    if (!archivo || !g) return;
+    try {
+      aviso('Subiendo factura…');
+      const ruta = await subirFactura(archivo, g.fecha);
+      const { error } = await db.rpc('adjuntar_factura_gasto', { p_gasto_id: g.id, p_factura_path: ruta });
+      if (error) throw error;
+      aviso('Factura adjuntada.');
+      await cargarGastos();
+    } catch (err) {
+      aviso(errorLegible(err), 'error');
+    }
+  });
+
+  // ---------- Gastos: registrar ----------
+  segmentos('#gOrigen', 'origen', (o) => {
+    origenGasto = o;
+    $('#campoSocio').hidden = o !== 'socio';
+  });
+
+  function limpiarGasto() {
+    $('#frmGasto').reset();
+    $('#gFecha').value = hoy();
+    $('#gFecha').max = hoy();
+    origenGasto = 'caja';
+    marcarSegmento('#gOrigen', 'origen', 'caja');
+    $('#campoSocio').hidden = true;
+    $('#gFoto').dispatchEvent(new Event('change'));
+    quitarFijo();
+  }
+
+  function quitarFijo() {
+    fijoElegido = null;
+    $('#chipFijo').hidden = true;
+  }
+  $('#quitarFijo').addEventListener('click', quitarFijo);
+
+  $('#frmGasto').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const valor = Math.round(Number($('#gValor').value));
+    const fecha = $('#gFecha').value;
+    if (!(valor > 0)) return aviso('Escribe el valor del gasto.', 'error');
+    if (!$('#gCategoria').value) return aviso('Elige la categoría.', 'error');
+    if (origenGasto === 'socio' && !$('#gSocio').value) return aviso('Elige qué socio lo pagó.', 'error');
+    if (fijoElegido && mesDe(fecha) !== fijoElegido.periodo.slice(0, 7)) {
+      if (!confirm('La fecha es de otro mes. El gasto fijo quedará pagado para ese mes. ¿Continuar?')) return;
+    }
+
+    const btn = $('#btnGasto');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    try {
+      let ruta = null;
+      if (archivoFactura) {
+        btn.textContent = 'Subiendo factura…';
+        ruta = await subirFactura(archivoFactura, fecha);
+      }
+      const { error } = await db.rpc('registrar_gasto', {
+        p_fecha: fecha,
+        p_categoria_id: Number($('#gCategoria').value),
+        p_descripcion: $('#gDesc').value.trim(),
+        p_valor: valor,
+        p_origen: origenGasto,
+        p_socio_id: origenGasto === 'socio' ? $('#gSocio').value : null,
+        p_proveedor: $('#gProveedor').value.trim() || null,
+        p_gasto_fijo_id: fijoElegido ? fijoElegido.id : null,
+        p_factura_path: ruta
+      });
+      if (error) throw error;
+      aviso(`Gasto de ${cop.format(valor)} registrado.`);
+      const mesGasto = mesDe(fecha);
+      limpiarGasto();
+      if ($('#fMes').value !== mesGasto) $('#fMes').value = mesGasto;
+      await Promise.all([cargarGastos(), cargarFijos(), cargarSocios()]);
+    } catch (err) {
+      aviso(errorLegible(err), 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Registrar gasto';
+    }
+  });
+
+  // ---------- Fijos ----------
+  async function cargarFijos() {
+    const [m, t] = await Promise.all([
+      db.from('v_fijos_mes').select('*').order('vence').order('nombre'),
+      db.from('gastos_fijos').select('*, categorias_gasto(nombre)').order('nombre')
+    ]);
+    if (m.error || t.error) return aviso('No se pudieron cargar los gastos fijos.', 'error');
+    fijosMes = m.data;
+    fijosTodos = t.data;
+    pintarFijos();
+  }
+
+  function pintarFijos() {
+    const pendientes = fijosMes.filter((f) => !f.gasto_id);
+    const vencidos = pendientes.filter((f) => f.vencido);
+    $('#resFijos').textContent = cop.format(pendientes.reduce((s, f) => s + Number(f.valor_estimado), 0));
+    $('#resFijosCaja').classList.toggle('alerta', vencidos.length > 0);
+    $('#cuentaFijos').hidden = !vencidos.length;
+    $('#cuentaFijos').textContent = vencidos.length;
+    $('#cuentaFijos').title = `${vencidos.length} vencido(s)`;
+    $('#tituloFijosMes').textContent = 'Fijos de ' + fMesLargo.format(fechaLocal(hoy()));
+
+    $('#tbFijos').innerHTML = fijosMes.length ? fijosMes.map((f) => {
+      const estado = f.gasto_id
+        ? `<span class="estado-ok">Pagado</span><small>${cop.format(f.valor_pagado)} el ${fCorta.format(fechaLocal(f.fecha_pago))}</small>`
+        : f.vencido ? '<span class="estado-mal">Vencido</span>' : '<span class="estado-pend">Pendiente</span>';
+      return `<tr>
+        <td>${esc(f.nombre)}<small>${esc(f.categoria)}</small><small class="solo-movil">Vence ${fCorta.format(fechaLocal(f.vence))}</small><span class="solo-movil">${estado}</span></td>
+        <td class="num ocultar-movil">${fCorta.format(fechaLocal(f.vence))}</td>
+        <td class="der num">${cop.format(f.valor_estimado)}</td>
+        <td class="ocultar-movil">${estado}</td>
+        <td class="acc">
+          ${f.gasto_id ? '' : `<button type="button" class="btn-texto" data-pagar="${f.id}">Pagar</button>`}
+          <button type="button" class="btn-texto" data-editar-fijo="${f.id}">Editar</button>
+        </td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="5" class="vacio">Todavía no hay gastos fijos. Crea el primero con el formulario.</td></tr>';
+
+    const inactivos = fijosTodos.filter((f) => !f.activo);
+    $('#listaInactivos').innerHTML = inactivos.length
+      ? inactivos.map((f) => `<li>${esc(f.nombre)} · ${cop.format(f.valor_estimado)} <button type="button" class="btn-texto" data-editar-fijo="${f.id}">Editar</button></li>`).join('')
+      : '<li class="ayuda" style="list-style:none;margin-left:-1.2rem">No hay fijos desactivados.</li>';
+  }
+
+  $('#p-fijos').addEventListener('click', (e) => {
+    const p = e.target.closest('[data-pagar]');
+    if (p) {
+      const f = fijosMes.find((x) => x.id === +p.dataset.pagar);
+      limpiarGasto();
+      fijoElegido = f;
+      $('#chipFijo').hidden = false;
+      $('#chipFijoTexto').textContent = `Pago de ${f.nombre} · ${fMesLargo.format(fechaLocal(f.periodo))}`;
+      $('#gValor').value = Math.round(f.valor_estimado) || '';
+      pintarCategorias(f.categoria_id);
+      $('#gDesc').value = `${f.nombre} ${fMesLargo.format(fechaLocal(f.periodo))}`;
+      origenGasto = 'cuenta';
+      marcarSegmento('#gOrigen', 'origen', 'cuenta');
+      abrirPestana('gastos');
+      $('#gValor').focus();
+      $('#gValor').select();
+      return;
+    }
+    const ed = e.target.closest('[data-editar-fijo]');
+    if (ed) editarFijo(+ed.dataset.editarFijo);
+  });
+
+  function editarFijo(id) {
+    const f = fijosTodos.find((x) => x.id === id);
+    if (!f) return;
+    fijoEditando = id;
+    $('#tituloFijo').textContent = 'Editar gasto fijo';
+    $('#fjNombre').value = f.nombre;
+    $('#fjCategoria').innerHTML = opciones(categorias, 'Elige una categoría', f.categoria_id);
+    $('#fjValor').value = Math.round(f.valor_estimado);
+    $('#fjDia').value = f.dia_pago;
+    $('#fjActivo').checked = f.activo;
+    $('#fjActivoCampo').hidden = false;
+    $('#cancelarFijo').hidden = false;
+    $('#frmFijo').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('#fjNombre').focus();
+  }
+
+  function limpiarFijo() {
+    fijoEditando = null;
+    $('#frmFijo').reset();
+    $('#tituloFijo').textContent = 'Nuevo gasto fijo';
+    $('#fjActivoCampo').hidden = true;
+    $('#cancelarFijo').hidden = true;
+    pintarCategorias();
+  }
+  $('#cancelarFijo').addEventListener('click', limpiarFijo);
+
+  $('#frmFijo').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = $('#btnFijo');
+    btn.disabled = true;
+    const { error } = await db.rpc('guardar_gasto_fijo', {
+      p_nombre: $('#fjNombre').value.trim(),
+      p_categoria_id: Number($('#fjCategoria').value),
+      p_valor_estimado: Math.round(Number($('#fjValor').value)),
+      p_dia_pago: Number($('#fjDia').value),
+      p_activo: fijoEditando ? $('#fjActivo').checked : true,
+      p_id: fijoEditando
+    });
+    btn.disabled = false;
+    if (error) return aviso(errorLegible(error), 'error');
+    aviso(fijoEditando ? 'Gasto fijo actualizado.' : 'Gasto fijo creado.');
+    limpiarFijo();
+    await cargarFijos();
+  });
+
+  // ---------- Socios ----------
+  async function cargarSocios() {
+    const [s, m] = await Promise.all([
+      db.from('v_saldo_socios').select('*').order('socio'),
+      db.from('v_movimientos_socios').select('*').order('fecha', { ascending: false }).order('id', { ascending: false }).limit(60)
+    ]);
+    if (s.error || m.error) return aviso('No se pudieron cargar las cuentas de socios.', 'error');
+    saldos = s.data;
+    movs = m.data;
+    pintarSocios();
+  }
+
+  function pintarSocios() {
+    const deuda = saldos.reduce((t, s) => t + Number(s.por_reembolsar), 0);
+    $('#resDeuda').textContent = cop.format(deuda);
+    $('#resDeudaCaja').classList.toggle('alerta', deuda > 0);
+    $('#resRetiros').textContent = cop.format(saldos.reduce((t, s) => t + Number(s.retiros_mes), 0));
+
+    $('#tarjetasSocios').innerHTML = saldos.length ? saldos.map((s) => `
+      <article class="socio num">
+        <h3>${esc(s.socio)}</h3>
+        <dl>
+          <dt>Pagó de su bolsillo</dt><dd>${cop.format(s.pagado_de_su_bolsillo)}</dd>
+          <dt>Ya se le reembolsó</dt><dd>${cop.format(s.reembolsado)}</dd>
+          <dt>Se le debe</dt><dd class="${Number(s.por_reembolsar) > 0 ? 'debe' : ''}">${cop.format(s.por_reembolsar)}</dd>
+          <dt>Retiros este mes</dt><dd>${cop.format(s.retiros_mes)}</dd>
+          <dt>Retiros en total</dt><dd>${cop.format(s.retiros_total)}</dd>
+        </dl>
+      </article>`).join('')
+      : '<p class="vacio">No hay usuarios con rol "socio". Revisa la tabla perfiles en Supabase.</p>';
+
+    $('#tbMovs').innerHTML = movs.length ? movs.map((m) => {
+      const anulado = m.estado === 'anulado';
+      return `<tr class="${anulado ? 'anulado' : ''}">
+        <td class="num ocultar-movil">${fCorta.format(fechaLocal(m.fecha))}</td>
+        <td class="ocultar-movil">${esc(m.socio)}</td>
+        <td><b class="solo-movil">${esc(m.socio)}</b>${m.tipo === 'retiro' ? 'Retiro' : 'Reembolso'} · ${ORIGENES[m.origen]}${m.nota || anulado ? `<small>${esc(m.nota || '')}${anulado ? ` Anulado: ${esc(m.motivo_anulacion)}` : ''}</small>` : ''}<small class="solo-movil">${fCorta.format(fechaLocal(m.fecha))}</small></td>
+        <td class="der num">${cop.format(m.valor)}</td>
+        <td class="acc">${anulado ? '' : `<button type="button" class="btn-texto peligro" data-anular-mov="${m.id}">Anular</button>`}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="5" class="vacio">Todavía no hay retiros ni reembolsos.</td></tr>';
+    pintarTipoMov();
+  }
+
+  function deudaCon(socioId) {
+    return Number(saldos.find((s) => s.socio_id === socioId)?.por_reembolsar || 0);
+  }
+
+  function pintarTipoMov() {
+    const reemb = tipoMov === 'reembolso';
+    $('#btnMov').textContent = reemb ? 'Registrar reembolso' : 'Registrar retiro';
+    $('#mTodo').hidden = !reemb;
+    const deuda = deudaCon($('#mSocio').value);
+    $('#mAyuda').textContent = reemb
+      ? (deuda > 0 ? `Se le deben ${cop.format(deuda)} de gastos que pagó de su bolsillo.` : 'A este socio no se le debe nada por ahora.')
+      : 'Plata que el socio saca del negocio para él. No es un gasto: no baja la utilidad.';
+    $('#mTodo').disabled = deuda <= 0;
+  }
+
+  segmentos('#mTipo', 'tipo', (t) => { tipoMov = t; pintarTipoMov(); });
+  segmentos('#mOrigen', 'origen', (o) => { origenMov = o; });
+  $('#mSocio').addEventListener('change', pintarTipoMov);
+  $('#mTodo').addEventListener('click', () => { $('#mValor').value = Math.round(deudaCon($('#mSocio').value)); });
+
+  $('#frmMov').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const valor = Math.round(Number($('#mValor').value));
+    if (!(valor > 0)) return aviso('Escribe el valor.', 'error');
+    const btn = $('#btnMov');
+    btn.disabled = true;
+    const { error } = await db.rpc('registrar_movimiento_socio', {
+      p_socio_id: $('#mSocio').value,
+      p_tipo: tipoMov,
+      p_valor: valor,
+      p_origen: origenMov,
+      p_fecha: $('#mFecha').value,
+      p_nota: $('#mNota').value.trim() || null
+    });
+    btn.disabled = false;
+    if (error) return aviso(errorLegible(error), 'error');
+    aviso(`${tipoMov === 'retiro' ? 'Retiro' : 'Reembolso'} de ${cop.format(valor)} registrado.`);
+    $('#mValor').value = '';
+    $('#mNota').value = '';
+    await cargarSocios();
+  });
+
+  $('#tbMovs').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-anular-mov]');
+    if (!b) return;
+    const m = movs.find((x) => x.id === +b.dataset.anularMov);
+    abrirAnular('mov', m.id, `${m.tipo === 'retiro' ? 'Retiro' : 'Reembolso'} de ${m.socio} por ${cop.format(m.valor)}.`);
+  });
+
+  // ---------- Anular ----------
+  const dlgAnular = $('#dlgAnular');
+  function abrirAnular(tipo, id, detalle) {
+    anulando = { tipo, id };
+    $('#anTitulo').textContent = tipo === 'gasto' ? 'Anular gasto' : 'Anular movimiento';
+    $('#anDetalle').textContent = detalle;
+    $('#anMotivo').value = '';
+    dlgAnular.showModal();
+    $('#anMotivo').focus();
+  }
+  $('#anCancelar').addEventListener('click', () => dlgAnular.close());
+  $('#frmAnular').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const motivo = $('#anMotivo').value.trim();
+    if (!motivo) return;
+    $('#anConfirmar').disabled = true;
+    const { error } = anulando.tipo === 'gasto'
+      ? await db.rpc('anular_gasto', { p_gasto_id: anulando.id, p_motivo: motivo })
+      : await db.rpc('anular_movimiento_socio', { p_id: anulando.id, p_motivo: motivo });
+    $('#anConfirmar').disabled = false;
+    if (error) return aviso(errorLegible(error), 'error');
+    dlgAnular.close();
+    aviso('Anulado. Queda en el historial con el motivo.');
+    await Promise.all([cargarGastos(), cargarFijos(), cargarSocios()]);
+  });
+
+  // ---------- Inicio ----------
+  limpiarGasto();
+  $('#mFecha').value = hoy();
+  $('#mFecha').max = hoy();
+
+  db.auth.onAuthStateChange((evento, s) => {
+    if (evento === 'TOKEN_REFRESHED') return;
+    setTimeout(() => mostrarSesion(s), 0);
+  });
+</script>
+</body>
+</html>
