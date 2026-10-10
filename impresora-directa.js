@@ -61,15 +61,18 @@
     return c;
   }
 
-  // Canvas -> bytes ESC/POS, en franjas de 24 filas (algunas impresoras
-  // tienen poca memoria y no aceptan una imagen alta de una sola vez)
+  // Canvas -> bytes ESC/POS (GS v 0)
   function rasterEscPos(canvas) {
     const { width, height } = canvas;
     const px = canvas.getContext('2d').getImageData(0, 0, width, height).data;
     const bytesFila = Math.ceil(width / 8);
     const partes = [];
-    for (let y0 = 0; y0 < height; y0 += 24) {
-      const filas = Math.min(24, height - y0);
+    // Una sola imagen por etiqueta. Las impresoras de etiquetas con sensor de
+    // separación (como la DIG-M220) toman cada imagen como una etiqueta y saltan a
+    // la siguiente: si se manda en franjas, cada franja cae en una etiqueta distinta.
+    const ALTO_FRANJA = 0xffff;
+    for (let y0 = 0; y0 < height; y0 += ALTO_FRANJA) {
+      const filas = Math.min(ALTO_FRANJA, height - y0);
       const cab = [0x1d, 0x76, 0x30, 0x00, bytesFila & 0xff, bytesFila >> 8, filas & 0xff, filas >> 8];
       const datos = new Uint8Array(bytesFila * filas);
       for (let y = 0; y < filas; y++) {
@@ -96,7 +99,9 @@
     const una = rasterEscPos(await canvasEtiqueta(codigo, medida));
     const partes = [new Uint8Array([0x1b, 0x40])];               // ESC @: reiniciar
     for (let i = 0; i < cantidad; i++) partes.push(...una);
-    partes.push(new Uint8Array([0x1b, 0x64, 0x04]));             // ESC d 4: avanzar para cortar
+    // Papel continuo: avanzar para cortar. Etiquetas troqueladas: la impresora
+    // se ubica sola en la siguiente etiqueta, avanzar desperdiciaría una.
+    if (Number(medida?.ancho) === 58 || Number(medida?.ancho) === 80) partes.push(new Uint8Array([0x1b, 0x64, 0x04]));
     return unir(partes);
   }
 
