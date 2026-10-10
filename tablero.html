@@ -100,6 +100,14 @@
   .anular input { width: 100%; }
   .acciones { display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
 
+  .resultado { width: 100%; border-collapse: collapse; min-width: 0 !important; }
+  .resultado td { padding: .4rem 0; border-bottom: 1px solid var(--linea); white-space: normal; }
+  .resultado td.der { white-space: nowrap; padding-left: .75rem; }
+  .resultado .sub td { font-weight: 600; }
+  .resultado .final td { font-weight: 700; font-size: 1.15rem; border-top: 2px solid var(--tinta); border-bottom: 0; }
+  .resultado .negativo, .kpis .negativo { color: var(--alerta); }
+  .nota-res { color: var(--suave); }
+
   #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
   #aviso.error { background: var(--alerta); color: #fff; }
 
@@ -137,6 +145,7 @@
     .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; }
     .nav a { text-align: center; padding: .5rem .2rem; background: var(--fondo); font-size: .95rem; }
     .nav a[aria-current="page"] { background: var(--acento); color: var(--acento-tinta); box-shadow: none; }
+    .nav a:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
     main { padding: 1rem; }
     dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
     .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
@@ -174,6 +183,7 @@
     <a href="pedidos.html">Pedidos</a>
     <a href="inventario.html">Inventario</a>
     <a href="cartera.html">Cartera</a>
+    <a href="gastos.html">Gastos</a>
     <a href="tablero.html" aria-current="page">Tablero</a>
   </nav>
   <span id="usuario"></span>
@@ -209,7 +219,38 @@
     <div><span>Margen bruto</span><strong id="kMargen">$ 0</strong><small id="kMargenPct"></small></div>
     <div><span>Dinero recibido</span><strong id="kRecaudo">$ 0</strong><small id="kAbonos"></small></div>
     <div><span>Vendido a crédito</span><strong id="kCredito">$ 0</strong><small id="kAnuladas"></small></div>
+    <div id="kUtilidadCaja" hidden><span>Utilidad</span><strong id="kUtilidad">$ 0</strong><small id="kUtilidadPct"></small></div>
   </section>
+
+  <div class="tres" id="bloqueResultado" hidden>
+    <section class="bloque">
+      <h3>Resultado del período</h3>
+      <table class="resultado num">
+        <tbody>
+          <tr><td>Ventas netas</td><td class="der" id="rVentas"></td></tr>
+          <tr><td>− Costo de la mercancía vendida</td><td class="der" id="rCosto"></td></tr>
+          <tr class="sub"><td>Margen bruto</td><td class="der" id="rMargen"></td></tr>
+          <tr><td>− Gastos del negocio</td><td class="der" id="rGastos"></td></tr>
+          <tr class="final"><td>Utilidad</td><td class="der" id="rUtilidad"></td></tr>
+        </tbody>
+      </table>
+      <small class="nota-res">Los retiros de socios no son gastos: se muestran aparte.</small>
+    </section>
+    <section class="bloque"><h3>Gastos por categoría</h3><ul class="barras num" id="porCategoriaGasto"></ul></section>
+    <section class="bloque">
+      <h3>Efectivo y socios</h3>
+      <table class="resultado num">
+        <tbody>
+          <tr><td>Entró en efectivo (ventas y abonos)</td><td class="der" id="eEntradas"></td></tr>
+          <tr><td>− Salió de la caja (gastos y retiros)</td><td class="der" id="eSalidas"></td></tr>
+          <tr class="sub"><td>Neto en efectivo</td><td class="der" id="eNeto"></td></tr>
+          <tr><td>Retiros de socios</td><td class="der" id="eRetiros"></td></tr>
+          <tr><td>Gastos que pagaron socios</td><td class="der" id="eSocios"></td></tr>
+        </tbody>
+      </table>
+      <a class="btn-texto" href="gastos.html" style="text-decoration:none">Ir a Gastos ›</a>
+    </section>
+  </div>
 
   <section class="bloque">
     <h2>Ventas por día</h2>
@@ -368,13 +409,14 @@
     const desde = $('#desde').value, hasta = $('#hasta').value;
     if (!desde || !hasta || hasta < desde) return aviso('Revisa el rango: la fecha final debe ser igual o posterior a la inicial.', 'error');
 
-    const [rr, rv] = await Promise.all([
+    const [rr, rv, rg] = await Promise.all([
       db.rpc('resumen_ventas', { p_desde: desde, p_hasta: hasta }),
       db.from('ventas').select('id, creado_en, total, metodo_pago, estado, usuario_id, clientes(nombre)')
         .gte('creado_en', `${desde}T00:00:00-05:00`)
         .lt('creado_en', `${sumarDias(hasta, 1)}T00:00:00-05:00`)
         .order('creado_en', { ascending: false })
-        .limit(200)
+        .limit(200),
+      db.rpc('resumen_gastos', { p_desde: desde, p_hasta: hasta })
     ]);
     if (rr.error) return aviso('No se pudo cargar el resumen: ' + rr.error.message, 'error');
     if (rv.error) return aviso('No se pudieron cargar las ventas: ' + rv.error.message, 'error');
@@ -389,6 +431,40 @@
       (x) => `${x.ventas} ${x.ventas === 1 ? 'venta' : 'ventas'}`);
     pintarTop(rr.data.top_productos);
     pintarVentas(rv.data);
+    // Si todavía no se ejecutó 07_gastos.sql, el Tablero sigue funcionando sin esta parte
+    pintarResultado(rr.data, rg.error ? null : rg.data);
+  }
+
+  function pintarResultado(r, g) {
+    $('#bloqueResultado').hidden = !g;
+    $('#kUtilidadCaja').hidden = !g;
+    if (!g) return;
+    const ventas = Number(r.kpis.ventas_netas), margen = Number(r.margen.margen), costo = Number(r.margen.costo);
+    const gastosT = Number(g.total_gastos), utilidad = margen - gastosT;
+    const signo = (v) => (v < 0 ? 'negativo' : '');
+    $('#kUtilidad').textContent = cop.format(utilidad);
+    $('#kUtilidad').className = signo(utilidad);
+    $('#kUtilidadPct').textContent = ventas > 0 ? `${pct(utilidad, ventas)} de las ventas · gastos ${cop.format(gastosT)}` : `Gastos ${cop.format(gastosT)}`;
+    $('#rVentas').textContent = cop.format(ventas);
+    $('#rCosto').textContent = cop.format(costo);
+    $('#rMargen').textContent = cop.format(margen);
+    $('#rGastos').textContent = cop.format(gastosT);
+    $('#rUtilidad').textContent = cop.format(utilidad);
+    $('#rUtilidad').className = 'der ' + signo(utilidad);
+
+    if (g.por_categoria.length) {
+      pintarBarras('#porCategoriaGasto', g.por_categoria, (x) => x.categoria,
+        (x) => `${x.gastos} ${x.gastos === 1 ? 'gasto' : 'gastos'}`);
+    } else {
+      $('#porCategoriaGasto').innerHTML = '<li class="vacio">Sin gastos en el período.</li>';
+    }
+    const ent = Number(g.efectivo.entradas), sal = Number(g.efectivo.salidas);
+    $('#eEntradas').textContent = cop.format(ent);
+    $('#eSalidas').textContent = cop.format(sal);
+    $('#eNeto').textContent = cop.format(ent - sal);
+    $('#eNeto').className = 'der ' + signo(ent - sal);
+    $('#eRetiros').textContent = cop.format(g.retiros);
+    $('#eSocios').textContent = cop.format(g.por_origen.socio);
   }
 
   function pintarKpis(r) {
