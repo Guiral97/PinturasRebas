@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="config.js"></script>
 <script src="etiquetas.js"></script>
+<script src="impresora-directa.js"></script>
 <style>
   :root {
     --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
@@ -156,6 +157,9 @@
   .et-otra { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
   .et-nota { color: var(--suave); font-size: .92rem; margin: 0; }
   .et-nota.error { color: var(--alerta); font-weight: 600; }
+  .et-directo { display: grid; gap: .5rem; padding-top: .9rem; border-top: 1px dashed var(--linea); }
+  .et-directo .fila { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+  .et-directo .fila > span { font-weight: 600; flex-basis: 100%; }
 
   #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
   #aviso.error { background: var(--alerta); color: #fff; }
@@ -196,6 +200,7 @@
     .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; }
     .nav a { text-align: center; padding: .5rem .2rem; background: var(--fondo); font-size: .95rem; }
     .nav a[aria-current="page"] { background: var(--acento); color: var(--acento-tinta); box-shadow: none; }
+    .nav a:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
     main { padding: 1rem; }
     dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
     .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
@@ -235,6 +240,7 @@
     <a href="pedidos.html">Pedidos</a>
     <a href="inventario.html" aria-current="page">Inventario</a>
     <a href="cartera.html">Cartera</a>
+    <a href="gastos.html">Gastos</a>
     <a href="tablero.html">Tablero</a>
   </nav>
   <span id="usuario"></span>
@@ -452,6 +458,14 @@
       <div class="et-otra" id="etOtra" hidden>
         <div class="campo"><label for="etAncho">Ancho (mm)</label><input id="etAncho" type="number" min="20" max="80" step="1" class="num"></div>
         <div class="campo"><label for="etAlto">Alto (mm)</label><input id="etAlto" type="number" min="10" max="120" step="1" class="num"></div>
+      </div>
+      <div class="et-directo" id="etDirecto" hidden>
+        <div class="fila">
+          <span>Imprimir directo, sin driver</span>
+          <button type="button" class="btn" data-directo="ble" hidden>Bluetooth</button>
+          <button type="button" class="btn" data-directo="serial" hidden>Puerto COM</button>
+        </div>
+        <p class="et-nota" id="etDirectoEstado" role="status"></p>
       </div>
     </div>
     <div class="dlg-pie">
@@ -837,12 +851,11 @@
     const m = medidaElegida();
     $('#etOtra').hidden = m.valor !== 'otra';
     const nota = $('#etNota');
-    const boton = $('#imprimirEtiquetas');
     if (m.ancho < 20 || m.alto < 10) {
       $('#etVista').innerHTML = '';
       nota.textContent = 'Escribe el ancho y el alto de la etiqueta en milímetros.';
       nota.className = 'et-nota error';
-      boton.disabled = true;
+      habilitarImpresion(false);
       return;
     }
     const codigo = codigoEtiqueta();
@@ -851,19 +864,25 @@
     if (!r.cabe) {
       nota.textContent = `El código no cabe en ${m.ancho} mm de ancho sin perder lectura. Usa una etiqueta más ancha.`;
       nota.className = 'et-nota error';
-      boton.disabled = true;
+      habilitarImpresion(false);
       return;
     }
     nota.className = 'et-nota';
     nota.textContent = etPres.codigo_barras
       ? ''
       : 'Este producto no tiene código. Al imprimir se le asigna este y queda guardado.';
-    boton.disabled = false;
+    habilitarImpresion(true);
+  }
+
+  function habilitarImpresion(si) {
+    document.querySelectorAll('#imprimirEtiquetas, [data-directo]').forEach((x) => (x.disabled = !si));
   }
 
   function abrirEtiquetas(presId) {
     etPres = catalogo.find((c) => c.id === presId);
     if (!etPres) return;
+    const cd = window.impresoraDirecta.conectada();
+    estadoDirecto(cd ? `Conectada: ${cd.nombre}` : '');
     $('#etNombre').textContent = etPres.etiqueta;
     $('#etCodigo').textContent = etPres.codigo_barras || `Código nuevo: ${codigoInterno(etPres.id)}`;
     $('#tituloEtiquetas').textContent = etPres.codigo_barras ? 'Imprimir etiquetas' : 'Crear código e imprimir';
@@ -883,33 +902,84 @@
   ['#etMedida', '#etAncho', '#etAlto'].forEach((s) => $(s).addEventListener('input', pintarVistaEtiqueta));
   $('#cerrarEtiquetas').addEventListener('click', () => dlgEt.close());
 
+  // Asigna el código propio si el producto no tiene. Devuelve false si no se pudo.
+  async function asegurarCodigo() {
+    if (etPres.codigo_barras) return true;
+    const nuevo = codigoInterno(etPres.id);
+    // Solo si sigue sin código (otro equipo pudo asignarle uno mientras tanto)
+    const { data, error } = await db.from('presentaciones')
+      .update({ codigo_barras: nuevo }).eq('id', etPres.id).is('codigo_barras', null).select('codigo_barras');
+    if (error) { aviso(mensajeError(error), 'error'); return false; }
+    if (!data.length) {
+      await cargarCatalogo();
+      dlgEt.close();
+      aviso('Este producto ya tenía código asignado. Ábrelo de nuevo para imprimir.', 'error');
+      return false;
+    }
+    etPres.codigo_barras = nuevo;
+    pintarCatalogo();
+    return true;
+  }
+
+  function cantidadEtiquetas() {
+    const cantidad = Math.trunc(Number($('#etCantidad').value));
+    if (!(cantidad >= 1 && cantidad <= 500)) { aviso('La cantidad debe estar entre 1 y 500.', 'error'); return 0; }
+    return cantidad;
+  }
+
   $('#frmEtiquetas').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const cantidad = Math.trunc(Number($('#etCantidad').value));
-    if (!(cantidad >= 1 && cantidad <= 500)) return aviso('La cantidad debe estar entre 1 y 500.', 'error');
+    const cantidad = cantidadEtiquetas();
+    if (!cantidad) return;
     const m = medidaElegida();
     const boton = $('#imprimirEtiquetas');
     boton.disabled = true;
     try {
-      if (!etPres.codigo_barras) {
-        const nuevo = codigoInterno(etPres.id);
-        // Solo si sigue sin código (otro equipo pudo asignarle uno mientras tanto)
-        const { data, error } = await db.from('presentaciones')
-          .update({ codigo_barras: nuevo }).eq('id', etPres.id).is('codigo_barras', null).select('codigo_barras');
-        if (error) return aviso(mensajeError(error), 'error');
-        if (!data.length) {
-          await cargarCatalogo();
-          dlgEt.close();
-          return aviso('Este producto ya tenía código asignado. Ábrelo de nuevo para imprimir.', 'error');
-        }
-        etPres.codigo_barras = nuevo;
-        pintarCatalogo();
-      }
+      if (!(await asegurarCodigo())) return;
       guardarMedida(m);
       imprimirEtiquetas(etPres.codigo_barras, cantidad, m);
       dlgEt.close();
     } finally {
       boton.disabled = false;
+    }
+  });
+
+  // Impresión directa por Bluetooth o puerto COM (impresora-directa.js)
+  const ID = window.impresoraDirecta;
+  $('[data-directo="ble"]').hidden = !ID.soportaBluetooth();
+  $('[data-directo="serial"]').hidden = !ID.soportaSerial();
+  $('#etDirecto').hidden = !ID.soportaBluetooth() && !ID.soportaSerial();
+
+  function estadoDirecto(texto, error = false) {
+    const p = $('#etDirectoEstado');
+    p.textContent = texto;
+    p.className = error ? 'et-nota error' : 'et-nota';
+  }
+
+  $('#etDirecto').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-directo]');
+    if (!b) return;
+    const tipo = b.dataset.directo;
+    const cantidad = cantidadEtiquetas();
+    if (!cantidad) return;
+    const m = medidaElegida();
+    const botones = [...document.querySelectorAll('[data-directo], #imprimirEtiquetas')];
+    botones.forEach((x) => (x.disabled = true));
+    try {
+      estadoDirecto(tipo === 'ble' ? 'Elige la impresora en la lista del navegador…' : 'Elige el puerto de la impresora…');
+      const c = await ID.conectar(tipo);
+      estadoDirecto(`Conectada: ${c.nombre}. Preparando…`);
+      if (!(await asegurarCodigo())) return;
+      guardarMedida(m);
+      const nombre = await ID.imprimirDirecto(tipo, etPres.codigo_barras, cantidad, m,
+        (f) => estadoDirecto(`Enviando a ${c.nombre}… ${Math.round(f * 100)} %`));
+      estadoDirecto(`Listo: ${cantidad} ${cantidad === 1 ? 'etiqueta enviada' : 'etiquetas enviadas'} a ${nombre}.`);
+      aviso('Etiquetas enviadas a la impresora.');
+    } catch (err) {
+      estadoDirecto(ID.errorDirecto(err), true);
+    } finally {
+      botones.forEach((x) => (x.disabled = false));
+      pintarVistaEtiqueta();   // vuelve a bloquear "Imprimir" si la medida no sirve
     }
   });
 
