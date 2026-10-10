@@ -138,6 +138,7 @@
     .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; }
     .nav a { text-align: center; padding: .5rem .2rem; background: var(--fondo); font-size: .95rem; }
     .nav a[aria-current="page"] { background: var(--acento); color: var(--acento-tinta); box-shadow: none; }
+    .nav a:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
     main { padding: 1rem; }
     dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
     .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
@@ -170,6 +171,7 @@
     <a href="pedidos.html">Pedidos</a>
     <a href="inventario.html">Inventario</a>
     <a href="cartera.html" aria-current="page">Cartera</a>
+    <a href="gastos.html">Gastos</a>
     <a href="tablero.html">Tablero</a>
   </nav>
   <span id="usuario"></span>
