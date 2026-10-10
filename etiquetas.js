@@ -124,6 +124,12 @@
     };
   }
 
+  // Ancho aprovechable de la etiqueta: se descuenta el margen de los dos lados
+  const MARGEN_ETIQUETA = 1.5;   // mm
+  function anchoUtil(anchoMm) {
+    return Math.max(0, anchoMm - 2 * MARGEN_ETIQUETA);
+  }
+  
   function htmlEtiquetas(codigo, cantidad, { ancho = 40, alto = 30 } = {}) {
     const margen = 1.5;
     const { svg } = svgCodigo(codigo, { anchoMm: ancho - 2 * margen, altoMm: alto - 2 * margen });
