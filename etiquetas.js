@@ -156,40 +156,78 @@
     return lineas;
   }
 
-  // Etiqueta completa: código solo, o con nombre del producto y/o precio.
-  // contenido: { nombre?: string, precio?: number }
-  function svgEtiqueta(codigo, { anchoMm, altoMm, nombre = '', precio = null }) {
-    const conNombre = !!String(nombre || '').trim();
+  // Etiqueta completa. De arriba hacia abajo: nombre de la tienda, nombre del
+  // producto, detalle (código de color / SKU), código de barras y precio.
+  // Cada parte es opcional; sin código de barras el texto se centra y se agranda.
+  // contenido: { conCodigo, tienda, nombre, detalle, precio }
+  function svgEtiqueta(codigo, { anchoMm, altoMm, conCodigo = true, tienda = '', nombre = '', detalle = '', precio = null }) {
+    const W = anchoMm, H = altoMm;
+    const hay = (t) => !!String(t ?? '').trim();
     const conPrecio = precio != null && precio !== '' && !Number.isNaN(Number(precio));
-    if (!conNombre && !conPrecio) return svgCodigo(codigo, { anchoMm, altoMm });
+    if (conCodigo && !hay(tienda) && !hay(nombre) && !hay(detalle) && !conPrecio) {
+      return svgCodigo(codigo, { anchoMm, altoMm });
+    }
+    if (!conCodigo && !hay(tienda) && !hay(nombre) && !hay(detalle) && !conPrecio) {
+      return { ancho: W, cabe: false, motivo: 'vacia', svg: '' };
+    }
+    const sinCod = !conCodigo;
+    // Si no cabe todo, se reduce la letra poco a poco (hasta 60 %) antes de rendirse
+    for (const escala of [1, 0.9, 0.8, 0.7, 0.6]) {
+      const r = armar(escala);
+      if (r.cabe || escala === 0.6) return r;
+    }
 
-    const fsN = limitar(altoMm * 0.12, 2.2, 3.4);
-    const lineas = conNombre ? partirNombre(nombre, anchoMm, fsN, 2) : [];
-    const altoNombre = lineas.length ? lineas.length * fsN * 1.18 + 0.5 : 0;
-    const fsP = limitar(altoMm * 0.17, 3, 5.5);
-    const altoPrecio = conPrecio ? fsP * 1.05 + 0.5 : 0;
-    const altoCod = altoMm - altoNombre - altoPrecio;
-    const c = svgCodigo(codigo, { anchoMm, altoMm: Math.max(altoCod, 4) });
-    const W = anchoMm;
-    const x0 = Math.max(0, (W - c.ancho) / 2);
+    function armar(k) {
+    const fsT = Math.max(1.6, limitar(H * (sinCod ? 0.12 : 0.09), 1.9, sinCod ? 3.4 : 2.8) * k);
+    const fsN = Math.max(1.8, limitar(H * (sinCod ? 0.16 : 0.12), 2.2, sinCod ? 5 : 3.4) * k);
+    const fsD = Math.max(1.6, limitar(H * (sinCod ? 0.11 : 0.09), 1.8, sinCod ? 3.2 : 2.6) * k);
+    const fsP = Math.max(2.4, limitar(H * (sinCod ? 0.26 : 0.17), 3, sinCod ? 9 : 5.5) * k);
 
     // Si una línea queda más ancha que la etiqueta (letras anchas), se comprime para que quepa
     const ajuste = (txt, fs) => (txt.length * fs * 0.66 > W * 0.98
       ? ` textLength="${(W * 0.98).toFixed(2)}" lengthAdjust="spacingAndGlyphs"` : '');
-    const textoNombre = lineas.map((l, i) =>
-      `<text x="${(W / 2).toFixed(2)}" y="${((i + 1) * fsN * 1.18 - fsN * 0.22).toFixed(2)}" font-size="${fsN.toFixed(2)}" text-anchor="middle"${ajuste(l, fsN)}>${escXml(l)}</text>`).join('');
-    const textoPrecio = conPrecio
-      ? `<text x="${(W / 2).toFixed(2)}" y="${(altoMm - 0.3).toFixed(2)}" font-size="${fsP.toFixed(2)}" font-weight="900" text-anchor="middle">${escXml(pesos.format(Number(precio)))}</text>`
+    const lineas = [];   // { txt, fs, peso }
+    if (hay(tienda)) partirNombre(tienda, W, fsT, 1).forEach((t) => lineas.push({ txt: t, fs: fsT, peso: 900 }));
+    if (hay(nombre)) partirNombre(nombre, W, fsN, sinCod ? 3 : 2).forEach((t) => lineas.push({ txt: t, fs: fsN, peso: 700 }));
+    if (hay(detalle)) partirNombre(detalle, W, fsD, 1).forEach((t) => lineas.push({ txt: t, fs: fsD, peso: 600 }));
+    const altoArriba = lineas.reduce((a, l) => a + l.fs * 1.18, 0) + (lineas.length ? 0.5 : 0);
+    const altoPrecio = conPrecio ? fsP * 1.05 + 0.5 : 0;
+
+    let y0 = 0, altoCod = 0, c = null, cabe, motivo = '';
+    if (conCodigo) {
+      altoCod = H - altoArriba - altoPrecio;
+      c = svgCodigo(codigo, { anchoMm, altoMm: Math.max(altoCod, 4) });
+      cabe = c.cabe && altoCod >= 8;
+      motivo = altoCod < 8 ? 'alto' : (!c.cabe ? 'ancho' : '');
+    } else {
+      const total = altoArriba + altoPrecio;
+      cabe = total <= H + 0.01;
+      motivo = cabe ? '' : 'alto';
+      y0 = Math.max(0, (H - total) / 2);   // centrado vertical
+    }
+
+    let y = y0, textos = '';
+    for (const l of lineas) {
+      y += l.fs * 1.18;
+      textos += `<text x="${(W / 2).toFixed(2)}" y="${(y - l.fs * 0.22).toFixed(2)}" font-size="${l.fs.toFixed(2)}" font-weight="${l.peso}" text-anchor="middle"${ajuste(l.txt, l.fs)}>${escXml(l.txt)}</text>`;
+    }
+    if (lineas.length) y += 0.5;
+    if (conPrecio) {
+      const yp = conCodigo ? H - 0.3 : y + fsP * 1.05 - fsP * 0.2;
+      textos += `<text x="${(W / 2).toFixed(2)}" y="${yp.toFixed(2)}" font-size="${fsP.toFixed(2)}" font-weight="900" text-anchor="middle">${escXml(pesos.format(Number(precio)))}</text>`;
+    }
+    const barras = conCodigo
+      ? `<g transform="translate(${Math.max(0, (W - c.ancho) / 2).toFixed(3)} ${altoArriba.toFixed(3)})">${c.interior}</g>`
       : '';
 
     return {
       ancho: W,
-      cabe: c.cabe && altoCod >= 8,
-      motivo: altoCod < 8 ? 'alto' : (!c.cabe ? 'ancho' : ''),
-      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(3)}mm" height="${altoMm}mm" viewBox="0 0 ${W.toFixed(3)} ${altoMm}">
-        <g fill="#000" font-family="Arial, Helvetica, sans-serif" font-weight="700">${textoNombre}${textoPrecio}</g>
-        <g transform="translate(${x0.toFixed(3)} ${altoNombre.toFixed(3)})">${c.interior}</g></svg>`
+      cabe,
+      motivo,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(3)}mm" height="${H}mm" viewBox="0 0 ${W.toFixed(3)} ${H}">
+        <g fill="#000" font-family="Arial, Helvetica, sans-serif">${textos}</g>${barras}</svg>`
     };
+    }
   }
 
   // Ancho que de verdad imprime el cabezal. En rollos de 58 y 80 mm (impresoras
