@@ -142,31 +142,20 @@
   .con-boton { display: flex; gap: .4rem; }
   .pres-lista { display: grid; gap: .75rem; }
   .pres {
-    display: grid; gap: 1rem 1.4rem; padding: 1rem 1.1rem 1.1rem; border: 1px solid var(--linea); border-radius: var(--radio);
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.4fr) minmax(0, .85fr); align-items: start;
+    display: grid; gap: .6rem; padding: .9rem; border: 1px solid var(--linea); border-radius: var(--radio);
+    grid-template-columns: 1.3fr 1fr 1.4fr 1fr 1fr .8fr .9fr auto; align-items: end;
   }
   .pres .campo label { font-size: .85rem; }
-  .pres-encabezado { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; padding-bottom: .6rem; border-bottom: 1px dashed var(--linea); }
-  .pres-titulo { font-family: "Barlow Condensed", sans-serif; font-weight: 600; font-size: 1.15rem; line-height: 1.2; }
-  .pres-titulo small { display: block; font-family: "Barlow", sans-serif; font-weight: 400; font-size: .85rem; color: var(--suave); }
-  .pres-grupo { display: grid; gap: .6rem; align-content: start; }
-  .grupo-titulo { color: var(--suave); font-size: .85rem; font-weight: 600; }
-  .precio-fila { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr) minmax(0, 1.1fr); gap: .5rem; align-items: end; }
-  .precio-fila [data-f="precio_venta"] { font-weight: 600; border-color: var(--acento); }
-  .con-sufijo { position: relative; }
-  .con-sufijo input { padding-right: 1.7rem; }
-  .con-sufijo span { position: absolute; right: .65rem; top: 50%; transform: translateY(-50%); color: var(--suave); pointer-events: none; }
-  .ganancia { margin: 0; font-size: .93rem; color: var(--suave); padding: .55rem .7rem; border-radius: var(--radio); background: var(--fondo); border-left: 4px solid var(--linea); }
-  .ganancia.ok { color: var(--tinta); border-left-color: var(--ok); }
-  .ganancia.ok strong { color: var(--ok); }
-  .ganancia.perdida { color: var(--alerta); border-left-color: var(--alerta); font-weight: 600; }
-  .campo small.error { color: var(--alerta); font-weight: 600; }
-  .pres .check { margin-top: .2rem; }
-  .parecidos { margin: -.4rem 0 0; padding: .6rem .8rem; border: 1px dashed var(--cinta-borde); border-radius: var(--radio); font-size: .93rem; }
-  .parecidos .btn-texto { padding: .1rem .3rem; text-align: left; white-space: normal; }
-  .dlg-pie .separador { margin-right: auto; color: var(--suave); font-size: .88rem; align-self: center; }
-  td small.pct { font-size: .85rem; }
+  .pres .check { padding-bottom: .55rem; }
   .pres-cab { display: flex; justify-content: space-between; align-items: center; }
+  /* Fracciones: partes que se venden de una presentación (1/36 de galón) */
+  .pres.fraccion {
+    margin-left: 1.5rem; border-style: dashed; background: var(--fondo);
+    grid-template-columns: .8fr 1.4fr 1fr 1.3fr 1fr 1fr .8fr .9fr auto;
+  }
+  .pres .pie-pres { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .4rem 1rem; align-items: center; justify-content: space-between; color: var(--suave); font-size: .88rem; }
+  .pres .dato { padding: .5rem 0; font-variant-numeric: tabular-nums; }
+  .parte-de { color: var(--acento); font-weight: 600; }
 
   /* Etiquetas */
   .acciones-fila { display: flex; gap: .15rem; justify-content: flex-end; white-space: nowrap; }
@@ -191,8 +180,8 @@
   #aviso.error { background: var(--alerta); color: #fff; }
 
   @media (max-width: 960px) {
-    .pres { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-    .pres-precio { grid-column: 1 / -1; grid-row: 2; }
+    .pres.fraccion { margin-left: .6rem; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); }
+    .pres { grid-template-columns: 1fr 1fr; }
     .entradas, .clientes { grid-template-columns: 1fr; }
   }
   @media (max-width: 560px) {
@@ -245,20 +234,14 @@
   .visually-hidden { left: 0; top: 0; }
   @media (max-width: 700px) {
     .pestanas button { flex: 1 0 auto; }
-    .pres { grid-template-columns: minmax(0, 1fr); }
-    .pres-precio { grid-row: auto; }
+    .pres { grid-template-columns: 1fr 1fr; }
     .dos { grid-template-columns: 1fr; }
-    .pres .dos { grid-template-columns: 1fr 1fr; }
-    .dlg-pie { flex-wrap: wrap; }
-    .dlg-pie .separador { display: none; }
-    .dlg-pie .btn { flex: 1 1 auto; }
     .cinta { padding: .85rem 1rem .95rem; }
     .cinta .fila { flex-wrap: wrap; }
     .cinta input { flex: 1 1 12rem; }
   }
   @media (max-width: 420px) {
-    .precio-fila { grid-template-columns: 1fr 1fr; }
-    .precio-fila > :last-child { grid-column: 1 / -1; }
+    .pres { grid-template-columns: 1fr; }
     .grilla-prod { grid-template-columns: 1fr; }
   }
   /* Logo junto al nombre */
@@ -374,7 +357,7 @@
           <div class="campo" id="campoCosto">
             <label for="costoMov">Costo unitario</label>
             <input id="costoMov" type="number" min="0" step="any" inputmode="numeric" class="num">
-            <small id="ayudaCosto">Actualiza el costo del producto.</small>
+            <small>Actualiza el costo del producto.</small>
           </div>
         </div>
 
@@ -444,7 +427,7 @@
     <div class="dlg-cuerpo">
       <h2 id="tituloProducto">Nuevo producto</h2>
       <div class="grilla-prod">
-        <div class="campo"><label for="prodNombre">Nombre</label><input id="prodNombre" required placeholder="Ej: Base bicapa, Masilla poliéster" autocomplete="off"></div>
+        <div class="campo"><label for="prodNombre">Nombre</label><input id="prodNombre" required placeholder="Ej: Base bicapa, Masilla poliéster"></div>
         <div class="campo"><label for="prodMarca">Marca</label>
           <div class="con-boton"><select id="prodMarca"><option value="">Sin marca</option></select><button type="button" class="btn" id="nuevaMarca">Nueva</button></div>
         </div>
@@ -453,7 +436,6 @@
         </div>
         <div class="campo"><label for="prodColor">Código de color</label><input id="prodColor" placeholder="Opcional"></div>
       </div>
-      <div class="parecidos" id="prodParecidos" hidden></div>
       <div class="campo"><label for="prodDesc">Descripción</label><input id="prodDesc" placeholder="Opcional"></div>
       <label class="check"><input type="checkbox" id="prodActivo" checked> Producto activo</label>
 
@@ -464,9 +446,7 @@
       <div class="pres-lista" id="presLista"></div>
     </div>
     <div class="dlg-pie">
-      <span class="separador" id="pieAyuda">Enter pasa al siguiente campo.</span>
       <button type="button" class="btn" id="cerrarProducto">Cancelar</button>
-      <button type="submit" class="btn" id="guardarOtro">Guardar y crear otro</button>
       <button type="submit" class="btn btn-primario" id="guardarProducto">Guardar producto</button>
     </div>
   </form>
@@ -553,12 +533,6 @@
   const norm = (t) => String(t ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
   const numOrNull = (v) => (v === '' || v == null ? null : Number(v));
   const textoOrNull = (v) => (v.trim() === '' ? null : v.trim());
-  // Ganancia expresada sobre el costo: (precio - costo) / costo
-  const pctSobreCosto = (costo, precio) =>
-    (Number(costo) > 0 && precio !== '' && precio != null) ? (Number(precio) - Number(costo)) / Number(costo) * 100 : null;
-  const fmtPct = (n) => n.toLocaleString('es-CO', { maximumFractionDigits: 1 });
-  // Precio sugerido a partir del %: se sube a la centena siguiente
-  const redondearPrecio = (n) => Math.ceil(Math.round(n) / 100) * 100;
 
   let tAviso;
   function aviso(texto, tipo = 'info') {
@@ -665,11 +639,18 @@
   }
 
   // ---------- Catálogo ----------
-  function pctCelda(p) {
-    const pct = pctSobreCosto(p.costo, p.precio_venta);
-    if (pct == null) return '';
-    return `<small class="pct ${pct <= 0 ? 'bajo' : ''}" title="Ganancia sobre el costo">${pct > 0 ? '+' : ''}${fmtPct(pct)} %</small>`;
+  // Bajo el stock: si hay un tarro abierto, o de qué presentación sale una parte
+  function detalleStock(p) {
+    if (p.madre_id) {
+      const m = catalogo.find((x) => x.id === p.madre_id);
+      return `<small>Parte de ${esc(m?.presentacion ?? 'otra presentación')}</small>`;
+    }
+    if (p.tiene_fracciones) {
+      return Number(p.abierto) > 0 ? `<small>+ abierto (${Math.round(Number(p.abierto) * 100)} %)</small>` : '<small>Se vende por partes</small>';
+    }
+    return '';
   }
+
   function pintarCatalogo() {
     const q = norm($('#buscarCat').value.trim());
     const soloBajo = $('#soloBajo').checked;
@@ -695,9 +676,9 @@
       <tr class="${p.activo ? '' : 'inactivo'}">
         <td>${esc(p.etiqueta)}<small>${esc(p.categoria ?? 'Sin categoría')}${p.activo ? '' : ' · Inactivo'}</small></td>
         <td class="num">${esc(p.codigo_barras || p.sku || '')}</td>
-        <td class="der num">${cop.format(p.precio_venta)}${pctCelda(p)}</td>
+        <td class="der num">${cop.format(p.precio_venta)}</td>
         <td class="der num">${cop.format(p.costo)}</td>
-        <td class="der num ${bajo ? 'bajo' : ''}">${Number(p.stock)}${bajo ? `<small>Mínimo ${Number(p.stock_minimo)}</small>` : ''}</td>
+        <td class="der num ${bajo ? 'bajo' : ''}">${Number(p.stock)}${bajo ? `<small>Mínimo ${Number(p.stock_minimo)}</small>` : ''}${detalleStock(p)}</td>
         <td><div class="acciones-fila">
           <button type="button" class="btn-texto" data-etiqueta="${p.id}">${p.codigo_barras ? 'Etiquetas' : 'Crear código'}</button>
           <button type="button" class="btn-texto" data-producto="${p.producto_id}">Editar</button>
@@ -718,151 +699,110 @@
   // ---------- Diálogo de producto ----------
   const dlg = $('#dlgProducto');
 
-  let hayCambios = false;           // para no perder lo escrito al cerrar
+  // "1/36", "1/4", "0,25" -> número entre 0 y 1
+  function leerFraccion(t) {
+    t = String(t ?? '').trim().replace(',', '.');
+    const m = t.match(/^(\d+)\s*\/\s*(\d+)$/);
+    const v = m ? +m[1] / +m[2] : Number(t);
+    return Number.isFinite(v) && v > 0 && v < 1 ? v : null;
+  }
+  // 0.02777… -> "1/36"
+  function textoFraccion(v) {
+    v = Number(v);
+    if (!(v > 0 && v < 1)) return '';
+    for (let d = 2; d <= 128; d++) {
+      const n = Math.round(v * d);
+      if (n >= 1 && Math.abs(n / d - v) < 1e-6) return `${n}/${d}`;
+    }
+    return String(+v.toFixed(4)).replace('.', ',');
+  }
 
-  function filaPresentacion(p = {}, pctInicial = '') {
+  function filaPresentacion(p = {}, madre = null) {
+    if (p.madre_id || madre) return filaFraccion(p, madre);
     const nueva = !p.id;
     const div = document.createElement('div');
     div.className = 'pres';
     if (p.id) div.dataset.id = p.id;
     const uid = Math.random().toString(36).slice(2, 8);
-    const pct = pctSobreCosto(p.costo, p.precio_venta);
-    const pctValor = pct == null ? pctInicial : Math.round(pct * 10) / 10;
+    div.dataset.uid = uid;
     div.innerHTML = `
-      <div class="pres-encabezado">
-        <div class="pres-titulo" data-titulo></div>
-        ${nueva ? '<button type="button" class="btn-texto" data-quitar>Quitar</button>' : ''}
-      </div>
-      <div class="pres-grupo">
-        <span class="grupo-titulo">Identificación</span>
-        <div class="campo"><label for="pn${uid}">Presentación</label><input id="pn${uid}" data-f="nombre" value="${esc(p.nombre ?? '')}" placeholder="Galón, 1/4, Unidad" required autocomplete="off"></div>
-        <div class="campo"><label for="pc${uid}">Código de barras</label><input id="pc${uid}" data-f="codigo_barras" value="${esc(p.codigo_barras ?? '')}" autocomplete="off" inputmode="numeric" placeholder="Escanéalo aquí">
-          <small data-aviso-codigo>Si no tiene, déjalo vacío y créalo luego con “Crear código”.</small></div>
-        <div class="campo"><label for="ps${uid}">SKU interno <span style="font-weight:400;color:var(--suave)">(opcional)</span></label><input id="ps${uid}" data-f="sku" value="${esc(p.sku ?? '')}" autocomplete="off"></div>
-      </div>
-      <div class="pres-grupo pres-precio">
-        <span class="grupo-titulo">Precio</span>
-        <div class="precio-fila">
-          <div class="campo"><label for="pk${uid}">Costo</label><input id="pk${uid}" data-f="costo" type="number" min="0" step="any" inputmode="numeric" class="num" value="${p.costo ?? ''}" placeholder="0"></div>
-          <div class="campo"><label for="pg${uid}">Ganancia</label><div class="con-sufijo"><input id="pg${uid}" data-f="pct" type="number" step="any" inputmode="decimal" class="num" value="${pctValor}" placeholder="30" title="Porcentaje sobre el costo"><span>%</span></div></div>
-          <div class="campo"><label for="pp${uid}">Precio venta</label><input id="pp${uid}" data-f="precio_venta" type="number" min="0" step="any" inputmode="numeric" class="num" value="${p.precio_venta ?? ''}" required></div>
-        </div>
-        <p class="ganancia" data-ganancia aria-live="polite"></p>
-      </div>
-      <div class="pres-grupo">
-        <span class="grupo-titulo">Inventario</span>
-        <div class="dos">
-          ${nueva
-            ? `<div class="campo"><label for="pi${uid}">Stock inicial</label><input id="pi${uid}" data-f="stock_inicial" type="number" min="0" step="any" inputmode="decimal" class="num" placeholder="0"></div>`
-            : `<div class="campo"><label>Stock actual</label><span class="num" style="padding:.5rem 0">${Number(p.stock ?? 0)}</span></div>`}
-          <div class="campo"><label for="pm${uid}">Stock mín.</label><input id="pm${uid}" data-f="stock_minimo" type="number" min="0" step="any" inputmode="decimal" class="num" value="${p.stock_minimo ?? 0}"></div>
-        </div>
-        <label class="check"><input type="checkbox" data-f="activo" ${p.activo === false ? '' : 'checked'}> Se vende en caja</label>
+      <div class="campo"><label for="pn${uid}">Presentación</label><input id="pn${uid}" data-f="nombre" value="${esc(p.nombre ?? '')}" placeholder="Galón, 1/4, Unidad" required></div>
+      <div class="campo"><label for="ps${uid}">SKU interno</label><input id="ps${uid}" data-f="sku" value="${esc(p.sku ?? '')}"></div>
+      <div class="campo"><label for="pc${uid}">Código de barras</label><input id="pc${uid}" data-f="codigo_barras" value="${esc(p.codigo_barras ?? '')}" autocomplete="off"></div>
+      <div class="campo"><label for="pp${uid}">Precio venta</label><input id="pp${uid}" data-f="precio_venta" type="number" min="0" step="any" class="num" value="${p.precio_venta ?? ''}" required></div>
+      <div class="campo"><label for="pk${uid}">Costo</label><input id="pk${uid}" data-f="costo" type="number" min="0" step="any" class="num" value="${p.costo ?? ''}"></div>
+      <div class="campo"><label for="pm${uid}">Stock mín.</label><input id="pm${uid}" data-f="stock_minimo" type="number" min="0" step="any" class="num" value="${p.stock_minimo ?? 0}"></div>
+      ${nueva
+        ? `<div class="campo"><label for="pi${uid}">Stock inicial</label><input id="pi${uid}" data-f="stock_inicial" type="number" min="0" step="any" class="num" placeholder="0"></div>`
+        : `<div class="campo"><label>Stock actual</label><span class="num" style="padding:.5rem 0">${Number(p.stock ?? 0)}</span></div>`}
+      <label class="check"><input type="checkbox" data-f="activo" ${p.activo === false ? '' : 'checked'}> Activa</label>
+      <div class="pie-pres">
+        <span>${p.tiene_fracciones ? (Number(p.abierto) > 0 ? `Se vende por partes. Hay uno abierto: queda el ${Math.round(Number(p.abierto) * 100)} %.` : 'Se vende por partes. No hay ninguno abierto.') : 'Si se vende por partes (1/36, 1/8, 1/4…), agrégalas aquí.'}</span>
+        <button type="button" class="btn-texto" data-partes>Vender por partes</button>
       </div>`;
+    div.querySelector('[data-partes]').addEventListener('click', () => {
+      const nueva = filaFraccion({}, div);
+      let ultima = div;
+      while (ultima.nextElementSibling?.dataset.madre === uid) ultima = ultima.nextElementSibling;
+      ultima.after(nueva);
+      nueva.querySelector('input').focus();
+    });
+    // El costo de las partes sigue al de la presentación completa
+    div.querySelector('[data-f="costo"]').addEventListener('input', () =>
+      document.querySelectorAll(`.pres[data-madre="${uid}"]`).forEach((f) => f.actualizar?.()));
+    div.querySelector('[data-f="nombre"]').addEventListener('input', () =>
+      document.querySelectorAll(`.pres[data-madre="${uid}"]`).forEach((f) => f.actualizar?.()));
     return div;
   }
 
-  const campoDe = (fila, f) => fila.querySelector(`[data-f="${f}"]`);
-
-  // Muestra cuánto se gana con el costo y el precio escritos
-  function pintarGanancia(fila) {
-    const c = campoDe(fila, 'costo').value, pv = campoDe(fila, 'precio_venta').value;
-    const out = fila.querySelector('[data-ganancia]');
-    const costo = Number(c), precio = Number(pv);
-    out.className = 'ganancia';
-    if (c === '' || costo <= 0) { out.textContent = 'Escribe el costo para ver cuánto ganas.'; return; }
-    if (pv === '') { out.textContent = 'Escribe el precio de venta o el % de ganancia que quieres.'; return; }
-    const g = precio - costo;
-    if (g < 0) {
-      out.classList.add('perdida');
-      out.textContent = `Precio por debajo del costo: pierdes ${cop.format(-g)} en cada venta.`;
-      return;
-    }
-    if (g === 0) {
-      out.classList.add('perdida');
-      out.textContent = 'Sin ganancia: el precio es igual al costo.';
-      return;
-    }
-    out.classList.add('ok');
-    out.innerHTML = `Ganas <strong>${cop.format(g)}</strong> por unidad: <strong>${fmtPct(g / costo * 100)} %</strong> sobre el costo,
-      que es el ${fmtPct(g / precio * 100)} % del precio de venta.`;
+  // Una parte de otra presentación: no tiene inventario propio, se vende del mismo tarro
+  function filaFraccion(p = {}, madreDiv = null) {
+    const div = document.createElement('div');
+    div.className = 'pres fraccion';
+    if (p.id) div.dataset.id = p.id;
+    if (!madreDiv && p.madre_id) madreDiv = document.querySelector(`#presLista .pres[data-id="${p.madre_id}"]`);
+    div.dataset.madre = madreDiv?.dataset.uid ?? '';
+    const uid = Math.random().toString(36).slice(2, 8);
+    const nombreMadre = () => madreDiv?.querySelector('[data-f="nombre"]').value.trim() || 'la presentación';
+    div.innerHTML = `
+      <div class="campo"><label for="pf${uid}">Fracción</label><input id="pf${uid}" data-f="fraccion" value="${esc(textoFraccion(p.fraccion) || '')}" placeholder="1/36" required></div>
+      <div class="campo"><label for="pn${uid}">Se vende como</label><input id="pn${uid}" data-f="nombre" value="${esc(p.nombre ?? '')}" placeholder="1/36 de Galón" required></div>
+      <div class="campo"><label for="ps${uid}">SKU interno</label><input id="ps${uid}" data-f="sku" value="${esc(p.sku ?? '')}"></div>
+      <div class="campo"><label for="pc${uid}">Código de barras</label><input id="pc${uid}" data-f="codigo_barras" value="${esc(p.codigo_barras ?? '')}" autocomplete="off"></div>
+      <div class="campo"><label for="pp${uid}">Precio venta</label><input id="pp${uid}" data-f="precio_venta" type="number" min="0" step="any" class="num" value="${p.precio_venta ?? ''}" required></div>
+      <div class="campo"><label>Costo</label><span class="dato" data-costo>—</span></div>
+      <div class="campo"><label for="pm${uid}">Stock mín.</label><input id="pm${uid}" data-f="stock_minimo" type="number" min="0" step="1" class="num" value="${p.stock_minimo ?? 0}"></div>
+      <div class="campo"><label>Disponible</label><span class="dato">${p.id ? Number(p.stock ?? 0) : '—'}</span></div>
+      <label class="check"><input type="checkbox" data-f="activo" ${p.activo === false ? '' : 'checked'}> Activa</label>
+      <div class="pie-pres">
+        <span>Parte de <span class="parte-de" data-madre-nombre></span>. No lleva inventario propio: cada venta descuenta del tarro abierto y, si no alcanza, abre uno nuevo.</span>
+        ${p.id ? '' : '<button type="button" class="btn-texto" data-quitar>Quitar</button>'}
+      </div>`;
+    const autoNombre = !p.id;     // mientras no se escriba a mano, el nombre se arma solo
+    const nombre = div.querySelector('[data-f="nombre"]');
+    nombre.addEventListener('input', () => { div.dataset.manual = '1'; });
+    div.actualizar = () => {
+      const f = leerFraccion(div.querySelector('[data-f="fraccion"]').value);
+      div.querySelector('[data-madre-nombre]').textContent = nombreMadre();
+      if (autoNombre && !div.dataset.manual) {
+        const t = div.querySelector('[data-f="fraccion"]').value.trim();
+        nombre.value = t ? `${t} de ${nombreMadre()}` : '';
+      }
+      const costoMadre = Number(madreDiv?.querySelector('[data-f="costo"]').value || 0);
+      div.querySelector('[data-costo]').textContent = f && costoMadre ? cop.format(Math.round(costoMadre * f)) : '—';
+    };
+    div.querySelector('[data-f="fraccion"]').addEventListener('input', div.actualizar);
+    div.querySelector('[data-quitar]')?.addEventListener('click', () => div.remove());
+    queueMicrotask(div.actualizar);
+    return div;
   }
 
-  // Pone en el campo % la ganancia que dan el costo y el precio actuales
-  function sincronizarPct(fila) {
-    const pct = pctSobreCosto(campoDe(fila, 'costo').value, campoDe(fila, 'precio_venta').value);
-    if (pct != null) campoDe(fila, 'pct').value = Math.round(pct * 10) / 10;
-  }
-
-  // Avisa si el código de barras ya lo usa otro producto o se repite en el formulario
-  function revisarCodigo(fila) {
-    const input = campoDe(fila, 'codigo_barras');
-    const ayuda = fila.querySelector('[data-aviso-codigo]');
-    const codigo = input.value.trim();
-    let problema = '';
-    if (codigo) {
-      const otro = catalogo.find((c) => c.codigo_barras === codigo && String(c.id) !== String(fila.dataset.id ?? ''));
-      const repetido = [...$('#presLista').querySelectorAll('.pres')]
-        .some((f) => f !== fila && campoDe(f, 'codigo_barras').value.trim() === codigo);
-      if (otro) problema = `Este código ya es de: ${otro.etiqueta}.`;
-      else if (repetido) problema = 'Este código se repite en otra presentación.';
-    }
-    ayuda.className = problema ? 'error' : '';
-    ayuda.textContent = problema || (codigo ? 'Código libre.' : 'Si no tiene, déjalo vacío y créalo luego con “Crear código”.');
-    input.setAttribute('aria-invalid', problema ? 'true' : 'false');
-  }
-
-  // Encabezado de cada presentación: cómo se verá el producto en la caja
-  function pintarTitulos() {
-    const marcaSel = $('#prodMarca');
-    const marca = marcaSel.value ? marcaSel.selectedOptions[0]?.textContent ?? '' : '';
-    const nombre = $('#prodNombre').value.trim();
-    const filas = [...$('#presLista').querySelectorAll('.pres')];
-    filas.forEach((fila, i) => {
-      const pres = campoDe(fila, 'nombre').value.trim();
-      const completo = [marca, nombre, pres].filter(Boolean).join(' ');
-      fila.querySelector('[data-titulo]').innerHTML = (nombre || pres)
-        ? `${esc(completo)}<small>Así aparece en la caja</small>`
-        : `Presentación ${i + 1}<small>Escribe el nombre del producto y la presentación</small>`;
-      const q = fila.querySelector('[data-quitar]');
-      if (q) q.hidden = filas.length === 1;
-    });
-  }
-
-  // Al crear, muestra productos con nombre parecido para no duplicarlos
-  let tParecidos;
-  function buscarParecidos() {
-    const caja = $('#prodParecidos');
-    const q = norm($('#prodNombre').value.trim());
-    if (productoEditando || q.length < 4) { caja.hidden = true; return; }
-    const vistos = new Set();
-    const hallados = catalogo.filter((c) => {
-      if (vistos.has(c.producto_id) || !norm(c.etiqueta).includes(q)) return false;
-      vistos.add(c.producto_id);
-      return true;
-    }).slice(0, 4);
-    if (!hallados.length) { caja.hidden = true; return; }
-    caja.innerHTML = `¿Ya existe? Hay productos con un nombre parecido. Si es uno de estos, edítalo y agrégale la presentación:<br>` +
-      hallados.map((c) => `<button type="button" class="btn-texto" data-abrir-producto="${c.producto_id}">${esc(c.etiqueta)}</button>`).join('<br>');
-    caja.hidden = false;
-  }
-
-  function agregarFila(p, pctInicial) {
-    const fila = filaPresentacion(p, pctInicial);
-    $('#presLista').appendChild(fila);
-    pintarGanancia(fila);
-    revisarCodigo(fila);
-    return fila;
-  }
-
-  async function abrirProducto(id, codigoInicial = '', base = {}) {
+  async function abrirProducto(id, codigoInicial = '') {
     productoEditando = id;
     $('#frmProducto').reset();
     $('#presLista').innerHTML = '';
-    $('#prodParecidos').hidden = true;
     $('#tituloProducto').textContent = id ? 'Editar producto' : 'Nuevo producto';
-    $('#guardarOtro').hidden = !!id;
-    let prod = { activo: true, marca_id: base.marca_id, categoria_id: base.categoria_id };
+    let prod = { activo: true };
     let pres = [];
 
     if (id) {
@@ -884,85 +824,27 @@
     $('#prodActivo').checked = prod.activo !== false;
 
     if (!pres.length) pres = [{ codigo_barras: codigoInicial }];
-    pres.forEach((p) => agregarFila(p, base.pct ?? ''));
-    pintarTitulos();
-    hayCambios = false;
+    const porId = Object.fromEntries(catalogo.map((c) => [c.id, c]));
+    pres = pres.map((p) => ({ ...p, tiene_fracciones: porId[p.id]?.tiene_fracciones, abierto: porId[p.id]?.abierto }));
+    pres.filter((p) => !p.madre_id).forEach((p) => {
+      $('#presLista').appendChild(filaPresentacion(p));
+      if (p.id) pres.filter((h) => h.madre_id === p.id).forEach((h) => $('#presLista').appendChild(filaPresentacion(h)));
+    });
 
-    if (!dlg.open) dlg.showModal();
+    dlg.showModal();
     $('#prodNombre').focus();
   }
 
   $('#agregarPres').addEventListener('click', () => {
-    // La nueva presentación arranca con el mismo % de ganancia que la anterior
-    const filas = $('#presLista').querySelectorAll('.pres');
-    const ultima = filas[filas.length - 1];
-    const fila = agregarFila({}, ultima ? campoDe(ultima, 'pct').value : '');
-    pintarTitulos();
-    hayCambios = true;
+    const fila = filaPresentacion();
+    $('#presLista').appendChild(fila);
     fila.querySelector('input').focus();
   });
+  $('#cerrarProducto').addEventListener('click', () => dlg.close());
 
-  $('#presLista').addEventListener('click', (e) => {
-    const q = e.target.closest('[data-quitar]');
-    if (!q) return;
-    q.closest('.pres').remove();
-    pintarTitulos();
-    $('#presLista').querySelectorAll('.pres').forEach(revisarCodigo);
-  });
-
-  // Costo, % y precio se calculan entre sí mientras se escribe
-  $('#presLista').addEventListener('input', (e) => {
-    const fila = e.target.closest('.pres');
-    if (!fila) return;
-    const f = e.target.dataset.f;
-    const costo = Number(campoDe(fila, 'costo').value);
-    const pct = campoDe(fila, 'pct').value;
-    if (f === 'pct') {
-      if (costo > 0 && pct !== '') campoDe(fila, 'precio_venta').value = redondearPrecio(costo * (1 + Number(pct) / 100));
-    } else if (f === 'costo') {
-      // Sin precio todavía: se calcula con el % ya escrito. Con precio: se mantiene y cambia el %.
-      if (campoDe(fila, 'precio_venta').value === '' && pct !== '' && costo > 0) {
-        campoDe(fila, 'precio_venta').value = redondearPrecio(costo * (1 + Number(pct) / 100));
-      } else sincronizarPct(fila);
-    } else if (f === 'precio_venta') {
-      sincronizarPct(fila);
-    }
-    if (f === 'codigo_barras') $('#presLista').querySelectorAll('.pres').forEach(revisarCodigo);
-    if (['costo', 'pct', 'precio_venta'].includes(f)) pintarGanancia(fila);
-  });
-
-  $('#frmProducto').addEventListener('input', (e) => {
-    hayCambios = true;
-    if (e.target.matches('#prodNombre, #prodMarca, [data-f="nombre"]')) pintarTitulos();
-    if (e.target.id === 'prodNombre') { clearTimeout(tParecidos); tParecidos = setTimeout(buscarParecidos, 250); }
-  });
-
-  $('#prodParecidos').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-abrir-producto]');
-    if (!b) return;
-    if (hayCambios && !confirm('Se perderá lo que escribiste en este producto nuevo. ¿Abrir el existente?')) return;
-    abrirProducto(+b.dataset.abrirProducto);
-  });
-
-  function cerrarProductoConAviso() {
-    if (hayCambios && !confirm('Hay cambios sin guardar. ¿Cerrar de todos modos?')) return false;
-    dlg.close();
-    return true;
-  }
-  $('#cerrarProducto').addEventListener('click', cerrarProductoConAviso);
-  dlg.addEventListener('cancel', (e) => {   // tecla Escape
-    e.preventDefault();
-    cerrarProductoConAviso();
-  });
-
-  // Enter (también el que manda el lector) no guarda: pasa al siguiente campo.
+  // El lector termina con Enter: dentro del formulario no debe guardar.
   $('#frmProducto').addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter' || !e.target.matches('input, select')) return;
-    e.preventDefault();
-    const campos = [...$('#frmProducto').querySelectorAll('input:not([type="checkbox"]), select')]
-      .filter((x) => !x.disabled && x.offsetParent !== null);
-    const sig = campos[campos.indexOf(e.target) + 1];
-    if (sig) { sig.focus(); if (sig.select) sig.select(); }
+    if (e.key === 'Enter' && e.target.matches('input')) e.preventDefault();
   });
 
   async function crearMaestro(tabla, etiqueta) {
@@ -985,48 +867,29 @@
 
   $('#frmProducto').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const otro = e.submitter?.id === 'guardarOtro';
-    const btn = otro ? $('#guardarOtro') : $('#guardarProducto');
-    const texto = btn.textContent;
-    const base = {
-      marca_id: numOrNull($('#prodMarca').value),
-      categoria_id: numOrNull($('#prodCategoria').value),
-      pct: campoDe($('#presLista .pres:last-child') ?? document.createElement('div'), 'pct')?.value ?? ''
-    };
-    $('#guardarOtro').disabled = $('#guardarProducto').disabled = true;
+    const btn = $('#guardarProducto');
+    btn.disabled = true;
     btn.textContent = 'Guardando…';
-    let ok = false;
     try {
-      ok = await guardarProducto();
+      await guardarProducto();
     } finally {
-      $('#guardarOtro').disabled = $('#guardarProducto').disabled = false;
-      btn.textContent = texto;
+      btn.disabled = false;
+      btn.textContent = 'Guardar producto';
     }
-    // Siguiente producto con la misma marca, categoría y % de ganancia
-    if (ok && otro) abrirProducto(null, '', base);
   });
 
   async function guardarProducto() {
-    const filas = [...$('#presLista').querySelectorAll('.pres')];
-    if (!filas.length) return aviso('Agrega al menos una presentación.', 'error');
-
-    // Revisiones antes de guardar
-    const codigoMalo = filas.find((f) => campoDe(f, 'codigo_barras').getAttribute('aria-invalid') === 'true');
-    if (codigoMalo) {
-      campoDe(codigoMalo, 'codigo_barras').focus();
-      return aviso('Hay un código de barras repetido. Corrígelo o déjalo vacío.', 'error');
+    const todas = [...$('#presLista').querySelectorAll('.pres')];
+    if (!todas.length) return aviso('Agrega al menos una presentación.', 'error');
+    for (const f of todas.filter((x) => x.classList.contains('fraccion'))) {
+      const n = f.querySelector('[data-f="nombre"]').value.trim() || 'Una parte';
+      if (!leerFraccion(f.querySelector('[data-f="fraccion"]').value))
+        return aviso(`${n}: escribe la fracción como 1/36, 1/8 o 0,25 (menor que 1).`, 'error');
+      if (!f.dataset.madre || !document.querySelector(`#presLista .pres[data-uid="${f.dataset.madre}"]`))
+        return aviso(`${n}: no se encontró la presentación de la que sale.`, 'error');
     }
-    const sinGanancia = filas.filter((f) => {
-      const c = Number(campoDe(f, 'costo').value || 0), p = Number(campoDe(f, 'precio_venta').value || 0);
-      return p === 0 || (c > 0 && p <= c);
-    });
-    if (sinGanancia.length) {
-      const nombres = sinGanancia.map((f) => campoDe(f, 'nombre').value.trim() || 'sin nombre').join(', ');
-      if (!confirm(`Estas presentaciones no dejan ganancia (precio en cero o menor o igual al costo): ${nombres}.\n\n¿Guardar de todos modos?`)) {
-        campoDe(sinGanancia[0], 'precio_venta').focus();
-        return false;
-      }
-    }
+    // Las completas primero: las partes necesitan el id de su madre
+    const filas = [...todas.filter((x) => !x.classList.contains('fraccion')), ...todas.filter((x) => x.classList.contains('fraccion'))];
 
     const prod = {
       nombre: $('#prodNombre').value.trim(),
@@ -1048,16 +911,23 @@
 
     for (const fila of filas) {
       const v = (f) => fila.querySelector(`[data-f="${f}"]`);
+      const esParte = fila.classList.contains('fraccion');
       const datos = {
         producto_id: productoEditando,
         nombre: v('nombre').value.trim(),
         sku: textoOrNull(v('sku').value),
         codigo_barras: textoOrNull(v('codigo_barras').value),
         precio_venta: Number(v('precio_venta').value || 0),
-        costo: Number(v('costo').value || 0),
         stock_minimo: Number(v('stock_minimo').value || 0),
         activo: v('activo').checked
       };
+      if (esParte) {
+        // El costo lo calcula la base de datos: costo de la madre × fracción
+        datos.madre_id = Number(document.querySelector(`#presLista .pres[data-uid="${fila.dataset.madre}"]`).dataset.id);
+        datos.fraccion = leerFraccion(v('fraccion').value);
+      } else {
+        datos.costo = Number(v('costo').value || 0);
+      }
 
       if (fila.dataset.id) {
         const { error } = await db.from('presentaciones').update(datos).eq('id', fila.dataset.id);
@@ -1067,7 +937,7 @@
         if (error) return aviso(`${datos.nombre}: ${mensajeError(error)}`, 'error');
         fila.dataset.id = data.id;
 
-        const inicial = Number(v('stock_inicial')?.value || 0);
+        const inicial = esParte ? 0 : Number(v('stock_inicial')?.value || 0);
         if (inicial > 0) {
           const { error: e2 } = await db.rpc('registrar_movimiento', {
             p_presentacion_id: data.id, p_tipo: 'inicial', p_cantidad: inicial,
@@ -1079,7 +949,6 @@
       }
     }
 
-    hayCambios = false;
     dlg.close();
     aviso('Producto guardado.');
     await Promise.all([cargarCatalogo(), cargarMovimientos()]);
@@ -1089,7 +958,6 @@
       $('#noExiste').hidden = true;
       if (creado) seleccionar(creado);
     }
-    return true;
   }
 
   // ---------- Etiquetas de código de barras ----------
@@ -1334,19 +1202,14 @@
     $('#noExiste').hidden = false;
   }
 
-  // Con el costo nuevo de la compra, cuánto queda ganando el precio actual
-  function pintarGananciaEntrada() {
-    const ayuda = $('#ayudaCosto');
-    const p = seleccionEntrada;
-    const pct = p ? pctSobreCosto($('#costoMov').value, p.precio_venta) : null;
-    ayuda.className = '';
-    if (pct == null) { ayuda.textContent = 'Actualiza el costo del producto.'; return; }
-    ayuda.textContent = `Con este costo y el precio de ${cop.format(p.precio_venta)}, la ganancia queda en ${fmtPct(pct)} %.`;
-    if (pct <= 0) ayuda.className = 'error';
-  }
-  $('#costoMov').addEventListener('input', pintarGananciaEntrada);
-
   function seleccionar(p) {
+    if (p.madre_id) {
+      const m = catalogo.find((x) => x.id === p.madre_id);
+      if (m) {
+        aviso(`${p.presentacion} se vende por partes de ${m.presentacion}: la entrada se registra en ${m.presentacion}.`);
+        p = m;
+      }
+    }
     seleccionEntrada = p;
     $('#opcionesEntrada').hidden = true;
     $('#noExiste').hidden = true;
@@ -1354,7 +1217,6 @@
     $('#selEntrada').innerHTML = `<strong>${esc(p.etiqueta)}</strong>
       <span class="num">Stock actual: ${Number(p.stock)} · Costo actual: ${cop.format(p.costo)}</span>`;
     $('#costoMov').value = p.costo > 0 ? Number(p.costo) : '';
-    pintarGananciaEntrada();
     $('#btnMov').disabled = false;
     $('#cantMov').focus();
   }
