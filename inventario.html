@@ -143,15 +143,25 @@
   .pres-lista { display: grid; gap: .75rem; }
   .pres {
     display: grid; gap: .6rem; padding: .9rem; border: 1px solid var(--linea); border-radius: var(--radio);
-    grid-template-columns: 1.3fr 1fr 1.4fr 1fr 1fr .8fr .9fr auto; align-items: end;
+    grid-template-columns: 1.3fr 1fr 1.4fr 1fr .8fr 1fr .8fr .9fr auto; align-items: end;
   }
   .pres .campo label { font-size: .85rem; }
+  .pres [data-f="precio_venta"] { font-weight: 600; border-color: var(--acento); }
+  .con-sufijo { position: relative; }
+  .con-sufijo input { padding-right: 1.7rem; }
+  .con-sufijo span { position: absolute; right: .65rem; top: 50%; transform: translateY(-50%); color: var(--suave); pointer-events: none; }
+  .ganancia { grid-column: 1 / -1; margin: 0; font-size: .93rem; color: var(--suave); padding: .55rem .7rem; border-radius: var(--radio); background: var(--fondo); border-left: 4px solid var(--linea); }
+  .ganancia.ok { color: var(--tinta); border-left-color: var(--ok); }
+  .ganancia.ok strong { color: var(--ok); }
+  .ganancia.perdida { color: var(--alerta); border-left-color: var(--alerta); font-weight: 600; }
+  .campo small.error { color: var(--alerta); font-weight: 600; }
+  td small.pct { font-size: .85rem; }
   .pres .check { padding-bottom: .55rem; }
   .pres-cab { display: flex; justify-content: space-between; align-items: center; }
   /* Fracciones: partes que se venden de una presentación (1/36 de galón) */
   .pres.fraccion {
     margin-left: 1.5rem; border-style: dashed; background: var(--fondo);
-    grid-template-columns: .8fr 1.4fr 1fr 1.3fr 1fr 1fr .8fr .9fr auto;
+    grid-template-columns: .8fr 1.4fr 1fr 1.3fr 1fr .8fr 1fr .8fr .9fr auto;
   }
   .pres .pie-pres { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .4rem 1rem; align-items: center; justify-content: space-between; color: var(--suave); font-size: .88rem; }
   .pres .dato { padding: .5rem 0; font-variant-numeric: tabular-nums; }
@@ -357,7 +367,7 @@
           <div class="campo" id="campoCosto">
             <label for="costoMov">Costo unitario</label>
             <input id="costoMov" type="number" min="0" step="any" inputmode="numeric" class="num">
-            <small>Actualiza el costo del producto.</small>
+            <small id="ayudaCosto">Actualiza el costo del producto.</small>
           </div>
         </div>
 
@@ -533,6 +543,12 @@
   const norm = (t) => String(t ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
   const numOrNull = (v) => (v === '' || v == null ? null : Number(v));
   const textoOrNull = (v) => (v.trim() === '' ? null : v.trim());
+  // Ganancia expresada sobre el costo: (precio - costo) / costo
+  const pctSobreCosto = (costo, precio) =>
+    (Number(costo) > 0 && precio !== '' && precio != null) ? (Number(precio) - Number(costo)) / Number(costo) * 100 : null;
+  const fmtPct = (n) => n.toLocaleString('es-CO', { maximumFractionDigits: 1 });
+  // Precio sugerido a partir del %: se sube a la centena siguiente
+  const redondearPrecio = (n) => Math.ceil(Math.round(n) / 100) * 100;
 
   let tAviso;
   function aviso(texto, tipo = 'info') {
@@ -651,6 +667,12 @@
     return '';
   }
 
+  function pctCelda(p) {
+    const pct = pctSobreCosto(p.costo, p.precio_venta);
+    if (pct == null) return '';
+    return `<small class="pct ${pct <= 0 ? 'bajo' : ''}" title="Ganancia sobre el costo">${pct > 0 ? '+' : ''}${fmtPct(pct)} %</small>`;
+  }
+
   function pintarCatalogo() {
     const q = norm($('#buscarCat').value.trim());
     const soloBajo = $('#soloBajo').checked;
@@ -676,7 +698,7 @@
       <tr class="${p.activo ? '' : 'inactivo'}">
         <td>${esc(p.etiqueta)}<small>${esc(p.categoria ?? 'Sin categoría')}${p.activo ? '' : ' · Inactivo'}</small></td>
         <td class="num">${esc(p.codigo_barras || p.sku || '')}</td>
-        <td class="der num">${cop.format(p.precio_venta)}</td>
+        <td class="der num">${cop.format(p.precio_venta)}${pctCelda(p)}</td>
         <td class="der num">${cop.format(p.costo)}</td>
         <td class="der num ${bajo ? 'bajo' : ''}">${Number(p.stock)}${bajo ? `<small>Mínimo ${Number(p.stock_minimo)}</small>` : ''}${detalleStock(p)}</td>
         <td><div class="acciones-fila">
@@ -717,7 +739,63 @@
     return String(+v.toFixed(4)).replace('.', ',');
   }
 
-  function filaPresentacion(p = {}, madre = null) {
+  const campoDe = (fila, f) => fila.querySelector(`[data-f="${f}"]`);
+  // Las partes no tienen campo de costo: lo calcula actualizar() (costo de la madre × fracción)
+  const costoDe = (fila) => fila.classList.contains('fraccion') ? (fila.dataset.costo ?? '') : campoDe(fila, 'costo').value;
+
+  // Campo de % de ganancia sobre el costo, con el valor que dan costo y precio (o el inicial)
+  function campoPct(uid, costo, precio, pctInicial = '') {
+    const pct = pctSobreCosto(costo, precio);
+    const valor = pct == null ? pctInicial : Math.round(pct * 10) / 10;
+    return `<div class="campo"><label for="pg${uid}">Ganancia</label><div class="con-sufijo"><input id="pg${uid}" data-f="pct" type="number" step="any" inputmode="decimal" class="num" value="${valor}" placeholder="30" title="Porcentaje sobre el costo"><span>%</span></div></div>`;
+  }
+
+  // Muestra cuánto se gana con el costo y el precio escritos
+  function pintarGanancia(fila) {
+    const c = costoDe(fila), pv = campoDe(fila, 'precio_venta').value;
+    const out = fila.querySelector('[data-ganancia]');
+    const costo = Number(c), precio = Number(pv);
+    out.className = 'ganancia';
+    if (c === '' || costo <= 0) {
+      out.textContent = fila.classList.contains('fraccion')
+        ? 'Escribe la fracción y el costo de la presentación completa para ver cuánto ganas.'
+        : 'Escribe el costo para ver cuánto ganas.';
+      return;
+    }
+    if (pv === '') { out.textContent = 'Escribe el precio de venta o el % de ganancia que quieres.'; return; }
+    const g = precio - costo;
+    if (g < 0) {
+      out.classList.add('perdida');
+      out.textContent = `Precio por debajo del costo: pierdes ${cop.format(-g)} en cada venta.`;
+      return;
+    }
+    if (g === 0) {
+      out.classList.add('perdida');
+      out.textContent = 'Sin ganancia: el precio es igual al costo.';
+      return;
+    }
+    out.classList.add('ok');
+    out.innerHTML = `Ganas <strong>${cop.format(g)}</strong> por unidad: <strong>${fmtPct(g / costo * 100)} %</strong> sobre el costo,
+      que es el ${fmtPct(g / precio * 100)} % del precio de venta.`;
+  }
+
+  // Pone en el campo % la ganancia que dan el costo y el precio actuales
+  function sincronizarPct(fila) {
+    const pct = pctSobreCosto(costoDe(fila), campoDe(fila, 'precio_venta').value);
+    if (pct != null) campoDe(fila, 'pct').value = Math.round(pct * 10) / 10;
+  }
+
+  // Cambió el costo: sin precio todavía, se calcula con el % ya escrito; con precio, se mantiene y cambia el %.
+  function alCambiarCosto(fila) {
+    const costo = Number(costoDe(fila));
+    const pct = campoDe(fila, 'pct').value;
+    if (campoDe(fila, 'precio_venta').value === '' && pct !== '' && costo > 0) {
+      campoDe(fila, 'precio_venta').value = redondearPrecio(costo * (1 + Number(pct) / 100));
+    } else sincronizarPct(fila);
+    pintarGanancia(fila);
+  }
+
+  function filaPresentacion(p = {}, madre = null, pctInicial = '') {
     if (p.madre_id || madre) return filaFraccion(p, madre);
     const nueva = !p.id;
     const div = document.createElement('div');
@@ -729,13 +807,15 @@
       <div class="campo"><label for="pn${uid}">Presentación</label><input id="pn${uid}" data-f="nombre" value="${esc(p.nombre ?? '')}" placeholder="Galón, 1/4, Unidad" required></div>
       <div class="campo"><label for="ps${uid}">SKU interno</label><input id="ps${uid}" data-f="sku" value="${esc(p.sku ?? '')}"></div>
       <div class="campo"><label for="pc${uid}">Código de barras</label><input id="pc${uid}" data-f="codigo_barras" value="${esc(p.codigo_barras ?? '')}" autocomplete="off"></div>
-      <div class="campo"><label for="pp${uid}">Precio venta</label><input id="pp${uid}" data-f="precio_venta" type="number" min="0" step="any" class="num" value="${p.precio_venta ?? ''}" required></div>
-      <div class="campo"><label for="pk${uid}">Costo</label><input id="pk${uid}" data-f="costo" type="number" min="0" step="any" class="num" value="${p.costo ?? ''}"></div>
+      <div class="campo"><label for="pk${uid}">Costo</label><input id="pk${uid}" data-f="costo" type="number" min="0" step="any" inputmode="numeric" class="num" value="${p.costo ?? ''}"></div>
+      ${campoPct(uid, p.costo, p.precio_venta, pctInicial)}
+      <div class="campo"><label for="pp${uid}">Precio venta</label><input id="pp${uid}" data-f="precio_venta" type="number" min="0" step="any" inputmode="numeric" class="num" value="${p.precio_venta ?? ''}" required></div>
       <div class="campo"><label for="pm${uid}">Stock mín.</label><input id="pm${uid}" data-f="stock_minimo" type="number" min="0" step="any" class="num" value="${p.stock_minimo ?? 0}"></div>
       ${nueva
         ? `<div class="campo"><label for="pi${uid}">Stock inicial</label><input id="pi${uid}" data-f="stock_inicial" type="number" min="0" step="any" class="num" placeholder="0"></div>`
         : `<div class="campo"><label>Stock actual</label><span class="num" style="padding:.5rem 0">${Number(p.stock ?? 0)}</span></div>`}
       <label class="check"><input type="checkbox" data-f="activo" ${p.activo === false ? '' : 'checked'}> Activa</label>
+      <p class="ganancia" data-ganancia aria-live="polite"></p>
       <div class="pie-pres">
         <span>${p.tiene_fracciones ? (Number(p.abierto) > 0 ? `Se vende por partes. Hay uno abierto: queda el ${Math.round(Number(p.abierto) * 100)} %.` : 'Se vende por partes. No hay ninguno abierto.') : 'Si se vende por partes (1/36, 1/8, 1/4…), agrégalas aquí.'}</span>
         <button type="button" class="btn-texto" data-partes>Vender por partes</button>
@@ -752,6 +832,7 @@
       document.querySelectorAll(`.pres[data-madre="${uid}"]`).forEach((f) => f.actualizar?.()));
     div.querySelector('[data-f="nombre"]').addEventListener('input', () =>
       document.querySelectorAll(`.pres[data-madre="${uid}"]`).forEach((f) => f.actualizar?.()));
+    pintarGanancia(div);
     return div;
   }
 
@@ -769,11 +850,13 @@
       <div class="campo"><label for="pn${uid}">Se vende como</label><input id="pn${uid}" data-f="nombre" value="${esc(p.nombre ?? '')}" placeholder="1/36 de Galón" required></div>
       <div class="campo"><label for="ps${uid}">SKU interno</label><input id="ps${uid}" data-f="sku" value="${esc(p.sku ?? '')}"></div>
       <div class="campo"><label for="pc${uid}">Código de barras</label><input id="pc${uid}" data-f="codigo_barras" value="${esc(p.codigo_barras ?? '')}" autocomplete="off"></div>
-      <div class="campo"><label for="pp${uid}">Precio venta</label><input id="pp${uid}" data-f="precio_venta" type="number" min="0" step="any" class="num" value="${p.precio_venta ?? ''}" required></div>
       <div class="campo"><label>Costo</label><span class="dato" data-costo>—</span></div>
+      ${campoPct(uid, null, null)}
+      <div class="campo"><label for="pp${uid}">Precio venta</label><input id="pp${uid}" data-f="precio_venta" type="number" min="0" step="any" inputmode="numeric" class="num" value="${p.precio_venta ?? ''}" required></div>
       <div class="campo"><label for="pm${uid}">Stock mín.</label><input id="pm${uid}" data-f="stock_minimo" type="number" min="0" step="1" class="num" value="${p.stock_minimo ?? 0}"></div>
       <div class="campo"><label>Disponible</label><span class="dato">${p.id ? Number(p.stock ?? 0) : '—'}</span></div>
       <label class="check"><input type="checkbox" data-f="activo" ${p.activo === false ? '' : 'checked'}> Activa</label>
+      <p class="ganancia" data-ganancia aria-live="polite"></p>
       <div class="pie-pres">
         <span>Parte de <span class="parte-de" data-madre-nombre></span>. No lleva inventario propio: cada venta descuenta del tarro abierto y, si no alcanza, abre uno nuevo.</span>
         ${p.id ? '' : '<button type="button" class="btn-texto" data-quitar>Quitar</button>'}
@@ -789,7 +872,9 @@
         nombre.value = t ? `${t} de ${nombreMadre()}` : '';
       }
       const costoMadre = Number(madreDiv?.querySelector('[data-f="costo"]').value || 0);
+      div.dataset.costo = f && costoMadre ? costoMadre * f : '';
       div.querySelector('[data-costo]').textContent = f && costoMadre ? cop.format(Math.round(costoMadre * f)) : '—';
+      alCambiarCosto(div);
     };
     div.querySelector('[data-f="fraccion"]').addEventListener('input', div.actualizar);
     div.querySelector('[data-quitar]')?.addEventListener('click', () => div.remove());
@@ -836,9 +921,29 @@
   }
 
   $('#agregarPres').addEventListener('click', () => {
-    const fila = filaPresentacion();
+    // La nueva presentación arranca con el mismo % de ganancia que la anterior completa
+    const completas = $('#presLista').querySelectorAll('.pres:not(.fraccion)');
+    const ultima = completas[completas.length - 1];
+    const fila = filaPresentacion({}, null, ultima ? campoDe(ultima, 'pct').value : '');
     $('#presLista').appendChild(fila);
     fila.querySelector('input').focus();
+  });
+
+  // Costo, % y precio se calculan entre sí mientras se escribe
+  $('#presLista').addEventListener('input', (e) => {
+    const fila = e.target.closest('.pres');
+    if (!fila) return;
+    const f = e.target.dataset.f;
+    if (f === 'pct') {
+      const costo = Number(costoDe(fila)), pct = e.target.value;
+      if (costo > 0 && pct !== '') campoDe(fila, 'precio_venta').value = redondearPrecio(costo * (1 + Number(pct) / 100));
+      pintarGanancia(fila);
+    } else if (f === 'costo') {
+      alCambiarCosto(fila);
+    } else if (f === 'precio_venta') {
+      sincronizarPct(fila);
+      pintarGanancia(fila);
+    }
   });
   $('#cerrarProducto').addEventListener('click', () => dlg.close());
 
@@ -1202,6 +1307,18 @@
     $('#noExiste').hidden = false;
   }
 
+  // Con el costo nuevo de la compra, cuánto queda ganando el precio actual
+  function pintarGananciaEntrada() {
+    const ayuda = $('#ayudaCosto');
+    const p = seleccionEntrada;
+    const pct = p ? pctSobreCosto($('#costoMov').value, p.precio_venta) : null;
+    ayuda.className = '';
+    if (pct == null) { ayuda.textContent = 'Actualiza el costo del producto.'; return; }
+    ayuda.textContent = `Con este costo y el precio de ${cop.format(p.precio_venta)}, la ganancia queda en ${fmtPct(pct)} %.`;
+    if (pct <= 0) ayuda.className = 'error';
+  }
+  $('#costoMov').addEventListener('input', pintarGananciaEntrada);
+
   function seleccionar(p) {
     if (p.madre_id) {
       const m = catalogo.find((x) => x.id === p.madre_id);
@@ -1217,6 +1334,7 @@
     $('#selEntrada').innerHTML = `<strong>${esc(p.etiqueta)}</strong>
       <span class="num">Stock actual: ${Number(p.stock)} · Costo actual: ${cop.format(p.costo)}</span>`;
     $('#costoMov').value = p.costo > 0 ? Number(p.costo) : '';
+    pintarGananciaEntrada();
     $('#btnMov').disabled = false;
     $('#cantMov').focus();
   }
@@ -1281,6 +1399,7 @@
     $('#selEntrada').innerHTML = '<strong>Ningún producto seleccionado</strong><span>Escanea o busca el siguiente producto.</span>';
     $('#cantMov').value = '';
     $('#costoMov').value = '';
+    pintarGananciaEntrada();
     if (tipoMov !== 'compra') $('#notaMov').value = '';   // en compras la factura suele repetirse
     btn.disabled = true;
     await Promise.all([cargarCatalogo(), cargarMovimientos()]);
