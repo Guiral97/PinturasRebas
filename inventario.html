@@ -20,7 +20,7 @@
   :root {
     --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
     --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
-    --cinta: #E8D08A; --cinta-borde: #C9AE66; --alerta: #A1281F; --ok: #2F6B3A;
+    --cinta: #E8D08A; --cinta-borde: #C9AE66; --alerta: #A1281F; --ok: #2F6B3A; --aviso: #8A6410;
     --radio: 6px;
     font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
   }
@@ -28,7 +28,7 @@
     :root {
       --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
       --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
-      --cinta: #C4AB68; --cinta-borde: #9E8850; --alerta: #E57B72; --ok: #7FC08A;
+      --cinta: #C4AB68; --cinta-borde: #9E8850; --alerta: #E57B72; --ok: #7FC08A; --aviso: #E3B94F;
     }
   }
   * { box-sizing: border-box; }
@@ -105,7 +105,19 @@
   .cinta .fila { display: flex; gap: .5rem; }
   .cinta input { font-size: 1.25rem; background: rgba(255,255,255,.88); border-color: var(--cinta-borde); color: #1A2127; }
   .cinta .btn { background: rgba(255,255,255,.55); border-color: var(--cinta-borde); color: #1A2127; }
-  #lector { margin-top: 1rem; max-width: 26rem; border-radius: var(--radio); overflow: hidden; }
+  #lector, #lectorCarga { margin-top: 1rem; max-width: 26rem; border-radius: var(--radio); overflow: hidden; }
+
+  /* Carga rápida */
+  .carga-ayuda { color: var(--suave); font-size: .93rem; margin: .75rem 0 0; }
+  .carga-izq { display: grid; gap: 1rem; align-content: start; }
+  .carga-izq > .lista-opciones, .carga-izq > .no-existe { margin-top: 0; }
+  .carga-cab { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .25rem 1rem; margin-bottom: .5rem; }
+  .carga-cab span { color: var(--suave); }
+  .carga-codigo { margin: 0; color: var(--suave); font-variant-numeric: tabular-nums; }
+  .tres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+  .carga-nota { color: var(--suave); font-size: .9rem; margin: .6rem 0 0; }
+  #p-carga table { min-width: 0; }
+  #caAyuda.aviso-stock { color: var(--alerta); font-weight: 600; }
 
   /* Entradas */
   .entradas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
@@ -134,38 +146,83 @@
   .clientes { display: grid; grid-template-columns: 22rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
 
   /* Diálogo de producto */
-  dialog { border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); color: var(--tinta); padding: 0; width: min(62rem, calc(100% - 1.5rem)); max-height: calc(100vh - 2rem); }
+  dialog { border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); color: var(--tinta); padding: 0; width: min(70rem, calc(100% - 1.5rem)); max-height: calc(100vh - 2rem); }
   dialog::backdrop { background: rgba(10, 14, 18, .45); }
   .dlg-cuerpo { padding: 1.25rem 1.5rem; display: grid; gap: 1.1rem; }
   .dlg-pie { display: flex; justify-content: flex-end; gap: .5rem; padding: 1rem 1.5rem; border-top: 1px solid var(--linea); position: sticky; bottom: 0; background: var(--panel); }
   .grilla-prod { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .9rem; }
   .con-boton { display: flex; gap: .4rem; }
-  .pres-lista { display: grid; gap: .75rem; }
-  .pres {
-    display: grid; gap: .6rem; padding: .9rem; border: 1px solid var(--linea); border-radius: var(--radio);
-    grid-template-columns: 1.3fr 1fr 1.4fr 1fr .8fr 1fr .8fr .9fr auto; align-items: end;
-  }
-  .pres .campo label { font-size: .85rem; }
-  .pres [data-f="precio_venta"] { font-weight: 600; border-color: var(--acento); }
+  .pres-cab { display: flex; justify-content: space-between; align-items: center; }
+  .campo small.error { color: var(--alerta); font-weight: 600; }
+  td small.pct { font-size: .85rem; }
   .con-sufijo { position: relative; }
   .con-sufijo input { padding-right: 1.7rem; }
   .con-sufijo span { position: absolute; right: .65rem; top: 50%; transform: translateY(-50%); color: var(--suave); pointer-events: none; }
-  .ganancia { grid-column: 1 / -1; margin: 0; font-size: .93rem; color: var(--suave); padding: .55rem .7rem; border-radius: var(--radio); background: var(--fondo); border-left: 4px solid var(--linea); }
-  .ganancia.ok { color: var(--tinta); border-left-color: var(--ok); }
-  .ganancia.ok strong { color: var(--ok); }
-  .ganancia.perdida { color: var(--alerta); border-left-color: var(--alerta); font-weight: 600; }
-  .campo small.error { color: var(--alerta); font-weight: 600; }
-  td small.pct { font-size: .85rem; }
-  .pres .check { padding-bottom: .55rem; }
-  .pres-cab { display: flex; justify-content: space-between; align-items: center; }
-  /* Fracciones: partes que se venden de una presentación (1/36 de galón) */
-  .pres.fraccion {
-    margin-left: 1.5rem; border-style: dashed; background: var(--fondo);
-    grid-template-columns: .8fr 1.4fr 1fr 1.3fr 1fr .8fr 1fr .8fr .9fr auto;
+
+  /* Presentaciones: cada una es un bloque con sus partes (venta por partes) debajo */
+  .pres-lista { display: grid; gap: 1rem; }
+  .grupo-pres { border: 1px solid var(--linea); border-radius: 10px; overflow: hidden; }
+  .pres-completa { display: grid; gap: .9rem; padding: 1rem 1.1rem 1.1rem; }
+  .pres h4, .partes h4 { font-family: "Barlow Condensed", sans-serif; font-weight: 600; font-size: 1.2rem; margin: 0; }
+  .pres-titulo { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem 1rem; }
+  .pres-titulo h4 { margin-right: auto; }
+  .pres-dato { color: var(--suave); font-size: .92rem; }
+  .pres-dato strong { color: var(--tinta); }
+  .pres .campo label { font-size: .85rem; font-weight: 600; color: var(--suave); }
+  .pres-id { display: grid; grid-template-columns: 1fr 1.2fr 1.3fr; gap: .75rem; }
+  .pres [data-f="precio_venta"] { font-weight: 600; border-color: var(--acento); }
+  .campo-codigo { background: color-mix(in srgb, var(--cinta) 22%, var(--panel)); border-color: var(--cinta-borde); }
+  .campo-codigo::placeholder { color: var(--suave); }
+
+  /* Costo × % = precio, y al lado cuánto se gana */
+  .pres-precio { display: flex; flex-wrap: wrap; background: var(--fondo); border: 1px solid var(--linea); border-radius: 8px; }
+  .calculo { display: flex; align-items: flex-end; gap: .6rem; padding: .85rem 1rem; }
+  .calculo .campo { width: 9rem; }
+  .calculo .campo.campo-pct { width: 6.5rem; }
+  .calculo .op { color: var(--suave); font-size: 1.15rem; padding-bottom: .5rem; }
+  .pres-precio > .ganancia { flex: 1 1 14rem; padding: .85rem 1rem; border-left: 1px solid var(--linea); display: flex; flex-direction: column; justify-content: center; gap: .1rem; }
+  .ganancia { margin: 0; color: var(--suave); }
+  .g-titulo { font-size: .85rem; }
+  .g-valor { font-family: "Barlow Condensed", sans-serif; font-weight: 600; font-size: 1.75rem; line-height: 1.05; color: var(--tinta); font-variant-numeric: tabular-nums; }
+  .g-nota { font-size: .86rem; color: var(--suave); }
+  .ganancia.ok .g-valor { color: var(--ok); }
+  .ganancia.baja .g-valor, .ganancia.baja .g-nota { color: var(--aviso); }
+  .ganancia.perdida .g-valor, .ganancia.perdida .g-nota { color: var(--alerta); font-weight: 600; }
+  .pres-stock { display: grid; grid-template-columns: 9rem 9rem minmax(0, 1fr); gap: .75rem; align-items: end; }
+  .pres-stock > small { color: var(--suave); font-size: .88rem; padding-bottom: .55rem; }
+
+  /* Venta por partes: tabla compacta, una fila por parte */
+  .partes { display: grid; gap: .8rem; padding: .9rem 1.1rem 1.1rem; border-top: 1px solid var(--linea); background: color-mix(in srgb, var(--fondo) 45%, var(--panel)); }
+  .partes h4 { font-size: 1.1rem; }
+  .partes h4 span { font-family: "Barlow", sans-serif; font-weight: 500; font-size: .92rem; color: var(--suave); }
+  .partes-cab { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .6rem 1rem; }
+  .partes-cab p { margin: .1rem 0 0; color: var(--suave); font-size: .9rem; }
+  .chips { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+  .chips > span { color: var(--suave); font-size: .9rem; margin-right: .1rem; }
+  .chip { min-height: 2.3rem; padding: .25rem .8rem; border: 1px dashed var(--linea); border-radius: 999px; background: var(--panel); color: var(--acento); font-weight: 600; }
+  .chip:hover { border-style: solid; border-color: var(--acento); }
+  .partes-tabla { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; overflow: hidden; }
+  .parte-cols, .pres.fraccion {
+    display: grid; gap: .6rem; align-items: center; padding: .55rem .8rem;
+    grid-template-columns: 4.6rem minmax(9rem, 1.5fr) minmax(8rem, 1.2fr) 5.6rem 6rem 7rem minmax(7rem, 1fr) 4rem 3rem 2.6rem;
   }
-  .pres .pie-pres { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .4rem 1rem; align-items: center; justify-content: space-between; color: var(--suave); font-size: .88rem; }
-  .pres .dato { padding: .5rem 0; font-variant-numeric: tabular-nums; }
-  .parte-de { color: var(--acento); font-weight: 600; }
+  .parte-cols { background: var(--fondo); color: var(--suave); font-size: .76rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .parte-cols .der, .c-costo { text-align: right; }
+  .pres.fraccion { border-top: 1px solid var(--linea); }
+  .pres.fraccion input { padding: .4rem .5rem; }
+  .pres.fraccion [data-f="fraccion"] { text-align: center; font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.1rem; color: var(--acento); }
+  .c-nombre { display: grid; gap: .25rem; }
+  .pres.fraccion input.sku { font-size: .82rem; padding: .15rem .5rem; color: var(--suave); border-style: dashed; }
+  .parte-disp { display: block; text-align: center; font-size: .75rem; color: var(--suave); margin-top: .15rem; }
+  .c-gana .ganancia { line-height: 1.2; }
+  .c-gana .g-valor { font-family: "Barlow", sans-serif; font-size: 1rem; }
+  .c-gana .g-nota { display: block; font-size: .78rem; }
+  .c-activa { display: flex; justify-content: center; align-items: center; gap: .4rem; }
+  .c-activa input { width: 1.15rem; height: 1.15rem; }
+  .btn-icono { width: 2.5rem; height: 2.5rem; border: 0; border-radius: var(--radio); background: none; color: var(--suave); display: inline-flex; align-items: center; justify-content: center; }
+  .btn-icono:hover { color: var(--alerta); background: var(--fondo); }
+  .partes-pie { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1rem; padding: .6rem .8rem; border-top: 1px solid var(--linea); background: var(--fondo); color: var(--suave); font-size: .88rem; }
+  .pres .etq { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
   /* Etiquetas */
   .acciones-fila { display: flex; gap: .15rem; justify-content: flex-end; white-space: nowrap; }
@@ -190,9 +247,36 @@
   #aviso.error { background: var(--alerta); color: #fff; }
 
   @media (max-width: 960px) {
-    .pres.fraccion { margin-left: .6rem; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); }
-    .pres { grid-template-columns: 1fr 1fr; }
     .entradas, .clientes { grid-template-columns: 1fr; }
+  }
+  /* Diálogo angosto: las partes pasan de tabla a tarjetas */
+  @media (max-width: 900px) {
+    .parte-cols { display: none; }
+    .pres.fraccion { grid-template-columns: repeat(6, minmax(0, 1fr)); align-items: start; gap: .65rem .55rem; padding: .85rem .8rem; }
+    /* Orden en la tarjeta: parte y nombre · código y mínimo · costo, % y precio · ganancia y activa */
+    .c-frac { order: 1; } .c-nombre { order: 2; } .c-codigo { order: 3; } .c-min { order: 4; }
+    .c-costo { order: 5; } .c-pct { order: 6; } .c-precio { order: 7; } .c-gana { order: 8; }
+    .c-activa { order: 9; align-self: center; } .c-quitar { order: 10; align-self: center; }
+    .pres.fraccion .etq { position: static; width: auto; height: auto; overflow: visible; clip: auto; display: block; margin-bottom: .2rem; font-size: .8rem; font-weight: 600; color: var(--suave); }
+    .pres.fraccion .c-activa .etq { display: inline; margin: 0; }
+    .c-frac, .c-min, .c-costo, .c-pct, .c-precio { grid-column: span 2; }
+    .c-nombre, .c-codigo, .c-gana { grid-column: span 4; }
+    .c-costo { text-align: left; }
+    .c-costo .dato { display: block; padding: .4rem 0; }
+    .c-activa { grid-column: span 1; justify-content: flex-start; }
+    .c-quitar { grid-column: span 1; justify-self: end; }
+    .pres-precio { flex-direction: column; }
+    .pres-precio > .ganancia { flex-basis: auto; border-left: 0; border-top: 1px solid var(--linea); }
+    .calculo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .calculo .op { display: none; }
+    .calculo .campo, .calculo .campo.campo-pct { width: auto; }
+  }
+  @media (max-width: 640px) {
+    .pres-id { grid-template-columns: 1fr 1fr; }
+    .pres-id > .campo:last-child { grid-column: 1 / -1; }
+    .pres-stock { grid-template-columns: 1fr 1fr; }
+    .pres-stock > small { grid-column: 1 / -1; padding: 0; }
+    .pres-completa, .partes { padding-left: .85rem; padding-right: .85rem; }
   }
   @media (max-width: 560px) {
     #usuario { display: none; }
@@ -244,14 +328,13 @@
   .visually-hidden { left: 0; top: 0; }
   @media (max-width: 700px) {
     .pestanas button { flex: 1 0 auto; }
-    .pres { grid-template-columns: 1fr 1fr; }
     .dos { grid-template-columns: 1fr; }
     .cinta { padding: .85rem 1rem .95rem; }
     .cinta .fila { flex-wrap: wrap; }
     .cinta input { flex: 1 1 12rem; }
   }
   @media (max-width: 420px) {
-    .pres { grid-template-columns: 1fr; }
+    .pres-id { grid-template-columns: 1fr; }
     .grilla-prod { grid-template-columns: 1fr; }
   }
   /* Logo junto al nombre */
@@ -290,6 +373,7 @@
   <div class="pestanas" role="tablist">
     <button role="tab" id="t-catalogo" aria-controls="p-catalogo" aria-selected="true">Catálogo</button>
     <button role="tab" id="t-entradas" aria-controls="p-entradas" aria-selected="false">Entradas de mercancía</button>
+    <button role="tab" id="t-carga" aria-controls="p-carga" aria-selected="false">Carga rápida</button>
     <button role="tab" id="t-clientes" aria-controls="p-clientes" aria-selected="false">Clientes</button>
   </div>
 
@@ -386,6 +470,85 @@
 
         <button class="btn btn-primario" type="submit" id="btnMov" disabled>Registrar movimiento</button>
       </form>
+    </div>
+  </section>
+
+  <!-- ============ CARGA RÁPIDA ============ -->
+  <!-- Conteo del inventario recorriendo los estantes: se escanea, se cuenta y se guarda como inventario inicial -->
+  <section id="p-carga" role="tabpanel" aria-labelledby="t-carga" hidden>
+    <div class="entradas">
+      <div class="carga-izq">
+        <div>
+          <div class="cinta">
+            <label for="scanCarga">Escanea el producto del estante</label>
+            <div class="fila">
+              <input id="scanCarga" autocomplete="off" spellcheck="false" enterkeyhint="done" placeholder="Código o nombre">
+              <button class="btn" id="btnCamaraCarga" type="button">Usar cámara</button>
+            </div>
+          </div>
+          <p class="carga-ayuda">Cada escaneo del mismo producto suma 1. Se guarda al escanear el siguiente o al presionar Enter con el campo vacío.
+            <button type="button" class="btn-texto" id="cargaSinCodigo">Producto sin código</button></p>
+          <div id="lectorCarga" hidden></div>
+        </div>
+        <ul class="lista-opciones" id="opcionesCarga" hidden></ul>
+        <div class="no-existe" id="noExisteCarga" hidden>
+          <p id="noExisteCargaTexto"></p>
+          <button class="btn" type="button" id="crearCarga">Crear producto nuevo</button>
+        </div>
+
+        <div class="tarjeta" id="cargaActual" hidden>
+          <div class="seleccionado"><strong id="caNombre"></strong><span id="caDetalle" class="num"></span></div>
+          <div class="campo">
+            <label for="caCant">Cantidad contada</label>
+            <input id="caCant" type="number" min="0" step="any" inputmode="decimal" class="num">
+            <small id="caAyuda"></small>
+          </div>
+          <div class="con-boton">
+            <button class="btn btn-primario" type="button" id="caGuardar">Guardar cantidad</button>
+            <button class="btn" type="button" id="caDescartar">Descartar</button>
+          </div>
+        </div>
+
+        <form class="tarjeta" id="frmCargaNuevo" hidden>
+          <h2>Producto nuevo</h2>
+          <p class="carga-codigo" id="cnCodigo"></p>
+          <div class="campo"><label for="cnNombre">Nombre</label><input id="cnNombre" required placeholder="Ej: Base bicapa blanco, Lija 320"></div>
+          <div class="dos">
+            <div class="campo"><label for="cnMarca">Marca</label>
+              <div class="con-boton"><select id="cnMarca"></select><button type="button" class="btn" id="cnNuevaMarca">Nueva</button></div>
+            </div>
+            <div class="campo"><label for="cnCategoria">Categoría</label>
+              <div class="con-boton"><select id="cnCategoria"></select><button type="button" class="btn" id="cnNuevaCategoria">Nueva</button></div>
+            </div>
+          </div>
+          <div class="dos">
+            <div class="campo"><label for="cnPres">Presentación</label><input id="cnPres" required placeholder="Galón, 1/4, Unidad"></div>
+            <div class="campo"><label for="cnColor">Código de color</label><input id="cnColor" placeholder="Opcional"></div>
+          </div>
+          <div class="tres">
+            <div class="campo"><label for="cnCosto">Costo</label><input id="cnCosto" data-f="costo" type="number" min="0" step="any" inputmode="numeric" class="num"></div>
+            <div class="campo"><label for="cnPct">Ganancia</label><div class="con-sufijo"><input id="cnPct" data-f="pct" type="number" step="any" inputmode="decimal" class="num" placeholder="30" title="Porcentaje sobre el costo"><span>%</span></div></div>
+            <div class="campo"><label for="cnPrecio">Precio venta</label><input id="cnPrecio" data-f="precio_venta" type="number" min="0" step="any" inputmode="numeric" class="num" required></div>
+          </div>
+          <p class="ganancia" data-ganancia aria-live="polite"></p>
+          <div class="campo"><label for="cnCant">Cantidad contada</label><input id="cnCant" type="number" min="0" step="any" inputmode="decimal" class="num"></div>
+          <div class="con-boton">
+            <button class="btn btn-primario" type="submit" id="cnGuardar">Guardar producto</button>
+            <button class="btn" type="button" id="cnCancelar">Cancelar</button>
+          </div>
+        </form>
+      </div>
+
+      <div>
+        <div class="carga-cab"><h3>Contado en esta sesión</h3><span id="cargaTotales" class="num"></span></div>
+        <div class="tabla-caja">
+          <table>
+            <thead><tr><th>Producto</th><th class="der">Contado</th><th class="der">Stock</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
+            <tbody id="tbCarga"></tbody>
+          </table>
+        </div>
+        <p class="carga-nota">Cada cantidad se guarda en el momento como inventario inicial. Si te equivocas, usa “Deshacer”: queda un ajuste con el motivo.</p>
+      </div>
     </div>
   </section>
 
@@ -601,14 +764,16 @@
   $('#salir').addEventListener('click', () => db.auth.signOut());
 
   // ---------- Pestañas ----------
-  const tabs = ['catalogo', 'entradas', 'clientes'];
+  const tabs = ['catalogo', 'entradas', 'carga', 'clientes'];
   function abrirPestana(nombre) {
     tabs.forEach((t) => {
       $(`#t-${t}`).setAttribute('aria-selected', t === nombre);
       $(`#p-${t}`).hidden = t !== nombre;
     });
-    if (nombre !== 'entradas') detenerCamara();
+    detenerCamara();
+    if (nombre !== 'carga') enCola(guardarActual);   // lo que se estaba contando no se pierde
     if (nombre === 'entradas') $('#scanEntrada').focus();
+    if (nombre === 'carga') $('#scanCarga').focus();
   }
   tabs.forEach((t) => $(`#t-${t}`).addEventListener('click', () => abrirPestana(t)));
 
@@ -618,6 +783,7 @@
     if (error) return aviso('No se pudo cargar el catálogo: ' + error.message, 'error');
     catalogo = data;
     pintarCatalogo();
+    pintarCarga();
   }
 
   async function cargarMaestros() {
@@ -747,36 +913,36 @@
   function campoPct(uid, costo, precio, pctInicial = '') {
     const pct = pctSobreCosto(costo, precio);
     const valor = pct == null ? pctInicial : Math.round(pct * 10) / 10;
-    return `<div class="campo"><label for="pg${uid}">Ganancia</label><div class="con-sufijo"><input id="pg${uid}" data-f="pct" type="number" step="any" inputmode="decimal" class="num" value="${valor}" placeholder="30" title="Porcentaje sobre el costo"><span>%</span></div></div>`;
+    return `<div class="campo campo-pct"><label for="pg${uid}">Ganancia</label><div class="con-sufijo"><input id="pg${uid}" data-f="pct" type="number" step="any" inputmode="decimal" class="num" value="${valor}" placeholder="30" title="Porcentaje sobre el costo"><span>%</span></div></div>`;
   }
 
-  // Muestra cuánto se gana con el costo y el precio escritos
+  // Por debajo de este % sobre el costo, la ganancia se marca en amarillo
+  const GANANCIA_BAJA = 20;
+
+  // Muestra cuánto se gana con el costo y el precio escritos.
+  // En la presentación completa es un bloque grande; en una parte, una celda de la tabla.
   function pintarGanancia(fila) {
+    const parte = fila.classList.contains('fraccion');
     const c = costoDe(fila), pv = campoDe(fila, 'precio_venta').value;
     const out = fila.querySelector('[data-ganancia]');
     const costo = Number(c), precio = Number(pv);
-    out.className = 'ganancia';
-    if (c === '' || costo <= 0) {
-      out.textContent = fila.classList.contains('fraccion')
-        ? 'Escribe la fracción y el costo de la presentación completa para ver cuánto ganas.'
-        : 'Escribe el costo para ver cuánto ganas.';
-      return;
-    }
-    if (pv === '') { out.textContent = 'Escribe el precio de venta o el % de ganancia que quieres.'; return; }
+    // Solo textos propios (sin datos del usuario), por eso innerHTML
+    const pinta = (clase, valor, nota) => {
+      out.className = 'ganancia' + (clase ? ` ${clase}` : '');
+      out.innerHTML = (parte ? '' : '<span class="g-titulo">Ganas por unidad</span>')
+        + (valor ? `<strong class="g-valor">${valor}</strong>` : '')
+        + (nota ? `<small class="g-nota">${nota}</small>` : '');
+    };
+    if (c === '' || costo <= 0) return pinta('', parte ? '—' : '', parte ? 'Falta la fracción o el costo' : 'Escribe el costo para ver cuánto ganas.');
+    if (pv === '') return pinta('', parte ? '—' : '', 'Escribe el precio o el %.');
     const g = precio - costo;
-    if (g < 0) {
-      out.classList.add('perdida');
-      out.textContent = `Precio por debajo del costo: pierdes ${cop.format(-g)} en cada venta.`;
-      return;
-    }
-    if (g === 0) {
-      out.classList.add('perdida');
-      out.textContent = 'Sin ganancia: el precio es igual al costo.';
-      return;
-    }
-    out.classList.add('ok');
-    out.innerHTML = `Ganas <strong>${cop.format(g)}</strong> por unidad: <strong>${fmtPct(g / costo * 100)} %</strong> sobre el costo,
-      que es el ${fmtPct(g / precio * 100)} % del precio de venta.`;
+    if (g < 0) return pinta('perdida', cop.format(g), parte ? 'Pierdes en cada venta' : 'El precio está por debajo del costo: pierdes en cada venta.');
+    if (g === 0) return pinta('perdida', cop.format(0), 'Sin ganancia: precio igual al costo');
+    const sobreCosto = g / costo * 100, delPrecio = fmtPct(g / precio * 100);
+    const baja = sobreCosto < GANANCIA_BAJA;
+    pinta(baja ? 'baja' : 'ok', cop.format(g),
+      parte ? `${delPrecio} % del precio${baja ? ' · baja' : ''}`
+            : `${fmtPct(sobreCosto)} % sobre el costo · ${delPrecio} % del precio${baja ? ' · ganancia baja' : ''}`);
   }
 
   // Pone en el campo % la ganancia que dan el costo y el precio actuales
@@ -795,45 +961,128 @@
     pintarGanancia(fila);
   }
 
+  const FRACCIONES_RAPIDAS = ['1/2', '1/4', '1/8', '1/16', '1/32', '1/36'];
+
+  // Una presentación completa (la que tiene compras y stock), con sus partes debajo.
+  // Devuelve el bloque .grupo-pres; la fila .pres de adentro es la que se guarda.
   function filaPresentacion(p = {}, madre = null, pctInicial = '') {
     if (p.madre_id || madre) return filaFraccion(p, madre);
     const nueva = !p.id;
-    const div = document.createElement('div');
-    div.className = 'pres';
-    if (p.id) div.dataset.id = p.id;
     const uid = Math.random().toString(36).slice(2, 8);
-    div.dataset.uid = uid;
-    div.innerHTML = `
-      <div class="campo"><label for="pn${uid}">Presentación</label><input id="pn${uid}" data-f="nombre" value="${esc(p.nombre ?? '')}" placeholder="Galón, 1/4, Unidad" required></div>
-      <div class="campo"><label for="ps${uid}">SKU interno</label><input id="ps${uid}" data-f="sku" value="${esc(p.sku ?? '')}"></div>
-      <div class="campo"><label for="pc${uid}">Código de barras</label><input id="pc${uid}" data-f="codigo_barras" value="${esc(p.codigo_barras ?? '')}" autocomplete="off"></div>
-      <div class="campo"><label for="pk${uid}">Costo</label><input id="pk${uid}" data-f="costo" type="number" min="0" step="any" inputmode="numeric" class="num" value="${p.costo ?? ''}"></div>
-      ${campoPct(uid, p.costo, p.precio_venta, pctInicial)}
-      <div class="campo"><label for="pp${uid}">Precio venta</label><input id="pp${uid}" data-f="precio_venta" type="number" min="0" step="any" inputmode="numeric" class="num" value="${p.precio_venta ?? ''}" required></div>
-      <div class="campo"><label for="pm${uid}">Stock mín.</label><input id="pm${uid}" data-f="stock_minimo" type="number" min="0" step="any" class="num" value="${p.stock_minimo ?? 0}"></div>
-      ${nueva
-        ? `<div class="campo"><label for="pi${uid}">Stock inicial</label><input id="pi${uid}" data-f="stock_inicial" type="number" min="0" step="any" class="num" placeholder="0"></div>`
-        : `<div class="campo"><label>Stock actual</label><span class="num" style="padding:.5rem 0">${Number(p.stock ?? 0)}</span></div>`}
-      <label class="check"><input type="checkbox" data-f="activo" ${p.activo === false ? '' : 'checked'}> Activa</label>
-      <p class="ganancia" data-ganancia aria-live="polite"></p>
-      <div class="pie-pres">
-        <span>${p.tiene_fracciones ? (Number(p.abierto) > 0 ? `Se vende por partes. Hay uno abierto: queda el ${Math.round(Number(p.abierto) * 100)} %.` : 'Se vende por partes. No hay ninguno abierto.') : 'Si se vende por partes (1/36, 1/8, 1/4…), agrégalas aquí.'}</span>
-        <button type="button" class="btn-texto" data-partes>Vender por partes</button>
+    const abierto = Number(p.abierto) > 0 ? Math.round(Number(p.abierto) * 100) : 0;
+    const grupo = document.createElement('div');
+    grupo.className = 'grupo-pres';
+    grupo.innerHTML = `
+      <div class="pres pres-completa" data-uid="${uid}">
+        <div class="pres-titulo">
+          <h4 data-titulo></h4>
+          ${nueva ? '' : `<span class="pres-dato">Stock actual: <strong class="num">${Number(p.stock ?? 0)}</strong></span>`}
+          <label class="check"><input type="checkbox" data-f="activo" ${p.activo === false ? '' : 'checked'}> Activa</label>
+        </div>
+        <div class="pres-id">
+          <div class="campo"><label for="pn${uid}">Presentación</label><input id="pn${uid}" data-f="nombre" value="${esc(p.nombre ?? '')}" placeholder="Galón, 1/4, Unidad" required></div>
+          <div class="campo"><label for="ps${uid}">SKU interno</label><input id="ps${uid}" data-f="sku" value="${esc(p.sku ?? '')}"></div>
+          <div class="campo"><label for="pc${uid}">Código de barras</label><input id="pc${uid}" data-f="codigo_barras" class="campo-codigo num" value="${esc(p.codigo_barras ?? '')}" placeholder="Escanee o escriba" autocomplete="off"></div>
+        </div>
+        <div class="pres-precio">
+          <div class="calculo">
+            <div class="campo"><label for="pk${uid}">Costo</label><input id="pk${uid}" data-f="costo" type="number" min="0" step="any" inputmode="numeric" class="num" value="${p.costo ?? ''}"></div>
+            <span class="op" aria-hidden="true">×</span>
+            ${campoPct(uid, p.costo, p.precio_venta, pctInicial)}
+            <span class="op" aria-hidden="true">=</span>
+            <div class="campo"><label for="pp${uid}">Precio de venta</label><input id="pp${uid}" data-f="precio_venta" type="number" min="0" step="any" inputmode="numeric" class="num" value="${p.precio_venta ?? ''}" required></div>
+          </div>
+          <div class="ganancia" data-ganancia aria-live="polite"></div>
+        </div>
+        <div class="pres-stock">
+          <div class="campo"><label for="pm${uid}">Stock mínimo</label><input id="pm${uid}" data-f="stock_minimo" type="number" min="0" step="any" class="num" value="${p.stock_minimo ?? 0}"></div>
+          ${nueva ? `<div class="campo"><label for="pi${uid}">Stock inicial</label><input id="pi${uid}" data-f="stock_inicial" type="number" min="0" step="any" class="num" placeholder="0"></div>` : '<span></span>'}
+          <small data-nota-stock></small>
+        </div>
+      </div>
+      <div class="partes">
+        <div class="partes-cab">
+          <div>
+            <h4>Venta por partes <span data-cuenta></span></h4>
+            <p data-partes-nota></p>
+          </div>
+          <div class="chips" data-chips hidden>
+            <span>Agregar</span>
+            ${FRACCIONES_RAPIDAS.map((f) => `<button type="button" class="chip" data-fr="${f}">+ ${f}</button>`).join('')}
+            <button type="button" class="chip" data-fr="">Otra…</button>
+          </div>
+          <button type="button" class="btn-texto" data-abrir-partes>Vender por partes</button>
+        </div>
+        <div class="partes-tabla" hidden>
+          <div class="parte-cols" aria-hidden="true"><span>Parte</span><span>Se vende como</span><span>Código de barras</span><span class="der">Costo</span><span>Ganancia</span><span>Precio</span><span>Ganas</span><span>Mín.</span><span>Activa</span><span></span></div>
+          <div class="partes-lista"></div>
+          <div class="partes-pie">
+            <span>El costo de cada parte sale del costo de la presentación completa.</span>
+            <button type="button" class="btn" data-usar-pct></button>
+          </div>
+        </div>
       </div>`;
-    div.querySelector('[data-partes]').addEventListener('click', () => {
-      const nueva = filaFraccion({}, div);
-      let ultima = div;
-      while (ultima.nextElementSibling?.dataset.madre === uid) ultima = ultima.nextElementSibling;
-      ultima.after(nueva);
-      nueva.querySelector('input').focus();
+    const div = grupo.querySelector('.pres');
+    if (p.id) div.dataset.id = p.id;
+    div.dataset.uid = uid;
+    const lista = grupo.querySelector('.partes-lista');
+    const chips = grupo.querySelector('[data-chips]');
+    const abrir = grupo.querySelector('[data-abrir-partes]');
+    const usar = grupo.querySelector('[data-usar-pct]');
+    const nombreDe = () => campoDe(div, 'nombre').value.trim();
+
+    // Títulos, cuenta de partes y textos de ayuda según lo que haya escrito
+    grupo.refrescar = () => {
+      const nombre = nombreDe(), n = lista.children.length, pct = campoDe(div, 'pct').value;
+      grupo.querySelector('[data-titulo]').textContent = nombre || 'Nueva presentación';
+      grupo.querySelector('[data-cuenta]').textContent = n ? `· ${n} ${n === 1 ? 'parte' : 'partes'}${nombre ? ` de ${nombre}` : ''}` : '';
+      grupo.querySelector('.partes-tabla').hidden = !n;
+      const conChips = n > 0 || grupo.dataset.chips === '1';
+      chips.hidden = !conChips;
+      abrir.hidden = conChips;
+      grupo.querySelector('[data-partes-nota]').textContent = n
+        ? `Cada venta descuenta del tarro abierto; si no alcanza, abre uno nuevo.${nueva ? '' : abierto ? ` Hay uno abierto: queda el ${abierto} %.` : ' No hay ninguno abierto.'}`
+        : conChips ? 'Elige la fracción que se vende.' : 'Si se vende por partes (1/36, 1/8, 1/4…), agrégalas aquí.';
+      grupo.querySelector('[data-nota-stock]').textContent = n
+        ? `Las compras y el stock se registran solo aquí${nombre ? `, en ${nombre}` : ''}. Las partes descuentan de este inventario.`
+        : '';
+      usar.hidden = pct === '';
+      usar.textContent = `Usar ${pct} % en todas las partes`;
+    };
+
+    abrir.addEventListener('click', () => {
+      grupo.dataset.chips = '1';
+      grupo.refrescar();
+      chips.querySelector('button').focus();
     });
-    // El costo de las partes sigue al de la presentación completa
+    chips.querySelectorAll('[data-fr]').forEach((b) => b.addEventListener('click', () => {
+      const v = leerFraccion(b.dataset.fr);
+      const ya = v && [...lista.children].find((f) => leerFraccion(campoDe(f, 'fraccion').value) === v);
+      if (ya) { campoDe(ya, 'pct').focus(); return aviso(`Ya hay una parte de ${b.dataset.fr}.`); }
+      const parte = filaFraccion(v ? { fraccion: v } : {}, div);
+      lista.appendChild(parte);
+      grupo.refrescar();
+      (v ? campoDe(parte, 'pct') : campoDe(parte, 'fraccion')).focus();
+    }));
+    // Pone el % de la presentación completa en todas sus partes
+    usar.addEventListener('click', () => {
+      const pct = campoDe(div, 'pct').value;
+      if (pct === '') return;
+      lista.querySelectorAll('.pres').forEach((f) => {
+        campoDe(f, 'pct').value = pct;
+        const costo = Number(costoDe(f));
+        if (costo > 0) campoDe(f, 'precio_venta').value = redondearPrecio(costo * (1 + Number(pct) / 100));
+        pintarGanancia(f);
+      });
+    });
+    // El costo y el nombre de las partes siguen a los de la presentación completa
     div.querySelector('[data-f="costo"]').addEventListener('input', () =>
       document.querySelectorAll(`.pres[data-madre="${uid}"]`).forEach((f) => f.actualizar?.()));
     div.querySelector('[data-f="nombre"]').addEventListener('input', () =>
       document.querySelectorAll(`.pres[data-madre="${uid}"]`).forEach((f) => f.actualizar?.()));
     pintarGanancia(div);
-    return div;
+    grupo.refrescar();
+    return grupo;
   }
 
   // Una parte de otra presentación: no tiene inventario propio, se vende del mismo tarro
@@ -845,28 +1094,46 @@
     div.dataset.madre = madreDiv?.dataset.uid ?? '';
     const uid = Math.random().toString(36).slice(2, 8);
     const nombreMadre = () => madreDiv?.querySelector('[data-f="nombre"]').value.trim() || 'la presentación';
+    // Una fila de la tabla de partes; en pantallas angostas se vuelve tarjeta y muestra las etiquetas .etq
+    const pctMadre = madreDiv && !p.id ? campoDe(madreDiv, 'pct').value : '';
     div.innerHTML = `
-      <div class="campo"><label for="pf${uid}">Fracción</label><input id="pf${uid}" data-f="fraccion" value="${esc(textoFraccion(p.fraccion) || '')}" placeholder="1/36" required></div>
-      <div class="campo"><label for="pn${uid}">Se vende como</label><input id="pn${uid}" data-f="nombre" value="${esc(p.nombre ?? '')}" placeholder="1/36 de Galón" required></div>
-      <div class="campo"><label for="ps${uid}">SKU interno</label><input id="ps${uid}" data-f="sku" value="${esc(p.sku ?? '')}"></div>
-      <div class="campo"><label for="pc${uid}">Código de barras</label><input id="pc${uid}" data-f="codigo_barras" value="${esc(p.codigo_barras ?? '')}" autocomplete="off"></div>
-      <div class="campo"><label>Costo</label><span class="dato" data-costo>—</span></div>
-      ${campoPct(uid, null, null)}
-      <div class="campo"><label for="pp${uid}">Precio venta</label><input id="pp${uid}" data-f="precio_venta" type="number" min="0" step="any" inputmode="numeric" class="num" value="${p.precio_venta ?? ''}" required></div>
-      <div class="campo"><label for="pm${uid}">Stock mín.</label><input id="pm${uid}" data-f="stock_minimo" type="number" min="0" step="1" class="num" value="${p.stock_minimo ?? 0}"></div>
-      <div class="campo"><label>Disponible</label><span class="dato">${p.id ? Number(p.stock ?? 0) : '—'}</span></div>
-      <label class="check"><input type="checkbox" data-f="activo" ${p.activo === false ? '' : 'checked'}> Activa</label>
-      <p class="ganancia" data-ganancia aria-live="polite"></p>
-      <div class="pie-pres">
-        <span>Parte de <span class="parte-de" data-madre-nombre></span>. No lleva inventario propio: cada venta descuenta del tarro abierto y, si no alcanza, abre uno nuevo.</span>
-        ${p.id ? '' : '<button type="button" class="btn-texto" data-quitar>Quitar</button>'}
-      </div>`;
+      <div class="c-frac">
+        <label class="etq" for="pf${uid}">Fracción</label>
+        <input id="pf${uid}" data-f="fraccion" value="${esc(textoFraccion(p.fraccion) || '')}" placeholder="1/36" required>
+        ${p.id ? `<small class="parte-disp num" title="Cuántas alcanzan con lo que hay">${Number(p.stock ?? 0)} disp.</small>` : ''}
+      </div>
+      <div class="c-nombre">
+        <label class="etq" for="pn${uid}">Se vende como</label>
+        <input id="pn${uid}" data-f="nombre" value="${esc(p.nombre ?? '')}" placeholder="1/36 de Galón" required>
+        <label class="etq" for="ps${uid}">SKU interno</label>
+        <input id="ps${uid}" data-f="sku" class="sku" value="${esc(p.sku ?? '')}" placeholder="SKU interno">
+      </div>
+      <div class="c-codigo">
+        <label class="etq" for="pc${uid}">Código de barras</label>
+        <input id="pc${uid}" data-f="codigo_barras" class="campo-codigo num" value="${esc(p.codigo_barras ?? '')}" placeholder="Escanear" autocomplete="off">
+      </div>
+      <div class="c-costo"><span class="etq">Costo</span><span class="dato num" data-costo>—</span></div>
+      <div class="c-pct">
+        <label class="etq" for="pg${uid}">Ganancia</label>
+        <div class="con-sufijo"><input id="pg${uid}" data-f="pct" type="number" step="any" inputmode="decimal" class="num" value="${esc(pctMadre)}" placeholder="30" title="Porcentaje sobre el costo"><span>%</span></div>
+      </div>
+      <div class="c-precio">
+        <label class="etq" for="pp${uid}">Precio de venta</label>
+        <input id="pp${uid}" data-f="precio_venta" type="number" min="0" step="any" inputmode="numeric" class="num" value="${p.precio_venta ?? ''}" required>
+      </div>
+      <div class="c-gana"><span class="etq">Ganas</span><div class="ganancia" data-ganancia aria-live="polite"></div></div>
+      <div class="c-min">
+        <label class="etq" for="pm${uid}">Stock mín.</label>
+        <input id="pm${uid}" data-f="stock_minimo" type="number" min="0" step="1" class="num" value="${p.stock_minimo ?? 0}">
+      </div>
+      <label class="c-activa"><input type="checkbox" data-f="activo" ${p.activo === false ? '' : 'checked'}><span class="etq">Activa</span></label>
+      <div class="c-quitar">${p.id ? '' : `<button type="button" class="btn-icono" data-quitar aria-label="Quitar parte" title="Quitar parte">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>`}</div>`;
     const autoNombre = !p.id;     // mientras no se escriba a mano, el nombre se arma solo
     const nombre = div.querySelector('[data-f="nombre"]');
     nombre.addEventListener('input', () => { div.dataset.manual = '1'; });
     div.actualizar = () => {
       const f = leerFraccion(div.querySelector('[data-f="fraccion"]').value);
-      div.querySelector('[data-madre-nombre]').textContent = nombreMadre();
       if (autoNombre && !div.dataset.manual) {
         const t = div.querySelector('[data-f="fraccion"]').value.trim();
         nombre.value = t ? `${t} de ${nombreMadre()}` : '';
@@ -877,7 +1144,11 @@
       alCambiarCosto(div);
     };
     div.querySelector('[data-f="fraccion"]').addEventListener('input', div.actualizar);
-    div.querySelector('[data-quitar]')?.addEventListener('click', () => div.remove());
+    div.querySelector('[data-quitar]')?.addEventListener('click', () => {
+      const grupo = div.closest('.grupo-pres');
+      div.remove();
+      grupo?.refrescar();
+    });
     queueMicrotask(div.actualizar);
     return div;
   }
@@ -912,8 +1183,10 @@
     const porId = Object.fromEntries(catalogo.map((c) => [c.id, c]));
     pres = pres.map((p) => ({ ...p, tiene_fracciones: porId[p.id]?.tiene_fracciones, abierto: porId[p.id]?.abierto }));
     pres.filter((p) => !p.madre_id).forEach((p) => {
-      $('#presLista').appendChild(filaPresentacion(p));
-      if (p.id) pres.filter((h) => h.madre_id === p.id).forEach((h) => $('#presLista').appendChild(filaPresentacion(h)));
+      const grupo = filaPresentacion(p);
+      $('#presLista').appendChild(grupo);
+      if (p.id) pres.filter((h) => h.madre_id === p.id).forEach((h) => grupo.querySelector('.partes-lista').appendChild(filaPresentacion(h)));
+      grupo.refrescar();
     });
 
     dlg.showModal();
@@ -926,7 +1199,7 @@
     const ultima = completas[completas.length - 1];
     const fila = filaPresentacion({}, null, ultima ? campoDe(ultima, 'pct').value : '');
     $('#presLista').appendChild(fila);
-    fila.querySelector('input').focus();
+    fila.querySelector('[data-f="nombre"]').focus();
   });
 
   // Costo, % y precio se calculan entre sí mientras se escribe
@@ -944,6 +1217,8 @@
       sincronizarPct(fila);
       pintarGanancia(fila);
     }
+    // Título, textos y el botón "Usar X % en todas" de la presentación completa
+    if (!fila.classList.contains('fraccion')) fila.closest('.grupo-pres')?.refrescar?.();
   });
   $('#cerrarProducto').addEventListener('click', () => dlg.close());
 
@@ -1406,28 +1681,380 @@
     $('#scanEntrada').focus();
   });
 
-  // Cámara
+  // Cámara (una sola a la vez: Entradas o Carga rápida)
+  let camaraEn = null;   // { caja, boton } de la cámara abierta
   async function detenerCamara() {
     if (!lectorCamara) return;
     try { await lectorCamara.stop(); lectorCamara.clear(); } catch (_) {}
     lectorCamara = null;
-    $('#lector').hidden = true;
-    $('#btnCamara').textContent = 'Usar cámara';
+    camaraEn.caja.hidden = true;
+    camaraEn.boton.textContent = 'Usar cámara';
+    camaraEn = null;
   }
 
-  $('#btnCamara').addEventListener('click', async () => {
+  // seguir = la cámara queda abierta para el siguiente producto (el mismo código se ignora 2,5 s)
+  async function alternarCamara(caja, boton, alLeer, seguir = false) {
     if (lectorCamara) { await detenerCamara(); return; }
-    $('#lector').hidden = false;
-    lectorCamara = new Html5Qrcode('lector');
+    caja.hidden = false;
+    camaraEn = { caja, boton };
+    lectorCamara = new Html5Qrcode(caja.id);
+    let ultimo = '', cuando = 0;
     try {
       await lectorCamara.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 280, height: 120 } },
-        async (codigo) => { await detenerCamara(); $('#scanEntrada').value = codigo; buscarEntrada(codigo); });
-      $('#btnCamara').textContent = 'Cerrar cámara';
+        async (codigo) => {
+          if (!seguir) { await detenerCamara(); alLeer(codigo); return; }
+          if (codigo === ultimo && Date.now() - cuando < 2500) return;
+          ultimo = codigo; cuando = Date.now();
+          alLeer(codigo);
+        });
+      boton.textContent = 'Cerrar cámara';
     } catch (_) {
       lectorCamara = null;
-      $('#lector').hidden = true;
+      camaraEn = null;
+      caja.hidden = true;
       aviso('No se pudo abrir la cámara. Revisa que el navegador tenga permiso para usarla.', 'error');
     }
+  }
+
+  $('#btnCamara').addEventListener('click', () =>
+    alternarCamara($('#lector'), $('#btnCamara'), (codigo) => { $('#scanEntrada').value = codigo; buscarEntrada(codigo); }));
+
+  // ---------- Carga rápida ----------
+  // Para el conteo inicial: se escanea cada producto del estante. Si existe, cada escaneo
+  // suma 1 a lo contado; si no, se crea ahí mismo con un formulario corto. Cada cantidad
+  // se guarda al momento como movimiento "inicial", así nada se pierde si se cierra el navegador.
+  let actual = null;        // presentación que se está contando (aún sin guardar)
+  let cargaCodigo = '';     // código del producto nuevo ('' = se le asigna uno interno)
+  let contados = [];        // lo guardado en esta sesión, el más reciente primero
+  let cola = Promise.resolve();
+  const ultimoCarga = { marca_id: null, categoria_id: null, presentacion: '' };
+
+  // Los escaneos se atienden en orden, uno a la vez, aunque el lector vaya más rápido que internet
+  function enCola(fn) {
+    cola = cola.then(fn).catch((err) => aviso('Error inesperado: ' + (err?.message ?? err), 'error'));
+    return cola;
+  }
+
+  function leerPct() {
+    try { return localStorage.getItem('rebas-ganancia') ?? ''; } catch (_) { return ''; }
+  }
+  function guardarPct(v) {
+    try { localStorage.setItem('rebas-ganancia', v); } catch (_) {}
+  }
+
+  const pareceCodigo = (t) => /^[\w.\-]+$/.test(t) && /\d/.test(t);
+
+  async function procesarCarga(texto) {
+    texto = texto.trim();
+    $('#opcionesCarga').hidden = true;
+    $('#noExisteCarga').hidden = true;
+    if (!texto) { await guardarActual(); return; }   // Enter con el campo vacío guarda lo contado
+
+    if (!$('#frmCargaNuevo').hidden) {
+      aviso('Termina de guardar el producto nuevo, o cancélalo, antes de escanear otro.', 'error');
+      return;
+    }
+
+    const exacto = catalogo.find((p) => p.codigo_barras === texto || p.sku === texto);
+    if (exacto) { await elegirCarga(exacto); return; }
+
+    const q = norm(texto);
+    const lista = catalogo.filter((p) => p.activo && norm(`${p.etiqueta} ${p.codigo_color ?? ''}`).includes(q)).slice(0, 8);
+    if (lista.length) {
+      $('#opcionesCarga').innerHTML = lista.map((p, i) => `
+        <li><button type="button" data-i="${i}">
+          <span>${esc(p.etiqueta)}<small>${esc(p.codigo_barras || p.sku || 'Sin código')}</small></span>
+          <span class="num">Stock ${Number(p.stock)}</span>
+        </button></li>`).join('');
+      $('#opcionesCarga').hidden = false;
+      $('#opcionesCarga').querySelectorAll('button').forEach((b) =>
+        b.addEventListener('click', () => {
+          $('#opcionesCarga').hidden = true;
+          enCola(() => elegirCarga(lista[+b.dataset.i]));
+        }));
+      return;
+    }
+
+    if (!(await guardarActual())) return;
+    if (pareceCodigo(texto)) { abrirNuevoCarga(texto, ''); return; }
+    $('#noExisteCargaTexto').textContent = `No hay ningún producto con “${texto}”.`;
+    $('#crearCarga').onclick = () => abrirNuevoCarga('', texto);
+    $('#noExisteCarga').hidden = false;
+  }
+
+  async function elegirCarga(p) {
+    if (p.madre_id) {
+      const m = catalogo.find((x) => x.id === p.madre_id);
+      if (m) {
+        aviso(`${p.presentacion} se vende por partes de ${m.presentacion}: se cuenta en ${m.presentacion}.`);
+        p = m;
+      }
+    }
+    if (actual?.id === p.id) {
+      $('#caCant').value = Number($('#caCant').value || 0) + 1;
+      return;
+    }
+    if (!(await guardarActual())) return;
+    actual = p;
+    $('#caNombre').textContent = p.etiqueta;
+    $('#caDetalle').textContent = [p.codigo_barras || p.sku || 'Sin código', `Precio ${cop.format(p.precio_venta)}`].join(' · ');
+    $('#caCant').value = 1;
+    const ayuda = $('#caAyuda');
+    ayuda.className = '';
+    if (!p.activo) {
+      ayuda.textContent = 'Este producto está inactivo. Actívalo en el catálogo si lo vas a vender.';
+      ayuda.className = 'aviso-stock';
+    } else if (Number(p.stock) > 0) {
+      ayuda.textContent = `Ya tiene ${Number(p.stock)} en el sistema: lo que cuentes se suma.`;
+      ayuda.className = 'aviso-stock';
+    } else ayuda.textContent = 'Escanéalo otra vez para sumar 1, o escribe el total.';
+    $('#cargaActual').hidden = false;
+  }
+
+  // Guarda lo que se está contando. Devuelve false si no se pudo (queda en pantalla para reintentar).
+  async function guardarActual() {
+    if (!actual) return true;
+    const p = actual;
+    const cantidad = Number($('#caCant').value || 0);
+    if (cantidad < 0) { aviso('La cantidad no puede ser negativa.', 'error'); return false; }
+    actual = null;
+    $('#cargaActual').hidden = true;
+    if (cantidad === 0) return true;
+
+    const { error } = await db.rpc('registrar_movimiento', {
+      p_presentacion_id: p.id, p_tipo: 'inicial', p_cantidad: cantidad,
+      p_costo_unitario: null, p_proveedor_id: null, p_nota: 'Carga rápida'
+    });
+    if (error) {
+      actual = p;
+      $('#cargaActual').hidden = false;
+      aviso(`No se guardó ${p.etiqueta}: ${error.message}`, 'error');
+      return false;
+    }
+    p.stock = Number(p.stock) + cantidad;
+    agregarContado(p, cantidad, !p.codigo_barras);
+    cargarCatalogo();   // refresca stock (y el de sus partes) sin detener el conteo
+    return true;
+  }
+
+  function agregarContado(p, cantidad, sinCodigo) {
+    contados.unshift({ id: p.id, etiqueta: p.etiqueta, cantidad, costo: Number(p.costo) || 0, sinCodigo });
+    pintarCarga();
+  }
+
+  function pintarCarga() {
+    const stockDe = Object.fromEntries(catalogo.map((c) => [c.id, c.stock]));
+    if (!contados.length) {
+      $('#tbCarga').innerHTML = '<tr><td colspan="4" class="vacio">Todavía no has contado nada en esta sesión.</td></tr>';
+      $('#cargaTotales').textContent = '';
+      return;
+    }
+    $('#tbCarga').innerHTML = contados.map((c, i) => `
+      <tr>
+        <td>${esc(c.etiqueta)}</td>
+        <td class="der num">${c.cantidad}</td>
+        <td class="der num">${stockDe[c.id] != null ? Number(stockDe[c.id]) : ''}</td>
+        <td><div class="acciones-fila">
+          ${c.sinCodigo ? `<button type="button" class="btn-texto" data-et="${c.id}">Etiquetas</button>` : ''}
+          <button type="button" class="btn-texto" data-deshacer="${i}">Deshacer</button>
+        </div></td>
+      </tr>`).join('');
+    const productos = new Set(contados.map((c) => c.id)).size;
+    const unidades = Math.round(contados.reduce((s, c) => s + c.cantidad, 0) * 100) / 100;
+    const valor = contados.reduce((s, c) => s + c.cantidad * c.costo, 0);
+    $('#cargaTotales').textContent = `${productos} ${productos === 1 ? 'producto' : 'productos'} · ${unidades} unidades · ${cop.format(valor)} a costo`;
+  }
+
+  $('#tbCarga').addEventListener('click', async (e) => {
+    const et = e.target.closest('[data-et]');
+    // Los productos sin código de fábrica llevan el interno: se imprime para pegarlo
+    if (et) return abrirEtiquetas(+et.dataset.et);
+    const b = e.target.closest('[data-deshacer]');
+    if (!b) return;
+    const c = contados[+b.dataset.deshacer];
+    if (!confirm(`¿Deshacer ${c.cantidad} de ${c.etiqueta}? Queda registrado como ajuste.`)) return;
+    b.disabled = true;
+    const { error } = await db.rpc('registrar_movimiento', {
+      p_presentacion_id: c.id, p_tipo: 'ajuste', p_cantidad: -c.cantidad,
+      p_costo_unitario: null, p_proveedor_id: null, p_nota: 'Corrección de carga rápida'
+    });
+    if (error) { b.disabled = false; return aviso('No se pudo deshacer: ' + error.message, 'error'); }
+    contados.splice(contados.indexOf(c), 1);
+    aviso(`Se quitaron ${c.cantidad} de ${c.etiqueta}.`);
+    await Promise.all([cargarCatalogo(), cargarMovimientos()]);
+    pintarCarga();
+  });
+
+  $('#scanCarga').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const t = $('#scanCarga').value;
+    $('#scanCarga').value = '';
+    enCola(() => procesarCarga(t));
+  });
+
+  $('#btnCamaraCarga').addEventListener('click', () =>
+    alternarCamara($('#lectorCarga'), $('#btnCamaraCarga'), (codigo) => enCola(() => procesarCarga(codigo)), true));
+
+  $('#caCant').addEventListener('focus', () => $('#caCant').select());
+  $('#caCant').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    enCola(guardarActual).then(() => $('#scanCarga').focus());
+  });
+  $('#caGuardar').addEventListener('click', () => enCola(guardarActual).then(() => $('#scanCarga').focus()));
+  $('#caDescartar').addEventListener('click', () => {
+    actual = null;
+    $('#cargaActual').hidden = true;
+    $('#scanCarga').focus();
+  });
+
+  $('#cargaSinCodigo').addEventListener('click', () => enCola(async () => {
+    if (!$('#frmCargaNuevo').hidden) return $('#cnNombre').focus();
+    if (await guardarActual()) abrirNuevoCarga('', '');
+  }));
+
+  // Formulario corto de producto nuevo: recuerda marca, categoría, presentación y % del anterior
+  function abrirNuevoCarga(codigo, nombre) {
+    detenerCamara();
+    cargaCodigo = codigo;
+    $('#noExisteCarga').hidden = true;
+    const f = $('#frmCargaNuevo');
+    f.reset();
+    $('#cnCodigo').textContent = codigo
+      ? `Código: ${codigo}`
+      : 'Sin código de fábrica: se le asigna uno interno y luego imprimes la etiqueta.';
+    $('#cnNombre').value = nombre;
+    $('#cnMarca').innerHTML = opciones(marcas, 'Sin marca', ultimoCarga.marca_id);
+    $('#cnCategoria').innerHTML = opciones(categorias, 'Sin categoría', ultimoCarga.categoria_id);
+    $('#cnPres').value = ultimoCarga.presentacion;
+    $('#cnPct').value = leerPct();
+    $('#cnCant').value = 1;
+    pintarGanancia(f);
+    f.hidden = false;
+    $('#cnNombre').focus();
+  }
+
+  function cerrarNuevoCarga() {
+    $('#frmCargaNuevo').hidden = true;
+    cargaCodigo = '';
+    $('#scanCarga').focus();
+  }
+
+  // Aquí el % manda: al cambiar costo o %, el precio se recalcula; si se escribe el precio, cambia el %
+  $('#frmCargaNuevo').addEventListener('input', (e) => {
+    const f = $('#frmCargaNuevo');
+    const campo = e.target.dataset.f;
+    if (!campo) return;
+    const costo = Number($('#cnCosto').value), pct = $('#cnPct').value;
+    if (campo === 'costo' || campo === 'pct') {
+      if (costo > 0 && pct !== '') $('#cnPrecio').value = redondearPrecio(costo * (1 + Number(pct) / 100));
+    } else sincronizarPct(f);
+    pintarGanancia(f);
+  });
+
+  // El lector y el Enter no envían el formulario: pasan al campo siguiente; en la cantidad, guarda
+  $('#frmCargaNuevo').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || !e.target.matches('input, select')) return;
+    e.preventDefault();
+    if (e.target.id === 'cnCant') return $('#frmCargaNuevo').requestSubmit();
+    const campos = [...$('#frmCargaNuevo').querySelectorAll('input, select')];
+    campos[campos.indexOf(e.target) + 1]?.focus();
+  });
+
+  $('#cnCancelar').addEventListener('click', cerrarNuevoCarga);
+  $('#cnNuevaMarca').addEventListener('click', async () => {
+    const id = await crearMaestro('marcas', 'marca');
+    if (id) $('#cnMarca').innerHTML = opciones(marcas, 'Sin marca', id);
+  });
+  $('#cnNuevaCategoria').addEventListener('click', async () => {
+    const id = await crearMaestro('categorias', 'categoría');
+    if (id) $('#cnCategoria').innerHTML = opciones(categorias, 'Sin categoría', id);
+  });
+
+  $('#frmCargaNuevo').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = $('#cnGuardar');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    try {
+      await enCola(guardarNuevoCarga);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Guardar producto';
+    }
+  });
+
+  async function guardarNuevoCarga() {
+    const nombre = $('#cnNombre').value.trim();
+    const presentacion = $('#cnPres').value.trim();
+    const costo = Number($('#cnCosto').value || 0);
+    const precio = Number($('#cnPrecio').value || 0);
+    const cantidad = Number($('#cnCant').value || 0);
+    const marca_id = numOrNull($('#cnMarca').value);
+    const categoria_id = numOrNull($('#cnCategoria').value);
+    if (!nombre) return aviso('Escribe el nombre del producto.', 'error');
+    if (!presentacion) return aviso('Escribe la presentación (Galón, 1/4, Unidad…).', 'error');
+    if (!(precio > 0)) return aviso('Escribe el precio de venta, o el costo y el % de ganancia.', 'error');
+    if (cantidad < 0) return aviso('La cantidad no puede ser negativa.', 'error');
+    if (cargaCodigo && catalogo.some((p) => p.codigo_barras === cargaCodigo))
+      return aviso('Ese código ya está en otro producto.', 'error');
+
+    // Si ya hay un producto con el mismo nombre y marca, se le agrega esta presentación
+    let consulta = db.from('productos').select('id').ilike('nombre', nombre.replace(/[\\%_]/g, '\\$&'));
+    consulta = marca_id ? consulta.eq('marca_id', marca_id) : consulta.is('marca_id', null);
+    const { data: existentes, error: e0 } = await consulta.limit(1);
+    if (e0) return aviso(mensajeError(e0), 'error');
+
+    let productoId = existentes[0]?.id, creado = false;
+    if (!productoId) {
+      const { data, error } = await db.from('productos').insert({
+        nombre, marca_id, categoria_id, codigo_color: textoOrNull($('#cnColor').value), activo: true
+      }).select('id').single();
+      if (error) return aviso(mensajeError(error), 'error');
+      productoId = data.id;
+      creado = true;
+    }
+
+    const { data: pres, error: e1 } = await db.from('presentaciones').insert({
+      producto_id: productoId, nombre: presentacion, codigo_barras: cargaCodigo || null,
+      costo, precio_venta: precio, stock_minimo: 0, activo: true
+    }).select('id').single();
+    if (e1) {
+      if (creado) await db.from('productos').delete().eq('id', productoId);   // no dejar el producto sin presentación
+      return aviso(mensajeError(e1), 'error');
+    }
+
+    // Sin código de fábrica: el interno (EAN-13 que empieza por 20), para la etiqueta
+    if (!cargaCodigo && window.codigoInterno) {
+      const { error } = await db.from('presentaciones').update({ codigo_barras: codigoInterno(pres.id) }).eq('id', pres.id);
+      if (error) aviso('El producto se guardó sin código interno. Créalo desde el catálogo con “Crear código”.', 'error');
+    }
+
+    if (cantidad > 0) {
+      const { error } = await db.rpc('registrar_movimiento', {
+        p_presentacion_id: pres.id, p_tipo: 'inicial', p_cantidad: cantidad,
+        p_costo_unitario: costo || null, p_proveedor_id: null, p_nota: 'Carga rápida'
+      });
+      if (error) aviso(`El producto se guardó, pero no la cantidad: ${error.message}. Escanéalo otra vez para contarlo.`, 'error');
+      else aviso(`${nombre} guardado con ${cantidad}.`);
+    } else aviso(`${nombre} guardado.`);
+
+    ultimoCarga.marca_id = marca_id;
+    ultimoCarga.categoria_id = categoria_id;
+    ultimoCarga.presentacion = presentacion;
+    if ($('#cnPct').value !== '') guardarPct($('#cnPct').value);
+
+    const sinCodigo = !cargaCodigo;
+    cerrarNuevoCarga();
+    await cargarCatalogo();
+    const p = catalogo.find((x) => x.id === pres.id);
+    if (p && cantidad > 0) agregarContado(p, cantidad, sinCodigo);
+  }
+
+  // Si se cierra la página con un conteo sin guardar, el navegador avisa
+  window.addEventListener('beforeunload', (e) => {
+    if (actual || !$('#frmCargaNuevo').hidden) { e.preventDefault(); e.returnValue = ''; }
   });
 
   // ---------- Clientes ----------
@@ -1499,6 +2126,7 @@
 
   // ---------- Inicio ----------
   aplicarTipo();
+  pintarCarga();
   db.auth.onAuthStateChange((evento, s) => {
     if (evento === 'TOKEN_REFRESHED') return;
     setTimeout(() => mostrarSesion(s), 0);
