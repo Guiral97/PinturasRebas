@@ -10,21 +10,21 @@
 <meta name="theme-color" content="#ffffff">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <style>
   :root {
     --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
     --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
-    --cinta: #E8D08A; --alerta: #A1281F; --ok: #2F6B3A; --radio: 6px;
+    --cinta: #E8D08A; --alerta: #A1281F; --ok: #2F6B3A; --aviso: #8A6410; --mora-media: #A8521A; --radio: 6px;
     font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
       --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
-      --cinta: #C4AB68; --alerta: #E57B72; --ok: #7FC08A;
+      --cinta: #C4AB68; --alerta: #E57B72; --ok: #7FC08A; --aviso: #E3B94F; --mora-media: #E08A4F;
     }
   }
   * { box-sizing: border-box; }
@@ -33,87 +33,121 @@
   .num { font-variant-numeric: tabular-nums; }
   button { font: inherit; cursor: pointer; }
   :focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
-  input, select { font: inherit; color: var(--tinta); background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: .5rem .65rem; width: 100%; }
-  label, legend { font-weight: 500; }
+  input, select { font: inherit; color: var(--tinta); background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: .5rem .65rem; width: 100%; min-height: 2.75rem; }
+  label, legend { font-weight: 600; }
   .campo { display: grid; gap: .3rem; }
-  .btn { border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .5rem .9rem; border-radius: var(--radio); white-space: nowrap; text-decoration: none; display: inline-block; }
-  .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.75rem;
+    border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .45rem .9rem;
+    border-radius: 8px; white-space: nowrap; text-decoration: none; font-weight: 600;
+  }
+  .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
   .btn-primario:disabled { opacity: .45; cursor: not-allowed; }
-  .btn-texto { border: 0; background: none; color: var(--acento); padding: .2rem .3rem; font-weight: 600; }
-  h2, h3 { font-family: "Barlow Condensed", sans-serif; font-weight: 600; margin: 0; }
-  h2 { font-size: 1.6rem; } h3 { font-size: 1.2rem; }
+  .btn-texto { border: 0; background: none; color: var(--acento); padding: .2rem .3rem; font-weight: 600; min-height: 2.75rem; }
+  .btn-wa { color: var(--ok); }
+  h1, h2, h3 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; margin: 0; }
+  h2 { font-size: 1.6rem; } h3 { font-size: 1.25rem; }
+  .rotulo { font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); }
+
+  /* Estados (iguales en toda la app) */
+  .estado { display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; font-weight: 700; line-height: 1.4; padding: .05rem .55rem; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+  .estado-pendiente { color: var(--aviso); border-color: color-mix(in srgb, var(--aviso) 40%, transparent); background: color-mix(in srgb, var(--aviso) 14%, transparent); }
+  .estado-confirmado { color: var(--acento); border-color: color-mix(in srgb, var(--acento) 40%, transparent); background: color-mix(in srgb, var(--acento) 14%, transparent); }
+  .estado-ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+  .estado-mal { color: var(--alerta); border-color: color-mix(in srgb, var(--alerta) 40%, transparent); background: color-mix(in srgb, var(--alerta) 14%, transparent); }
+  .estado-neutro { color: var(--suave); border-color: var(--linea); background: color-mix(in srgb, var(--suave) 12%, transparent); }
+  .estado-media { color: var(--mora-media); border-color: color-mix(in srgb, var(--mora-media) 40%, transparent); background: color-mix(in srgb, var(--mora-media) 14%, transparent); }
 
   .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
   .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; margin-right: auto; }
   #usuario { color: var(--suave); }
-  .nav { display: flex; gap: .25rem; }
-  .nav a { color: var(--tinta); text-decoration: none; padding: .4rem .7rem; border-radius: var(--radio); font-weight: 500; }
-  .nav a[aria-current="page"] { background: var(--fondo); box-shadow: inset 0 -3px 0 var(--acento); }
 
   #login { max-width: 22rem; margin: 12vh auto 0; padding: 1.5rem; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: 1rem; }
-  #login h1 { font-family: "Barlow Condensed", sans-serif; font-size: 1.8rem; margin: 0; }
+  #login h1 { font-size: 1.8rem; }
   #loginError { color: var(--alerta); margin: 0; min-height: 1.4em; }
 
-  main { max-width: 80rem; margin: 0 auto; padding: 1.25rem; }
+  main { max-width: 82.5rem; margin: 0 auto; padding: 1.4rem 1.5rem 3rem; display: grid; gap: 1.15rem; }
+  .titulo-pantalla { font-size: 2.1rem; }
 
-  /* Resumen: una línea de totales, sin tarjetas */
-  .resumen { display: flex; flex-wrap: wrap; gap: .5rem 2.5rem; align-items: baseline; padding-bottom: 1rem; margin-bottom: 1.25rem; border-bottom: 2px solid var(--tinta); }
-  .resumen div { display: grid; }
-  .resumen span { color: var(--suave); }
-  .resumen strong { font-family: "Barlow Condensed", sans-serif; font-size: 2.3rem; line-height: 1.05; font-weight: 700; }
-  .resumen .vencido strong { color: var(--alerta); }
+  /* Resumen y antigüedad */
+  .resumen {
+    background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; padding: 1.1rem 1.25rem;
+    display: flex; flex-wrap: wrap; gap: 1.1rem 2.5rem; align-items: center;
+  }
+  .res-total { display: grid; }
+  .res-total > span { color: var(--suave); }
+  .res-total strong { font-family: "Barlow Condensed", sans-serif; font-size: 2.5rem; line-height: 1.1; font-weight: 700; }
+  .res-total small { color: var(--suave); font-size: .875rem; }
+  .res-total .res-mora { color: var(--alerta); font-weight: 600; }
+  .res-tramos { flex: 1 1 32rem; display: grid; gap: .65rem; min-width: 0; }
+  .barra-tramos { display: flex; gap: 2px; height: .9rem; border-radius: 4px; overflow: hidden; background: var(--fondo); }
+  .barra-tramos span { min-width: 0; }
+  .tramos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; }
+  .tramos button {
+    text-align: left; color: var(--tinta); background: none; border: 1px solid var(--linea); border-radius: 8px;
+    padding: .45rem .65rem; min-height: 2.75rem; display: grid;
+  }
+  .tramos button span { font-size: .875rem; color: var(--suave); white-space: nowrap; }
+  .tramos button i { display: inline-block; width: .65rem; height: .65rem; border-radius: 2px; margin-right: .3rem; vertical-align: baseline; }
+  .tramos button strong { font-variant-numeric: tabular-nums; }
+  .tramos button[aria-pressed="true"] { border-color: var(--acento); background: color-mix(in srgb, var(--acento) 14%, transparent); }
+  .t-0 { background: var(--acento); } .t-1 { background: var(--aviso); } .t-2 { background: var(--mora-media); } .t-3 { background: var(--alerta); }
+  .c-0 { color: var(--suave); } .c-1 { color: var(--aviso); } .c-2 { color: var(--mora-media); } .c-3 { color: var(--alerta); }
 
-  .cuerpo { display: grid; grid-template-columns: 24rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) 28rem; gap: 1.25rem; align-items: start; }
 
   /* Lista de clientes */
-  .filtros { display: grid; gap: .6rem; margin-bottom: .75rem; }
-  .check { display: inline-flex; align-items: center; gap: .4rem; font-weight: 500; }
-  .check input { width: auto; }
-  #listaClientes { list-style: none; margin: 0; padding: 0; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); }
-  #listaClientes button {
-    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .15rem 1rem; width: 100%;
-    text-align: left; background: none; border: 0; border-bottom: 1px solid var(--linea);
-    color: var(--tinta); padding: .75rem .9rem; border-left: 4px solid transparent;
+  .lista { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; overflow: hidden; }
+  .lista-cab { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; padding: .85rem 1rem; border-bottom: 1px solid var(--linea); }
+  .lista-cab h2 { font-size: 1.4rem; margin-right: auto; }
+  .lista-cab input { flex: 1 1 14rem; max-width: 20rem; }
+  .lista-cab select { width: auto; }
+  #listaClientes { list-style: none; margin: 0; padding: 0; }
+  #listaClientes > li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem 1rem; align-items: center; padding: .55rem 1rem; border-bottom: 1px solid var(--linea); }
+  #listaClientes > li:last-child { border-bottom: 0; }
+  #listaClientes > li.activo { background: color-mix(in srgb, var(--acento) 10%, transparent); }
+  #listaClientes .elegir {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .1rem 1rem; align-items: center;
+    width: 100%; text-align: left; background: none; border: 0; color: var(--tinta); padding: .3rem 0; min-height: 2.75rem;
   }
-  #listaClientes li:last-child button { border-bottom: 0; }
-  #listaClientes button[aria-current="true"] { border-left-color: var(--acento); background: var(--fondo); }
   #listaClientes .nom { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #listaClientes .sal { font-weight: 600; text-align: right; }
-  #listaClientes .det { color: var(--suave); font-size: .875rem; }
-  #listaClientes .ven { color: var(--alerta); font-size: .875rem; font-weight: 600; text-align: right; }
-  .vacio { color: var(--suave); padding: 1.25rem .9rem; margin: 0; }
+  #listaClientes .sal { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+  #listaClientes .det { font-size: .875rem; font-weight: 600; grid-column: 1 / -1; }
+  #listaClientes .acciones { display: flex; gap: .4rem; }
+  .solo-celular { display: none; }
+  .vacio { color: var(--suave); padding: 1.25rem 1rem; margin: 0; }
 
-  /* Detalle */
-  .detalle { background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: 1.25rem; display: grid; gap: 1.5rem; }
-  #detContenido { display: grid; gap: 1.5rem; }
-  .det-cab { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; justify-content: space-between; align-items: start; }
-  .det-cab p { margin: .2rem 0 0; color: var(--suave); }
-  .tabla-caja { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; min-width: 34rem; }
-  th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--linea); }
-  th { font-weight: 600; color: var(--suave); font-size: .9rem; }
-  td.der, th.der { text-align: right; }
-  .vencida { color: var(--alerta); font-weight: 600; }
+  /* Panel del cliente y abono */
+  .detalle { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
+  #detContenido > * { padding: 1rem 1.15rem; border-bottom: 1px solid var(--linea); }
+  #detContenido > *:last-child { border-bottom: 0; }
+  .det-cab { display: grid; gap: .5rem; }
+  .det-cab p { margin: 0; color: var(--suave); font-size: .9rem; }
+  .det-cab .debe { color: var(--tinta); font-weight: 600; }
+  .det-cab .btn { justify-self: start; }
+  .facturas, .abonos { list-style: none; margin: .4rem 0 0; padding: 0; }
+  .facturas li, .abonos li { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .6rem; padding: .5rem 0; border-bottom: 1px solid var(--linea); }
+  .facturas li:last-child, .abonos li:last-child { border-bottom: 0; }
+  .facturas .f-info, .abonos .f-info { flex: 1 1 10rem; min-width: 0; }
+  .facturas small, .abonos small { display: block; color: var(--suave); font-size: .85rem; }
+  .facturas strong, .abonos strong { font-variant-numeric: tabular-nums; }
 
-  .abono { display: grid; gap: .9rem; padding: 1rem; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--fondo); }
-  .fila-abono { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
-  .con-boton { display: flex; gap: .4rem; }
+  .abono { display: grid; gap: 1rem; }
+  .valor-abono { display: flex; gap: .5rem; }
+  .valor-abono input { flex: 1; min-width: 0; font-size: 1.4rem; font-weight: 700; min-height: 3rem; }
+  .ayuda { color: var(--suave); font-size: .875rem; margin: 0; }
   .segmentos { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
-  .segmentos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
+  .segmentos button { min-height: 2.75rem; }
+  .segmentos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
+  #btnAbono { font-size: 1.1rem; min-height: 3.25rem; width: 100%; white-space: normal; }
   fieldset { border: 0; margin: 0; padding: 0; }
-  legend { padding: 0; margin-bottom: .3rem; }
+  legend { padding: 0; margin-bottom: .35rem; }
 
-  #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
+  #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: 8px; z-index: 50; }
   #aviso.error { background: var(--alerta); color: #fff; }
 
-  @media (max-width: 900px) {
+  @media (max-width: 1000px) {
     .cuerpo { grid-template-columns: 1fr; }
-    .fila-abono { grid-template-columns: 1fr; }
-  }
-  @media (max-width: 560px) {
-    #usuario { display: none; }
-    main { padding: 1rem; }
-    .resumen strong { font-size: 1.9rem; }
   }
 
   /* ===================== Responsivo (común a todas las pantallas) ===================== */
@@ -125,13 +159,8 @@
   #detContenido > *, .detalle > *, .panel > *, .bloque > *, #vista > *, #editor > *, .abono > *,
   dialog form > *, .dlg-cuerpo > *, .contenido > * { min-width: 0; }
   .segmentos button, .metodos button { white-space: normal; line-height: 1.2; }
-  .tabla-caja { position: relative; max-width: 100%; -webkit-overflow-scrolling: touch; }
-  td.num, th, td.der { white-space: nowrap; }
-  /* Barra superior: si no cabe en una línea, el menú baja a su propia fila */
   @media (max-width: 1180px) {
     .barra { flex-wrap: wrap; row-gap: .55rem; }
-    .nav { order: 3; width: 100%; flex-wrap: wrap; overflow: visible; }
-    .nav a { white-space: nowrap; }
   }
   /* Celular */
   @media (max-width: 700px) {
@@ -139,30 +168,35 @@
     .tienda { font-size: 1.25rem; }
     #usuario { display: none; }
     #salir { padding: .4rem .7rem; font-size: .9rem; }
-    .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; }
-    .nav a { text-align: center; padding: .5rem .2rem; background: var(--fondo); font-size: .95rem; }
-    .nav a[aria-current="page"] { background: var(--acento); color: var(--acento-tinta); box-shadow: none; }
-    .nav a:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
-    main { padding: 1rem; }
-    dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
-    .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
+    main { padding: 1rem; gap: .9rem; }
+    .titulo-pantalla { font-size: 1.8rem; }
     #aviso { left: .75rem; right: .75rem; transform: none; max-width: none; bottom: .75rem; }
     #login { margin: 6vh 1rem 0; }
-  }
-  @media (max-width: 420px) {
-    .segmentos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .resumen { gap: .4rem 1.5rem; }
-    .resumen strong { font-size: 1.65rem; }
+
+    /* Resumen compacto y tramos como píldoras desplazables */
+    .resumen { padding: .9rem; gap: .7rem; }
+    .res-total strong { font-size: 2.1rem; }
+    .res-tramos { flex-basis: 100%; }
+    .tramos { display: flex; overflow-x: auto; gap: .4rem; padding-bottom: .15rem; -webkit-overflow-scrolling: touch; }
+    .tramos button { flex: none; border-radius: 999px; display: flex; align-items: center; gap: .4rem; padding: .3rem .85rem; min-height: 2.5rem; }
+    .tramos button strong { font-size: .9rem; }
+
+    /* Clientes como tarjetas con dos botones */
+    .lista { background: none; border: 0; overflow: visible; }
+    .lista-cab { padding: 0 0 .6rem; border: 0; }
+    .lista-cab input { max-width: none; }
+    #listaClientes { display: grid; gap: .6rem; }
+    #listaClientes > li { grid-template-columns: 1fr; padding: .7rem .8rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
+    #listaClientes > li:last-child { border-bottom: 1px solid var(--linea); }
+    #listaClientes .acciones { display: grid; grid-template-columns: 1fr 1fr; }
+    #listaClientes .acciones > :only-child { grid-column: 1 / -1; }
+    .solo-celular { display: inline; }
+    .solo-escritorio { display: none; }
+
+    #detContenido > * { padding: .9rem; }
+    .segmentos { grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); }
   }
 
-  /* Cartera */
-  @media (max-width: 700px) {
-    .detalle { padding: 1rem; }
-    .det-cab #btnWhatsapp { width: 100%; text-align: center; }
-    .con-boton { flex-wrap: wrap; }
-    .con-boton input { flex: 1 1 10rem; }
-    .segmentos { grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); }
-  }
   /* Logo junto al nombre */
   .marca { display: flex; align-items: center; gap: .55rem; margin-right: auto; color: inherit; text-decoration: none; min-width: 0; }
   .marca .tienda { margin-right: 0; }
@@ -174,15 +208,7 @@
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" aria-label="Secciones">
-    <a href="index.html">Caja</a>
-    <a href="cotizaciones.html">Cotizaciones</a>
-    <a href="pedidos.html">Pedidos</a>
-    <a href="inventario.html">Inventario</a>
-    <a href="cartera.html" aria-current="page">Cartera</a>
-    <a href="gastos.html">Gastos</a>
-    <a href="tablero.html">Tablero</a>
-  </nav>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=1"></script>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -196,17 +222,30 @@
 </form>
 
 <main id="app" hidden>
-  <section class="resumen num" aria-label="Resumen de cartera">
-    <div><span>Por cobrar</span><strong id="totPorCobrar">$ 0</strong></div>
-    <div class="vencido"><span>Vencido</span><strong id="totVencido">$ 0</strong></div>
-    <div><span>Clientes con saldo</span><strong id="totClientes">0</strong></div>
+  <h1 class="titulo-pantalla">Cartera</h1>
+
+  <section class="resumen" aria-label="Resumen de cartera">
+    <div class="res-total">
+      <span>Por cobrar</span>
+      <strong id="totPorCobrar" class="num">$ 0</strong>
+      <small class="num"><span id="totClientes">0</span> · <span id="totFacturas">0 facturas</span></small>
+      <small class="res-mora num">En mora <span id="totVencido">$ 0</span></small>
+    </div>
+    <div class="res-tramos">
+      <div class="barra-tramos" id="barraTramos" role="img" aria-label="Sin saldos pendientes"></div>
+      <div class="tramos" id="tramos" role="group" aria-label="Filtrar clientes por antigüedad de la deuda"></div>
+    </div>
   </section>
 
   <div class="cuerpo">
-    <section aria-label="Clientes con saldo">
-      <div class="filtros">
+    <section class="lista" aria-labelledby="tituloClientes">
+      <div class="lista-cab">
+        <h2 id="tituloClientes">Clientes con saldo</h2>
         <input type="search" id="buscar" placeholder="Buscar cliente" aria-label="Buscar cliente">
-        <label class="check"><input type="checkbox" id="soloVencidos"> Solo con saldo vencido</label>
+        <select id="orden" aria-label="Ordenar">
+          <option value="mora">Más atrasados primero</option>
+          <option value="saldo">Mayor saldo primero</option>
+        </select>
       </div>
       <ul id="listaClientes"></ul>
     </section>
@@ -215,37 +254,29 @@
       <p class="vacio" id="detVacio">Elige un cliente para ver sus facturas pendientes y registrar abonos.</p>
       <div id="detContenido" hidden>
         <div class="det-cab">
-          <div>
-            <h2 id="detNombre"></h2>
-            <p id="detDatos" class="num"></p>
-          </div>
-          <a class="btn" id="btnWhatsapp" target="_blank" rel="noopener">Enviar recordatorio por WhatsApp</a>
+          <h2 id="detNombre"></h2>
+          <p id="detDatos" class="num"></p>
+          <a class="btn btn-wa" id="btnWhatsapp" target="_blank" rel="noopener">Enviar recordatorio por WhatsApp</a>
         </div>
 
         <div>
           <h3>Facturas pendientes</h3>
-          <div class="tabla-caja">
-            <table>
-              <thead><tr><th>Venta</th><th>Fecha</th><th>Vence</th><th class="der">Total</th><th class="der">Abonado</th><th class="der">Saldo</th><th></th></tr></thead>
-              <tbody id="tbFacturas"></tbody>
-            </table>
-          </div>
+          <ul class="facturas" id="tbFacturas"></ul>
         </div>
 
         <form class="abono" id="frmAbono">
           <h3>Registrar abono</h3>
-          <div class="fila-abono">
-            <div class="campo">
-              <label for="abValor">Valor</label>
-              <div class="con-boton">
-                <input id="abValor" type="number" min="1" step="any" inputmode="numeric" class="num" required>
-                <button type="button" class="btn" id="btnTodo">Saldo completo</button>
-              </div>
+          <div class="campo">
+            <label for="abValor">Valor</label>
+            <div class="valor-abono">
+              <input id="abValor" type="number" min="1" step="any" inputmode="numeric" class="num" required>
+              <button type="button" class="btn" id="btnTodo">Todo</button>
             </div>
-            <div class="campo">
-              <label for="abAplicar">Aplicar a</label>
-              <select id="abAplicar"></select>
-            </div>
+            <p class="ayuda" id="ayudaAplicar">Se aplica primero a la factura más antigua.</p>
+          </div>
+          <div class="campo">
+            <label for="abAplicar">Aplicar a</label>
+            <select id="abAplicar"></select>
           </div>
           <fieldset>
             <legend>Forma de pago</legend>
@@ -256,20 +287,15 @@
             </div>
           </fieldset>
           <div class="campo">
-            <label for="abRef">Referencia</label>
-            <input id="abRef" placeholder="Número de transferencia o recibo (opcional)">
+            <label for="abRef">Referencia <span class="ayuda">(opcional)</span></label>
+            <input id="abRef" placeholder="Número de transferencia o recibo">
           </div>
           <button class="btn btn-primario" type="submit" id="btnAbono">Registrar abono</button>
         </form>
 
         <div>
           <h3>Abonos recientes</h3>
-          <div class="tabla-caja">
-            <table>
-              <thead><tr><th>Fecha</th><th>Venta</th><th>Forma de pago</th><th>Referencia</th><th class="der">Valor</th></tr></thead>
-              <tbody id="tbAbonos"></tbody>
-            </table>
-          </div>
+          <ul class="abonos" id="tbAbonos"></ul>
         </div>
       </div>
     </section>
@@ -290,15 +316,25 @@
   $('#nombreTienda').textContent = NOMBRE_TIENDA;
 
   let cartera = [];           // v_cartera_clientes
+  let pendientes = [];        // v_cartera_ventas con saldo, de todos los clientes (para la antigüedad)
   let facturas = [];          // facturas pendientes del cliente abierto
   let clienteActual = null;   // fila de v_cartera_clientes
   let metodoAbono = 'efectivo';
+  let tramoFiltro = null;     // 0..3 o null
 
   const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const norm = (t) => String(t ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
   // Las fechas "date" llegan como 'AAAA-MM-DD'; se leen como fecha local, no UTC
   const fechaLocal = (d) => { const [a, m, dd] = d.split('-').map(Number); return new Date(a, m - 1, dd); };
+  // Hoy en Bogotá, como fecha local sin hora
+  const hoyBogota = () => fechaLocal(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date()));
+  const diasHasta = (d) => Math.round((fechaLocal(d) - hoyBogota()) / 86400000);
+
+  // Antigüedad: 0 al día, 1 de 1 a 30 días, 2 de 31 a 60, 3 más de 60
+  const TRAMOS = ['Al día', '1 a 30 días', '31 a 60 días', 'Más de 60'];
+  const CLASE_ESTADO = ['estado-neutro', 'estado-pendiente', 'estado-media', 'estado-mal'];
+  const tramoDe = (dias) => (dias <= 0 ? 0 : dias <= 30 ? 1 : dias <= 60 ? 2 : 3);
 
   let tAviso;
   function aviso(texto, tipo = 'info') {
@@ -308,6 +344,17 @@
     a.hidden = false;
     clearTimeout(tAviso);
     tAviso = setTimeout(() => (a.hidden = true), tipo === 'error' ? 6000 : 3500);
+  }
+
+  // Enlace de WhatsApp con el recordatorio (antepone 57 a números de 10 dígitos)
+  function enlaceWhatsapp(c) {
+    const tel = String(c.telefono ?? '').replace(/\D/g, '');
+    const telIntl = tel.length === 10 ? '57' + tel : tel;
+    if (telIntl.length < 11) return null;
+    let msg = `Hola ${c.nombre}, te saludamos de ${NOMBRE_TIENDA}. Tienes un saldo pendiente de ${cop.format(c.saldo)}`;
+    if (Number(c.saldo_vencido) > 0) msg += `, de los cuales ${cop.format(c.saldo_vencido)} ya están vencidos`;
+    msg += '. ¿Nos confirmas cuándo puedes hacer el pago? Gracias.';
+    return `https://wa.me/${telIntl}?text=${encodeURIComponent(msg)}`;
   }
 
   // ---------- Sesión ----------
@@ -320,6 +367,7 @@
     const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
     if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
     $('#usuario').textContent = perfil?.nombre ?? session.user.email;
+    navPendientes(db);
     cargarCartera();
   }
 
@@ -333,25 +381,72 @@
 
   // ---------- Cartera general ----------
   async function cargarCartera() {
-    const { data, error } = await db.from('v_cartera_clientes').select('*')
-      .order('saldo_vencido', { ascending: false }).order('saldo', { ascending: false });
-    if (error) return aviso('No se pudo cargar la cartera: ' + error.message, 'error');
-    cartera = data;
+    const [rc, rv] = await Promise.all([
+      db.from('v_cartera_clientes').select('*')
+        .order('saldo_vencido', { ascending: false }).order('saldo', { ascending: false }),
+      db.from('v_cartera_ventas').select('id, cliente_id, vence_en, saldo, dias_vencida').gt('saldo', 0)
+    ]);
+    if (rc.error) return aviso('No se pudo cargar la cartera: ' + rc.error.message, 'error');
+    if (rv.error) return aviso('No se pudieron cargar las facturas pendientes: ' + rv.error.message, 'error');
+    cartera = rc.data;
+    pendientes = rv.data;
 
     const total = cartera.reduce((s, c) => s + Number(c.saldo), 0);
     const vencido = cartera.reduce((s, c) => s + Number(c.saldo_vencido), 0);
     $('#totPorCobrar').textContent = cop.format(total);
     $('#totVencido').textContent = cop.format(vencido);
-    $('#totClientes').textContent = cartera.length;
+    $('#totClientes').textContent = `${cartera.length} ${cartera.length === 1 ? 'cliente' : 'clientes'}`;
+    $('#totFacturas').textContent = `${pendientes.length} ${pendientes.length === 1 ? 'factura' : 'facturas'}`;
+    pintarTramos(total);
     pintarLista();
+  }
+
+  function pintarTramos(total) {
+    const valores = [0, 0, 0, 0];
+    pendientes.forEach((f) => { valores[tramoDe(Number(f.dias_vencida))] += Number(f.saldo); });
+    const pct = valores.map((v) => (total > 0 ? Math.round((v / total) * 100) : 0));
+    $('#barraTramos').innerHTML = valores.map((v, i) => (v > 0 ? `<span class="t-${i}" style="flex: ${v}"></span>` : '')).join('');
+    $('#barraTramos').setAttribute('aria-label', total > 0
+      ? 'Antigüedad de la cartera: ' + TRAMOS.map((t, i) => `${t} ${pct[i]} %`).join(', ')
+      : 'Sin saldos pendientes');
+    $('#tramos').innerHTML = TRAMOS.map((t, i) => `
+      <button type="button" data-tramo="${i}" aria-pressed="${tramoFiltro === i}">
+        <span><i class="t-${i}" aria-hidden="true"></i>${t}</span>
+        <strong>${cop.format(valores[i])}</strong>
+      </button>`).join('');
+  }
+
+  $('#tramos').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tramo]');
+    if (!b) return;
+    const t = +b.dataset.tramo;
+    tramoFiltro = tramoFiltro === t ? null : t;
+    $('#tramos').querySelectorAll('[data-tramo]').forEach((x) => x.setAttribute('aria-pressed', String(+x.dataset.tramo === tramoFiltro)));
+    pintarLista();
+  });
+
+  // Texto de la línea del cliente: mora de la factura más vieja, o cuándo vence la próxima
+  function detalleCliente(c) {
+    const n = `${c.facturas_pendientes} ${c.facturas_pendientes === 1 ? 'factura' : 'facturas'}`;
+    const dias = Number(c.max_dias_vencida) || 0;
+    if (Number(c.saldo_vencido) > 0 && dias > 0) {
+      return { texto: `${n} · la más vieja con ${dias} ${dias === 1 ? 'día' : 'días'} de mora`, tramo: tramoDe(dias) };
+    }
+    const proximas = pendientes.filter((f) => f.cliente_id === c.cliente_id && f.vence_en).map((f) => diasHasta(f.vence_en));
+    if (proximas.length) {
+      const d = Math.min(...proximas);
+      return { texto: `${n} · ${d <= 0 ? 'vence hoy' : `vence en ${d} ${d === 1 ? 'día' : 'días'}`}`, tramo: 0 };
+    }
+    return { texto: n, tramo: 0 };
   }
 
   function pintarLista() {
     const q = norm($('#buscar').value.trim());
-    const soloVenc = $('#soloVencidos').checked;
     const filas = cartera.filter((c) =>
-      (!soloVenc || Number(c.saldo_vencido) > 0) &&
+      (tramoFiltro == null || pendientes.some((f) => f.cliente_id === c.cliente_id && tramoDe(Number(f.dias_vencida)) === tramoFiltro)) &&
       (!q || norm(`${c.nombre} ${c.documento ?? ''} ${c.telefono ?? ''}`).includes(q)));
+    if ($('#orden').value === 'saldo') filas.sort((a, b) => Number(b.saldo) - Number(a.saldo));
+    else filas.sort((a, b) => (Number(b.max_dias_vencida) || 0) - (Number(a.max_dias_vencida) || 0) || Number(b.saldo) - Number(a.saldo));
 
     if (!filas.length) {
       $('#listaClientes').innerHTML = `<li><p class="vacio">${cartera.length
@@ -359,20 +454,37 @@
         : 'Nadie debe nada. Las ventas a crédito aparecerán aquí.'}</p></li>`;
       return;
     }
-    $('#listaClientes').innerHTML = filas.map((c) => `
-      <li><button type="button" data-id="${c.cliente_id}" aria-current="${clienteActual?.cliente_id === c.cliente_id}">
-        <span class="nom">${esc(c.nombre)}</span>
-        <span class="sal num">${cop.format(c.saldo)}</span>
-        <span class="det">${c.facturas_pendientes} ${c.facturas_pendientes === 1 ? 'factura' : 'facturas'}</span>
-        <span class="ven num">${Number(c.saldo_vencido) > 0 ? `Vencido ${c.max_dias_vencida} días` : ''}</span>
-      </button></li>`).join('');
+    $('#listaClientes').innerHTML = filas.map((c) => {
+      const d = detalleCliente(c);
+      const wa = enlaceWhatsapp(c);
+      return `
+      <li class="${clienteActual?.cliente_id === c.cliente_id ? 'activo' : ''}">
+        <button type="button" class="elegir" data-id="${c.cliente_id}" aria-current="${clienteActual?.cliente_id === c.cliente_id}">
+          <span class="nom">${esc(c.nombre)}</span>
+          <span class="sal">${cop.format(c.saldo)}</span>
+          <span class="det c-${d.tramo}">${esc(d.texto)}</span>
+        </button>
+        <div class="acciones">
+          ${wa ? `<a class="btn btn-wa" href="${esc(wa)}" target="_blank" rel="noopener"><span class="solo-escritorio">WhatsApp</span><span class="solo-celular">Recordar</span></a>` : ''}
+          <button type="button" class="btn btn-primario" data-abonar="${c.cliente_id}">Abonar</button>
+        </div>
+      </li>`;
+    }).join('');
   }
 
   $('#buscar').addEventListener('input', pintarLista);
-  $('#soloVencidos').addEventListener('change', pintarLista);
-  $('#listaClientes').addEventListener('click', (e) => {
+  $('#orden').addEventListener('change', pintarLista);
+  $('#listaClientes').addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-id]');
-    if (b) abrirCliente(+b.dataset.id);
+    if (b) return abrirCliente(+b.dataset.id);
+    const ab = e.target.closest('[data-abonar]');
+    if (ab) {
+      await abrirCliente(+ab.dataset.abonar);
+      if (!$('#detContenido').hidden) {
+        $('#frmAbono').scrollIntoView({ block: 'center', behavior: 'smooth' });
+        $('#abValor').focus({ preventScroll: true });
+      }
+    }
   });
 
   // ---------- Detalle del cliente ----------
@@ -394,40 +506,35 @@
 
     const c = clienteActual;
     $('#detNombre').textContent = c.nombre;
-    const partes = [];
-    if (c.documento) partes.push(c.documento);
-    if (c.telefono) partes.push(c.telefono);
-    partes.push(`Plazo ${c.plazo_dias} días`);
+    const partes = [`<span class="debe">Debe ${cop.format(c.saldo)}</span>`];
     partes.push(c.cupo_credito != null
-      ? `Cupo ${cop.format(c.cupo_credito)} (disponible ${cop.format(Math.max(c.cupo_credito - c.saldo, 0))})`
-      : 'Sin cupo definido');
-    $('#detDatos').textContent = partes.join(' · ');
+      ? `cupo ${cop.format(c.cupo_credito)} (libre ${cop.format(Math.max(c.cupo_credito - c.saldo, 0))})`
+      : 'sin cupo definido');
+    partes.push(`plazo ${c.plazo_dias} días`);
+    if (c.telefono) partes.push(esc(c.telefono));
+    if (c.documento) partes.push(esc(c.documento));
+    $('#detDatos').innerHTML = partes.join(' · ');
 
-    // WhatsApp
-    const tel = String(c.telefono ?? '').replace(/\D/g, '');
-    const telIntl = tel.length === 10 ? '57' + tel : tel;
+    const wa = enlaceWhatsapp(c);
     const btnWa = $('#btnWhatsapp');
-    if (telIntl.length >= 11) {
-      let msg = `Hola ${c.nombre}, te saludamos de ${NOMBRE_TIENDA}. Tienes un saldo pendiente de ${cop.format(c.saldo)}`;
-      if (Number(c.saldo_vencido) > 0) msg += `, de los cuales ${cop.format(c.saldo_vencido)} ya están vencidos`;
-      msg += '. ¿Nos confirmas cuándo puedes hacer el pago? Gracias.';
-      btnWa.href = `https://wa.me/${telIntl}?text=${encodeURIComponent(msg)}`;
-      btnWa.hidden = false;
-    } else {
-      btnWa.hidden = true;
-    }
+    btnWa.hidden = !wa;
+    if (wa) btnWa.href = wa;
 
     // Facturas
-    $('#tbFacturas').innerHTML = facturas.map((f) => `
-      <tr>
-        <td class="num">${f.id}</td>
-        <td class="num">${fCorta.format(fechaLocal(f.fecha))}</td>
-        <td class="num ${f.dias_vencida > 0 ? 'vencida' : ''}">${fCorta.format(fechaLocal(f.vence_en))}${f.dias_vencida > 0 ? ` (${f.dias_vencida} días)` : ''}</td>
-        <td class="der num">${cop.format(f.total)}</td>
-        <td class="der num">${cop.format(f.abonado)}</td>
-        <td class="der num"><strong>${cop.format(f.saldo)}</strong></td>
-        <td><button type="button" class="btn-texto" data-pagar="${f.id}">Abonar</button></td>
-      </tr>`).join('');
+    $('#tbFacturas').innerHTML = facturas.map((f) => {
+      const dias = Number(f.dias_vencida) || 0;
+      const t = tramoDe(dias);
+      const estado = dias > 0
+        ? `<span class="estado ${CLASE_ESTADO[t]}">${dias} ${dias === 1 ? 'día' : 'días'} de mora</span>`
+        : `<span class="estado estado-neutro">Vence ${fCorta.format(fechaLocal(f.vence_en))}</span>`;
+      return `
+      <li>
+        <div class="f-info">Venta ${f.id} ${estado}
+          <small class="num">${fCorta.format(fechaLocal(f.fecha))} · total ${cop.format(f.total)} · abonado ${cop.format(f.abonado)}</small></div>
+        <strong>${cop.format(f.saldo)}</strong>
+        <button type="button" class="btn-texto" data-pagar="${f.id}">Abonar</button>
+      </li>`;
+    }).join('') || '<li class="vacio">No hay facturas pendientes.</li>';
 
     // Aplicar a
     $('#abAplicar').innerHTML = '<option value="">Facturas más antiguas primero</option>' +
@@ -436,15 +543,17 @@
     // Abonos recientes
     const metodos = { efectivo: 'Efectivo', transferencia: 'Transferencia', tarjeta: 'Tarjeta' };
     $('#tbAbonos').innerHTML = ra.data.length ? ra.data.map((a) => `
-      <tr>
-        <td class="num">${fHora.format(new Date(a.creado_en))}</td>
-        <td class="num">${a.venta_id}</td>
-        <td>${metodos[a.metodo_pago] ?? a.metodo_pago}</td>
-        <td>${esc(a.referencia)}</td>
-        <td class="der num">${cop.format(a.valor)}</td>
-      </tr>`).join('') : '<tr><td colspan="5" class="vacio">Este cliente todavía no ha hecho abonos.</td></tr>';
+      <li>
+        <div class="f-info">Venta ${a.venta_id} · ${metodos[a.metodo_pago] ?? esc(a.metodo_pago)}
+          <small class="num">${fHora.format(new Date(a.creado_en))}${a.referencia ? ` · ${esc(a.referencia)}` : ''}</small></div>
+        <strong>${cop.format(a.valor)}</strong>
+      </li>`).join('') : '<li class="vacio">Este cliente todavía no ha hecho abonos.</li>';
 
     $('#frmAbono').reset();
+    metodoAbono = 'efectivo';
+    $('#abMetodos').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x.dataset.metodo === metodoAbono));
+    textoBotonAbono();
+    actualizarAyudaAplicar();
     $('#detVacio').hidden = true;
     $('#detContenido').hidden = false;
   }
@@ -453,6 +562,7 @@
     const b = e.target.closest('[data-pagar]');
     if (!b) return;
     $('#abAplicar').value = b.dataset.pagar;
+    actualizarAyudaAplicar();
     $('#abValor').focus();
   });
 
@@ -461,8 +571,23 @@
     return id ? Number(facturas.find((f) => String(f.id) === id)?.saldo ?? 0) : Number(clienteActual?.saldo ?? 0);
   }
 
+  function actualizarAyudaAplicar() {
+    $('#ayudaAplicar').textContent = $('#abAplicar').value
+      ? `Se aplica a la venta ${$('#abAplicar').value}.`
+      : 'Se aplica primero a la factura más antigua.';
+  }
+  $('#abAplicar').addEventListener('change', actualizarAyudaAplicar);
+
+  // El botón dice el valor que se va a registrar
+  function textoBotonAbono() {
+    const v = Number($('#abValor').value);
+    $('#btnAbono').textContent = v > 0 ? `Registrar abono de ${cop.format(v)}` : 'Registrar abono';
+  }
+  $('#abValor').addEventListener('input', textoBotonAbono);
+
   $('#btnTodo').addEventListener('click', () => {
     $('#abValor').value = saldoObjetivo();
+    textoBotonAbono();
     $('#abValor').focus();
   });
 
@@ -491,7 +616,7 @@
       p_referencia: $('#abRef').value.trim() || null
     });
     btn.disabled = false;
-    btn.textContent = 'Registrar abono';
+    textoBotonAbono();
     if (error) return aviso('No se registró el abono: ' + error.message, 'error');
 
     const id = clienteActual.cliente_id;

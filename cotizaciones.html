@@ -19,14 +19,14 @@
   :root {
     --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
     --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
-    --cinta: #E8D08A; --cinta-borde: #C9AE66; --alerta: #A1281F; --ok: #2F6B3A; --radio: 6px;
+    --cinta: #E8D08A; --cinta-borde: #C9AE66; --alerta: #A1281F; --ok: #2F6B3A; --aviso: #8A6410; --radio: 6px;
     font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
       --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
-      --cinta: #C4AB68; --cinta-borde: #9E8850; --alerta: #E57B72; --ok: #7FC08A;
+      --cinta: #C4AB68; --cinta-borde: #9E8850; --alerta: #E57B72; --ok: #7FC08A; --aviso: #E3B94F;
     }
   }
   * { box-sizing: border-box; }
@@ -39,19 +39,32 @@
   label, legend { font-weight: 500; }
   .campo { display: grid; gap: .3rem; align-content: start; }
   .ayuda { color: var(--suave); font-size: .875rem; margin: 0; }
-  .btn { border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .5rem .9rem; border-radius: var(--radio); white-space: nowrap; text-decoration: none; display: inline-block; }
-  .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
+  .btn { border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .5rem .9rem; border-radius: 8px; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; min-height: 2.75rem; font-weight: 600; }
+  .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
   .btn:disabled { opacity: .45; cursor: not-allowed; }
-  .btn-peligro { color: var(--alerta); }
-  h2, h3 { font-family: "Barlow Condensed", sans-serif; font-weight: 600; margin: 0; }
-  h2 { font-size: 1.6rem; } h3 { font-size: 1.2rem; }
+  .btn-peligro { color: var(--alerta); border-color: transparent; background: none; }
+  h2, h3 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; margin: 0; }
+  h2 { font-size: 1.75rem; } h3 { font-size: 1.3rem; }
 
   .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
   .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; margin-right: auto; }
   #usuario { color: var(--suave); }
-  .nav { display: flex; gap: .25rem; flex-wrap: wrap; }
-  .nav a { color: var(--tinta); text-decoration: none; padding: .4rem .7rem; border-radius: var(--radio); font-weight: 500; }
-  .nav a[aria-current="page"] { background: var(--fondo); box-shadow: inset 0 -3px 0 var(--acento); }
+
+  /* Cabecera de la pantalla */
+  .cab-pagina { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; margin-bottom: 1.1rem; }
+  .cab-pagina h1 { margin: 0 auto 0 0; font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 2.15rem; line-height: 1.1; }
+
+  /* Estados (mismo código en toda la app) */
+  .estado {
+    display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; font-weight: 700; line-height: 1.3;
+    padding: .1rem .6rem; border-radius: 999px; white-space: nowrap;
+    color: var(--c); border: 1px solid color-mix(in srgb, var(--c) 40%, transparent); background: color-mix(in srgb, var(--c) 14%, transparent);
+  }
+  .estado-pendiente { --c: var(--aviso); }
+  .estado-confirmado { --c: var(--acento); }
+  .estado-ok { --c: var(--ok); }
+  .estado-mal { --c: var(--alerta); }
+  .estado-neutro { --c: var(--suave); }
 
   #login { max-width: 22rem; margin: 12vh auto 0; padding: 1.5rem; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: 1rem; }
   #login h1 { font-family: "Barlow Condensed", sans-serif; font-size: 1.8rem; margin: 0; }
@@ -72,39 +85,52 @@
   .segmentos.dos { grid-template-columns: 1fr 1fr; }
   .segmentos button { padding-inline: .3rem; }
   .segmentos button[aria-pressed="true"], .metodos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
-  #lista { list-style: none; margin: 0; padding: 0; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); }
+  /* Filtro de estado: control segmentado */
+  #filtroEstado { gap: 4px; padding: 4px; background: var(--panel); border: 1px solid var(--linea); border-radius: 10px; }
+  #filtroEstado .btn { min-height: 2.5rem; border-color: transparent; background: none; color: var(--suave); font-weight: 500; border-radius: 7px; }
+  #filtroEstado .btn[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); font-weight: 700; }
+  #buscar { min-height: 2.75rem; }
+  #lista { list-style: none; margin: 0; padding: 0; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; overflow: hidden; }
   #lista button {
-    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .15rem 1rem; width: 100%;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .15rem 1rem; width: 100%; align-items: baseline;
     text-align: left; background: none; border: 0; border-bottom: 1px solid var(--linea);
-    color: var(--tinta); padding: .75rem .9rem; border-left: 4px solid transparent;
+    color: var(--tinta); padding: .75rem .9rem;
   }
   #lista li:last-child button { border-bottom: 0; }
-  #lista button[aria-current="true"] { border-left-color: var(--acento); background: var(--fondo); }
+  #lista button:hover { background: color-mix(in srgb, var(--acento) 7%, transparent); }
+  #lista button[aria-current="true"] { background: color-mix(in srgb, var(--acento) 16%, transparent); }
   #lista .nom { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #lista .val { font-weight: 600; text-align: right; }
+  #lista .val { font-weight: 700; text-align: right; }
   #lista .det { color: var(--suave); font-size: .875rem; }
   #lista .vig { font-size: .875rem; text-align: right; color: var(--suave); }
   .vacio { color: var(--suave); padding: 1.25rem .9rem; margin: 0; }
   .atrasado { color: var(--alerta) !important; font-weight: 600; }
-  .pronto { font-weight: 600; color: var(--tinta) !important; }
+  .pronto { font-weight: 600; color: var(--aviso) !important; }
   .falta { color: var(--alerta); font-weight: 600; }
-  .etiqueta-prospecto { font-size: .8rem; font-weight: 600; color: var(--suave); border: 1px solid var(--linea); border-radius: 999px; padding: 0 .45rem; }
+  .etiqueta-prospecto { font-size: .75rem; font-weight: 600; color: var(--suave); border: 1px solid var(--linea); border-radius: 4px; padding: 0 .35rem; white-space: nowrap; }
 
-  .estado { display: inline-flex; align-items: center; gap: .35rem; font-weight: 600; font-size: .875rem; }
-  .estado::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: currentColor; }
-  .e-pendiente { color: var(--acento); }
-  .e-vencida { color: var(--alerta); }
-  .e-aceptada { color: var(--ok); }
-  .e-rechazada { color: var(--suave); }
-
-  .panel { background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: 1.25rem; display: grid; gap: 1.5rem; }
+  .panel { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; padding: 1.25rem; display: grid; gap: 1.5rem; }
   .bloque { display: grid; gap: 1.5rem; }
   .cab { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; justify-content: space-between; align-items: start; }
+  .cab > div:first-child { flex: 1 1 18rem; }
   .cab p { margin: .2rem 0 0; color: var(--suave); }
-  .titulo { display: flex; align-items: baseline; gap: .9rem; flex-wrap: wrap; }
+  .titulo { display: flex; align-items: center; gap: .6rem .9rem; flex-wrap: wrap; }
   .acciones { display: flex; flex-wrap: wrap; gap: .5rem; }
-  .nota-caja { margin: 0; padding: .75rem .9rem; border-left: 4px solid var(--linea); background: var(--fondo); border-radius: 0 var(--radio) var(--radio) 0; }
-  .nota-caja.aviso { border-left-color: var(--alerta); }
+  /* Acciones del detalle: enviar/imprimir arriba; decisión abajo, con el primario a la derecha */
+  #vAccionesArriba { justify-content: flex-end; }
+  #vAcciones { justify-content: flex-end; border-top: 1px solid var(--linea); padding-top: 1rem; }
+  #vAcciones .btn-peligro { margin-right: auto; }
+  .ico { width: 1.1rem; height: 1.1rem; flex: none; }
+  .nota-caja { margin: 0; padding: .75rem .9rem; border: 1px solid var(--linea); background: var(--fondo); border-radius: 8px; }
+  .nota-caja.aviso { display: flex; gap: .55rem; align-items: flex-start; color: var(--tinta); border-color: color-mix(in srgb, var(--alerta) 45%, transparent); background: color-mix(in srgb, var(--alerta) 10%, transparent); }
+  .nota-caja.aviso::before { content: ""; flex: none; width: 1.1rem; height: 1.1rem; margin-top: .15rem; background: var(--alerta);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4l9 16H3z'/%3E%3Cpath d='M12 10v4M12 17.5v.01'/%3E%3C/svg%3E") center / contain no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4l9 16H3z'/%3E%3Cpath d='M12 10v4M12 17.5v.01'/%3E%3C/svg%3E") center / contain no-repeat; }
+  .pie-vista { display: flex; flex-wrap: wrap; gap: 1.25rem 2rem; align-items: flex-start; justify-content: space-between; }
+  .pie-vista .notas { flex: 1 1 16rem; margin: 0; color: var(--tinta); }
+  .pie-vista .totales { flex: 0 1 22rem; margin-left: auto; }
+  .rotulo { display: block; font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); margin-bottom: .2rem; }
+  td .stock-aviso { display: block; font-size: .875rem; font-weight: 600; color: var(--alerta); }
   .tabla-caja { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; min-width: 36rem; }
   th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--linea); vertical-align: top; }
@@ -187,23 +213,18 @@
   .segmentos button, .metodos button { white-space: normal; line-height: 1.2; }
   .tabla-caja { position: relative; max-width: 100%; -webkit-overflow-scrolling: touch; }
   td.num, th, td.der { white-space: nowrap; }
-  /* Barra superior: si no cabe en una línea, el menú baja a su propia fila */
+  /* Barra superior: si no cabe en una línea, el menú baja a su propia fila (nav.js) */
   @media (max-width: 1180px) {
     .barra { flex-wrap: wrap; row-gap: .55rem; }
-    .nav { order: 3; width: 100%; flex-wrap: wrap; overflow: visible; }
-    .nav a { white-space: nowrap; }
   }
   /* Celular */
   @media (max-width: 700px) {
     .barra { padding: .6rem 1rem; gap: .5rem .6rem; }
     .tienda { font-size: 1.25rem; }
     #usuario { display: none; }
-    #salir { padding: .4rem .7rem; font-size: .9rem; }
-    .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; }
-    .nav a { text-align: center; padding: .5rem .2rem; background: var(--fondo); font-size: .95rem; }
-    .nav a[aria-current="page"] { background: var(--acento); color: var(--acento-tinta); box-shadow: none; }
-    .nav a:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
+    #salir { padding: .4rem .7rem; font-size: .9rem; min-height: 2.5rem; }
     main { padding: 1rem; }
+    .cab-pagina h1 { font-size: 1.8rem; }
     dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
     .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
     #aviso { left: .75rem; right: .75rem; transform: none; max-width: none; bottom: .75rem; }
@@ -221,6 +242,8 @@
     .panel { padding: 1rem; }
     .acciones { gap: .4rem; }
     .acciones > .btn { flex: 1 1 calc(50% - .4rem); text-align: center; }
+    #vAcciones .btn-peligro { margin-right: 0; order: 9; flex-basis: 100%; }
+    .pie-vista .totales { flex: 1 1 100%; }
     .totales { justify-self: stretch; width: 100%; }
     .cinta { padding: .85rem 1rem .95rem; }
     .cinta .fila { flex-wrap: wrap; }
@@ -238,15 +261,7 @@
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" aria-label="Secciones">
-    <a href="index.html">Caja</a>
-    <a href="cotizaciones.html" aria-current="page">Cotizaciones</a>
-    <a href="pedidos.html">Pedidos</a>
-    <a href="inventario.html">Inventario</a>
-    <a href="cartera.html">Cartera</a>
-    <a href="gastos.html">Gastos</a>
-    <a href="tablero.html">Tablero</a>
-  </nav>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=1"></script>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -260,6 +275,11 @@
 </form>
 
 <main id="app" hidden>
+  <div class="cab-pagina">
+    <h1>Cotizaciones</h1>
+    <button class="btn btn-primario" type="button" id="btnNueva">+ Nueva cotización</button>
+  </div>
+
   <section class="resumen num" aria-label="Resumen de cotizaciones pendientes">
     <div><span>Vigentes</span><strong id="totVigentes">0</strong></div>
     <div id="bloquePronto"><span>Vencen en 3 días o menos</span><strong id="totPronto">0</strong></div>
@@ -270,7 +290,6 @@
   <div class="cuerpo">
     <section aria-label="Lista de cotizaciones">
       <div class="filtros">
-        <button class="btn btn-primario" type="button" id="btnNueva">Nueva cotización</button>
         <div class="segmentos" id="filtroEstado" role="group" aria-label="Filtrar por estado">
           <button type="button" class="btn" data-filtro="pendiente" aria-pressed="true">Pendientes</button>
           <button type="button" class="btn" data-filtro="aceptada" aria-pressed="false">Aceptadas</button>
@@ -293,9 +312,8 @@
             <p id="vCliente"></p>
             <p id="vFechas" class="num"></p>
           </div>
+          <div class="acciones" id="vAccionesArriba"></div>
         </div>
-        <div class="acciones" id="vAcciones"></div>
-        <p class="nota-caja" id="vNotas" hidden></p>
         <p class="nota-caja aviso" id="vAviso" hidden></p>
         <div class="tabla-caja">
           <table>
@@ -303,11 +321,15 @@
             <tbody id="vDetalle"></tbody>
           </table>
         </div>
-        <div class="totales">
-          <dl class="cifras num" id="vCifras"></dl>
-          <div class="total"><span>Total</span><span class="total-cifra num" id="vTotal">$ 0</span></div>
+        <div class="pie-vista">
+          <p class="notas" id="vNotas" hidden></p>
+          <div class="totales">
+            <dl class="cifras num" id="vCifras"></dl>
+            <div class="total"><span>Total</span><span class="total-cifra num" id="vTotal">$ 0</span></div>
+          </div>
         </div>
         <p class="ayuda" id="vPrecio" hidden></p>
+        <div class="acciones" id="vAcciones"></div>
       </div>
 
       <!-- Crear o editar -->
@@ -447,6 +469,14 @@
   const fCorta = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
   const fHora = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' });
   const ESTADOS = { pendiente: 'Pendiente', vencida: 'Vencida', aceptada: 'Aceptada', rechazada: 'Rechazada' };
+  // Clase del código de estados común a la app
+  const CLASE_ESTADO = { pendiente: 'estado-pendiente', vencida: 'estado-mal', aceptada: 'estado-ok', rechazada: 'estado-neutro' };
+  const ICONOS = {
+    whatsapp: '<path d="M4 20l1.5-4.5A8 8 0 1 1 8.5 19z"/>',
+    imprimir: '<path d="M7 9V4h10v5M7 17H5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2"/><path d="M7 14h10v6H7z"/>',
+    ticket: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>'
+  };
+  const ico = (k) => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONOS[k]}</svg>`;
 
   document.title = `Cotizaciones | ${NOMBRE_TIENDA}`;
   $('#nombreTienda').textContent = NOMBRE_TIENDA;
@@ -487,7 +517,8 @@
     if (q.estado === 'aceptada') return { txt: q.pedido_id ? `Pedido ${q.pedido_id}` : 'Aceptada', cls: '' };
     if (q.estado === 'rechazada') return { txt: 'Rechazada', cls: '' };
     const d = q.dias_vigencia;
-    if (d < 0) return { txt: `Venció hace ${-d} ${d === -1 ? 'día' : 'días'}`, cls: 'atrasado' };
+    if (d === -1) return { txt: 'Venció ayer', cls: 'atrasado' };
+    if (d < 0) return { txt: `Venció hace ${-d} días`, cls: 'atrasado' };
     if (d === 0) return { txt: 'Vence hoy', cls: 'pronto' };
     if (d === 1) return { txt: 'Vence mañana', cls: 'pronto' };
     return { txt: `Vence en ${d} días`, cls: d <= 3 ? 'pronto' : '' };
@@ -516,6 +547,7 @@
     // no recargar para no perder una cotización a medio escribir.
     if (usuarioCargado === session.user.id) return;
     usuarioCargado = session.user.id;
+    window.navPendientes?.(db);
     const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
     if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
     $('#usuario').textContent = perfil?.nombre ?? session.user.email;
@@ -594,12 +626,17 @@
     $('#lista').innerHTML = filas.map((c) => {
       const v = vigencia(c);
       const ev = estadoVisible(c);
+      const n = Number(c.lineas) || 0;
+      // Pendientes: la vigencia dice más que el estado; las demás muestran su estado
+      const derecha = c.estado === 'pendiente'
+        ? `<span class="vig num ${v.cls}">${esc(v.txt)}</span>`
+        : `<span class="vig"><span class="estado ${CLASE_ESTADO[ev]}">${ESTADOS[ev]}</span></span>`;
       return `
       <li><button type="button" data-id="${c.id}" aria-current="${actual?.id === c.id}">
-        <span class="nom">${c.id} · ${esc(c.cliente)}</span>
+        <span class="nom">${esc(c.cliente)}${c.es_prospecto ? ' <span class="etiqueta-prospecto">Prospecto</span>' : ''}</span>
         <span class="val num">${cop.format(c.total)}</span>
-        <span class="det"><span class="estado e-${ev}">${ESTADOS[ev]}</span>${c.es_prospecto ? ' <span class="etiqueta-prospecto">Prospecto</span>' : ''}</span>
-        <span class="vig num ${v.cls}">${esc(v.txt)}</span>
+        <span class="det num">N.º ${c.id}${n ? ` · ${n} ${n === 1 ? 'producto' : 'productos'}` : ''}</span>
+        ${derecha}
       </button></li>`;
     }).join('');
   }
@@ -659,7 +696,7 @@
 
     $('#vTitulo').textContent = `Cotización ${q.id}`;
     $('#vEstado').textContent = ESTADOS[ev];
-    $('#vEstado').className = `estado e-${ev}`;
+    $('#vEstado').className = `estado ${CLASE_ESTADO[ev]}`;
     $('#vCliente').innerHTML = esc([q.cliente, q.documento, q.telefono].filter(Boolean).join(' · ')) +
       (q.es_prospecto ? ' <span class="etiqueta-prospecto">Prospecto</span>' : '');
 
@@ -671,7 +708,7 @@
     $('#vFechas').className = 'num' + (pendiente && q.vencida ? ' atrasado' : '');
 
     $('#vNotas').hidden = !q.notas;
-    $('#vNotas').textContent = q.notas ? `Notas: ${q.notas}` : '';
+    $('#vNotas').innerHTML = q.notas ? `<span class="rotulo">Notas para el cliente</span>${esc(q.notas)}` : '';
 
     let alerta = '';
     if (q.estado === 'rechazada') alerta = `Rechazada${q.motivo_rechazo ? ': ' + q.motivo_rechazo : '.'}`;
@@ -682,9 +719,14 @@
 
     $('#vDetalle').innerHTML = q.detalle.map((d) => {
       const corto = pendiente && (!d.activo || Number(d.stock) < Number(d.cantidad));
+      const faltan = Number(d.cantidad) - Math.max(Number(d.stock), 0);
+      const avisoStock = !corto ? ''
+        : !d.activo ? 'Producto inactivo'
+        : Number(d.stock) <= 0 ? 'Sin stock hoy'
+        : `Solo hay ${cant.format(d.stock)}: faltarían ${cant.format(faltan)}`;
       return `
       <tr>
-        <td>${esc(d.etiqueta)}<small>${esc(d.codigo ?? 'Sin código')}</small></td>
+        <td>${esc(d.etiqueta)}<small>${esc(d.codigo ?? 'Sin código')}</small>${avisoStock ? `<span class="stock-aviso">${esc(avisoStock)}</span>` : ''}</td>
         <td class="der num">${cant.format(d.cantidad)}</td>
         <td class="der num">${cop.format(d.precio_unitario)}</td>
         <td class="der num">${cop.format(d.subtotal)}</td>
@@ -703,24 +745,28 @@
         ? `Los precios de lista subieron ${cop.format(subio)} desde que se cotizó. Mientras esté vigente se respeta el total cotizado.`
         : `Con los precios de hoy el subtotal sería ${cop.format(q.subtotal_actual)}.`;
 
-    // Acciones
+    // Arriba: enviar e imprimir. Solo con teléfono aparece WhatsApp.
+    const arriba = [];
+    const tel = telefonoWa(q.telefono);
+    if (tel && q.estado !== 'rechazada') {
+      arriba.push(`<a class="btn" target="_blank" rel="noopener" href="https://wa.me/${tel}?text=${encodeURIComponent(textoWhatsapp(q))}">${ico('whatsapp')}Enviar por WhatsApp</a>`);
+    }
+    arriba.push(`<button class="btn" type="button" data-acc="carta">${ico('imprimir')}Imprimir o PDF</button>`);
+    arriba.push(`<button class="btn" type="button" data-acc="ticket">${ico('ticket')}Ticket</button>`);
+    $('#vAccionesArriba').innerHTML = arriba.join('');
+
+    // Abajo: la decisión. Rechazar a la izquierda; el primario de último, a la derecha.
     const acc = [];
+    if (pendiente) acc.push('<button class="btn btn-peligro" type="button" data-acc="rechazar">Marcar rechazada</button>');
+    if (q.estado === 'rechazada') acc.push('<button class="btn" type="button" data-acc="reabrir">Reabrir</button>');
+    acc.push('<button class="btn" type="button" data-acc="copiar">Copiar como nueva</button>');
+    if (pendiente) acc.push('<button class="btn" type="button" data-acc="editar">Editar</button>');
     if (pendiente) {
       acc.push(`<button class="btn btn-primario" type="button" data-acc="convertir" ${q.inactivos > 0 ? 'disabled' : ''}>Convertir en pedido</button>`);
     }
     if (q.estado === 'aceptada' && q.pedido_id) {
       acc.push(`<a class="btn btn-primario" href="pedidos.html?id=${q.pedido_id}">Ver pedido ${q.pedido_id}</a>`);
     }
-    acc.push('<button class="btn" type="button" data-acc="carta">Imprimir o PDF</button>');
-    acc.push('<button class="btn" type="button" data-acc="ticket">Ticket</button>');
-    const tel = telefonoWa(q.telefono);
-    if (tel && q.estado !== 'rechazada') {
-      acc.push(`<a class="btn" target="_blank" rel="noopener" href="https://wa.me/${tel}?text=${encodeURIComponent(textoWhatsapp(q))}">Enviar por WhatsApp</a>`);
-    }
-    if (pendiente) acc.push('<button class="btn" type="button" data-acc="editar">Editar</button>');
-    acc.push('<button class="btn" type="button" data-acc="copiar">Copiar como nueva</button>');
-    if (pendiente) acc.push('<button class="btn btn-peligro" type="button" data-acc="rechazar">Marcar rechazada</button>');
-    if (q.estado === 'rechazada') acc.push('<button class="btn" type="button" data-acc="reabrir">Reabrir</button>');
     $('#vAcciones').innerHTML = acc.join('');
   }
 
@@ -749,7 +795,7 @@
     return l.join('\n');
   }
 
-  $('#vAcciones').addEventListener('click', (e) => {
+  $('#vista').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-acc]');
     if (!b || !actual || procesando) return;
     const acc = b.dataset.acc;

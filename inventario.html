@@ -59,9 +59,6 @@
   .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
   .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; margin-right: auto; }
   #usuario { color: var(--suave); }
-  .nav { display: flex; gap: .25rem; }
-  .nav a { color: var(--tinta); text-decoration: none; padding: .4rem .7rem; border-radius: var(--radio); font-weight: 500; }
-  .nav a[aria-current="page"] { background: var(--fondo); box-shadow: inset 0 -3px 0 var(--acento); }
 
   /* Login */
   #login { max-width: 22rem; margin: 12vh auto 0; padding: 1.5rem; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: 1rem; }
@@ -70,19 +67,74 @@
 
   main { max-width: 78rem; margin: 0 auto; padding: 1.25rem; }
 
-  /* Pestañas */
-  .pestanas { display: flex; gap: .25rem; border-bottom: 1px solid var(--linea); margin-bottom: 1.25rem; overflow-x: auto; overflow-y: hidden; }
-  .pestanas button {
-    border: 0; background: none; color: var(--suave); padding: .7rem 1rem;
-    font-weight: 600; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap;
+  /* Cabecera de la pantalla: título, subpestañas y acciones */
+  .cab-pagina { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; margin-bottom: 1.25rem; }
+  .cab-pagina h1 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 2.1rem; margin: 0; line-height: 1.1; }
+  .cab-acciones { margin-left: auto; display: flex; flex-wrap: wrap; gap: .5rem; }
+  .cab-acciones .btn { min-height: 2.75rem; }
+
+  /* Pestañas: control segmentado */
+  .pestanas {
+    display: flex; gap: .25rem; padding: .25rem; background: var(--panel);
+    border: 1px solid var(--linea); border-radius: 10px; overflow-x: auto; max-width: 100%;
   }
-  .pestanas button[aria-selected="true"] { color: var(--tinta); border-bottom-color: var(--acento); }
+  .pestanas button {
+    border: 0; background: none; color: var(--suave); padding: .45rem .9rem; min-height: 2.5rem;
+    font-weight: 500; border-radius: 7px; white-space: nowrap;
+  }
+  .pestanas button:hover { color: var(--tinta); }
+  .pestanas button[aria-selected="true"] { color: var(--acento-tinta); background: var(--acento); font-weight: 600; }
 
   .herramientas { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-bottom: 1rem; }
   .herramientas input[type="search"] { max-width: 24rem; }
+  .herramientas .buscar { flex: 1 1 18rem; max-width: 26rem; min-height: 2.75rem; }
   .check { display: inline-flex; align-items: center; gap: .4rem; font-weight: 500; }
   .check input { width: auto; }
   .herramientas .btn-primario { margin-left: auto; }
+
+  /* Filtros en píldoras */
+  .filtros { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .filtro {
+    display: inline-flex; align-items: center; gap: .4rem; min-height: 2.5rem; padding: 0 .9rem;
+    border: 1px solid var(--linea); border-radius: 999px; background: var(--panel); color: var(--tinta); font-weight: 600;
+  }
+  .filtro .cuenta { color: var(--suave); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .filtro .punto { width: .55rem; height: .55rem; border-radius: 50%; background: var(--aviso); }
+  .filtro[aria-pressed="true"] { border-color: var(--acento); background: color-mix(in srgb, var(--acento) 14%, transparent); }
+
+  /* Estados unificados */
+  .estado {
+    display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; font-weight: 700; line-height: 1.5;
+    padding: 0 .55rem; border-radius: 999px; border: 1px solid; white-space: nowrap;
+  }
+  .estado-pendiente { color: var(--aviso); border-color: color-mix(in srgb, var(--aviso) 40%, transparent); background: color-mix(in srgb, var(--aviso) 14%, transparent); }
+  .estado-confirmado { color: var(--acento); border-color: color-mix(in srgb, var(--acento) 40%, transparent); background: color-mix(in srgb, var(--acento) 14%, transparent); }
+  .estado-ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+  .estado-mal { color: var(--alerta); border-color: color-mix(in srgb, var(--alerta) 40%, transparent); background: color-mix(in srgb, var(--alerta) 14%, transparent); }
+  .estado-neutro { color: var(--suave); border-color: var(--linea); background: color-mix(in srgb, var(--suave) 12%, transparent); }
+
+  /* Catálogo agrupado por producto */
+  .cat-tabla td { vertical-align: middle; }
+  .cat-tabla tr.cat-producto td { background: color-mix(in srgb, var(--fondo) 55%, var(--panel)); padding: .55rem .8rem; }
+  .cat-producto .cab { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .9rem; }
+  .cat-producto strong { font-size: 1.05rem; }
+  .cat-producto .info { color: var(--suave); font-size: .875rem; }
+  .cat-producto .btn-texto { margin-left: auto; min-height: 2.5rem; }
+  .cat-tabla .pres-nombre { padding-left: 1.75rem; }
+  .cat-tabla .rama { color: var(--suave); margin-right: .3rem; }
+  .cat-tabla .codigo { color: var(--suave); }
+  .btn-codigo {
+    font-size: .85rem; font-weight: 600; color: var(--aviso); background: none;
+    border: 1px dashed color-mix(in srgb, var(--aviso) 55%, transparent); border-radius: var(--radio); padding: .2rem .55rem;
+  }
+  .stock-bajo { display: inline-flex; align-items: center; gap: .3rem; font-weight: 700; color: var(--aviso); }
+  .stock-num { font-weight: 600; }
+  .stock-nota { color: var(--suave); font-size: .875rem; }
+  .abierto { font-size: .8rem; color: var(--tinta); background: color-mix(in srgb, var(--acento) 14%, transparent); border-radius: 999px; padding: .05rem .5rem; margin-left: .3rem; white-space: nowrap; }
+  .gan { font-weight: 600; color: var(--ok); }
+  .gan.baja { color: var(--aviso); }
+  .gan.neg { color: var(--alerta); }
+  .cat-tabla tr.inactivo td { color: var(--suave); }
 
   /* Tablas */
   .tabla-caja { overflow-x: auto; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); }
@@ -366,8 +418,6 @@
   /* Barra superior: si no cabe en una línea, el menú baja a su propia fila */
   @media (max-width: 1180px) {
     .barra { flex-wrap: wrap; row-gap: .55rem; }
-    .nav { order: 3; width: 100%; flex-wrap: wrap; overflow: visible; }
-    .nav a { white-space: nowrap; }
   }
   /* Celular */
   @media (max-width: 700px) {
@@ -375,10 +425,6 @@
     .tienda { font-size: 1.25rem; }
     #usuario { display: none; }
     #salir { padding: .4rem .7rem; font-size: .9rem; }
-    .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; }
-    .nav a { text-align: center; padding: .5rem .2rem; background: var(--fondo); font-size: .95rem; }
-    .nav a[aria-current="page"] { background: var(--acento); color: var(--acento-tinta); box-shadow: none; }
-    .nav a:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
     main { padding: 1rem; }
     dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
     .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
@@ -395,7 +441,30 @@
   .tabla-caja th:first-child, .tabla-caja td:first-child { min-width: 12rem; white-space: normal; }
   .visually-hidden { left: 0; top: 0; }
   @media (max-width: 700px) {
+    .cab-pagina h1 { font-size: 1.8rem; }
+    .pestanas { width: 100%; }
     .pestanas button { flex: 1 0 auto; }
+    .cab-acciones { margin-left: 0; width: 100%; }
+    .cab-acciones .btn { flex: 1 1 auto; }
+    .herramientas .buscar { max-width: none; }
+    /* El catálogo pasa a tarjetas: cada presentación en dos renglones */
+    .cat-tabla { min-width: 0; }
+    .cat-tabla thead { display: none; }
+    .cat-tabla tbody { display: block; }
+    .cat-tabla tr { display: block; }
+    .cat-tabla tr.cat-presentacion {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .15rem .75rem;
+      padding: .6rem .8rem .6rem 1.4rem; border-bottom: 1px solid var(--linea);
+    }
+    .cat-tabla tr.cat-presentacion td { border: 0; padding: 0; text-align: left; }
+    .cat-tabla tr.cat-presentacion td.pres-nombre { grid-column: 1; font-weight: 600; }
+    .cat-tabla tr.cat-presentacion td.c-precio { grid-column: 2; grid-row: 1; text-align: right; }
+    .cat-tabla tr.cat-presentacion td.c-stock { grid-column: 1; }
+    .cat-tabla tr.cat-presentacion td.c-gan { grid-column: 2; grid-row: 2; text-align: right; }
+    .cat-tabla tr.cat-presentacion td.c-codigo { grid-column: 1; font-size: .875rem; }
+    .cat-tabla tr.cat-presentacion td.c-acciones { grid-column: 2; grid-row: 3; }
+    .cat-tabla tr.cat-producto td { display: block; border-bottom: 1px solid var(--linea); }
+    .cat-tabla td.vacio { display: block; }
     .dos { grid-template-columns: 1fr; }
     .cinta { padding: .85rem 1rem .95rem; }
     .cinta .fila { flex-wrap: wrap; }
@@ -416,15 +485,7 @@
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" aria-label="Secciones">
-    <a href="index.html">Caja</a>
-    <a href="cotizaciones.html">Cotizaciones</a>
-    <a href="pedidos.html">Pedidos</a>
-    <a href="inventario.html" aria-current="page">Inventario</a>
-    <a href="cartera.html">Cartera</a>
-    <a href="gastos.html">Gastos</a>
-    <a href="tablero.html">Tablero</a>
-  </nav>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=1"></script>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -438,28 +499,37 @@
 </form>
 
 <main id="app" hidden>
-  <div class="pestanas" role="tablist">
-    <button role="tab" id="t-catalogo" aria-controls="p-catalogo" aria-selected="true">Catálogo</button>
-    <button role="tab" id="t-entradas" aria-controls="p-entradas" aria-selected="false">Entradas de mercancía</button>
-    <button role="tab" id="t-carga" aria-controls="p-carga" aria-selected="false">Carga rápida</button>
-    <button role="tab" id="t-mezclas" aria-controls="p-mezclas" aria-selected="false">Mezclas</button>
-    <button role="tab" id="t-clientes" aria-controls="p-clientes" aria-selected="false">Clientes</button>
+  <div class="cab-pagina">
+    <h1>Inventario</h1>
+    <div class="pestanas" role="tablist" aria-label="Inventario">
+      <button role="tab" id="t-catalogo" aria-controls="p-catalogo" aria-selected="true">Catálogo</button>
+      <button role="tab" id="t-entradas" aria-controls="p-entradas" aria-selected="false">Entradas</button>
+      <button role="tab" id="t-carga" aria-controls="p-carga" aria-selected="false">Carga rápida</button>
+      <button role="tab" id="t-mezclas" aria-controls="p-mezclas" aria-selected="false">Mezclas</button>
+      <button role="tab" id="t-clientes" aria-controls="p-clientes" aria-selected="false">Clientes</button>
+    </div>
+    <div class="cab-acciones" id="accionesCatalogo">
+      <button class="btn" id="irEntrada" type="button">Registrar entrada</button>
+      <button class="btn btn-primario" id="nuevoProducto" type="button">+ Nuevo producto</button>
+    </div>
   </div>
 
   <!-- ============ CATÁLOGO ============ -->
   <section id="p-catalogo" role="tabpanel" aria-labelledby="t-catalogo">
     <div class="herramientas">
-      <input type="search" id="buscarCat" placeholder="Buscar por nombre, marca, color o código" aria-label="Buscar en el catálogo">
-      <label class="check"><input type="checkbox" id="soloBajo"> Solo stock bajo</label>
-      <label class="check"><input type="checkbox" id="verInactivos"> Ver inactivos</label>
-      <label class="check"><input type="checkbox" id="sinCodigo"> Sin código de barras</label>
-      <button class="btn btn-primario" id="nuevoProducto" type="button">Nuevo producto</button>
+      <input type="search" class="buscar" id="buscarCat" placeholder="Nombre, marca, color o código" aria-label="Buscar en el catálogo">
+      <div class="filtros" role="group" aria-label="Filtros del catálogo">
+        <button type="button" class="filtro" id="filtroTodos" aria-pressed="true">Todos <span class="cuenta" data-cuenta="todos"></span></button>
+        <button type="button" class="filtro" id="soloBajo" aria-pressed="false"><span class="punto" aria-hidden="true"></span>Stock bajo <span class="cuenta" data-cuenta="bajo"></span></button>
+        <button type="button" class="filtro" id="sinCodigo" aria-pressed="false">Sin código <span class="cuenta" data-cuenta="sinCodigo"></span></button>
+        <button type="button" class="filtro" id="verInactivos" aria-pressed="false">Inactivos <span class="cuenta" data-cuenta="inactivos"></span></button>
+      </div>
     </div>
     <div class="tabla-caja">
-      <table>
+      <table class="cat-tabla">
         <thead><tr>
-          <th>Producto</th><th>Código</th><th class="der">Precio</th><th class="der">Costo</th>
-          <th class="der">Stock</th><th><span class="visually-hidden">Acciones</span></th>
+          <th>Producto y presentación</th><th>Código</th><th class="der">Precio</th><th class="der">Ganancia</th>
+          <th>Stock</th><th><span class="visually-hidden">Acciones</span></th>
         </tr></thead>
         <tbody id="tbCatalogo"></tbody>
       </table>
@@ -903,6 +973,7 @@
     const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
     if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
     $('#usuario').textContent = perfil?.nombre ?? session.user.email;
+    navPendientes(db);
     await Promise.all([cargarCatalogo(), cargarMaestros(), cargarClientes(), cargarMovimientos(), cargarMezclas()]);
   }
 
@@ -921,6 +992,7 @@
       $(`#t-${t}`).setAttribute('aria-selected', t === nombre);
       $(`#p-${t}`).hidden = t !== nombre;
     });
+    $('#accionesCatalogo').hidden = nombre !== 'catalogo';
     detenerCamara();
     if (nombre !== 'carga') enCola(guardarActual);   // lo que se estaba contando no se pierde
     if (nombre === 'entradas') $('#scanEntrada').focus();
@@ -973,32 +1045,50 @@
   }
 
   // ---------- Catálogo ----------
-  // Bajo el stock: si hay un tarro abierto, o de qué presentación sale una parte
-  function detalleStock(p) {
-    if (p.madre_id) {
-      const m = catalogo.find((x) => x.id === p.madre_id);
-      return `<small>Parte de ${esc(m?.presentacion ?? 'otra presentación')}</small>`;
-    }
-    if (p.tiene_fracciones) {
-      return Number(p.abierto) > 0 ? `<small>+ abierto (${Math.round(Number(p.abierto) * 100)} %)</small>` : '<small>Se vende por partes</small>';
-    }
-    return '';
+  // Ganancia sobre el costo; por debajo de GANANCIA_BAJA se marca en ámbar
+  function ganCelda(p) {
+    const pct = pctSobreCosto(p.costo, p.precio_venta);
+    if (pct == null) return '<span class="stock-nota">—</span>';
+    const clase = pct <= 0 ? 'neg' : pct < GANANCIA_BAJA ? 'baja' : '';
+    return `<span class="gan ${clase}" title="Ganancia sobre el costo">${pct > 0 ? '+' : ''}${fmtPct(pct)} %</span>`
+      + `<small>Costo ${cop.format(p.costo)}</small>`;
   }
 
-  function pctCelda(p) {
-    const pct = pctSobreCosto(p.costo, p.precio_venta);
-    if (pct == null) return '';
-    return `<small class="pct ${pct <= 0 ? 'bajo' : ''}" title="Ganancia sobre el costo">${pct > 0 ? '+' : ''}${fmtPct(pct)} %</small>`;
+  const ALERTA_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>';
+  const esBajo = (p) => p.activo && Number(p.stock) <= Number(p.stock_minimo);
+
+  function stockCelda(p) {
+    const n = Number(p.stock);
+    const abierto = !p.madre_id && p.tiene_fracciones && Number(p.abierto) > 0 ? `<span class="abierto">+ abierto ${Math.round(Number(p.abierto) * 100)} %</span>` : '';
+    if (esBajo(p)) return `<span class="stock-bajo">${ALERTA_SVG}${n} · mínimo ${Number(p.stock_minimo)}</span>${abierto}`;
+    if (p.madre_id) return `<span class="stock-num">${n}</span> <span class="stock-nota">alcanzan</span>`;
+    return `<span class="stock-num">${n}</span>${abierto}`;
+  }
+
+  // Filtros del catálogo (Todos apaga los demás)
+  const filtrosCat = { bajo: false, sinCodigo: false, inactivos: false };
+  const BOTON_FILTRO = { bajo: '#soloBajo', sinCodigo: '#sinCodigo', inactivos: '#verInactivos' };
+
+  function pintarFiltros() {
+    $('#filtroTodos').setAttribute('aria-pressed', String(!Object.values(filtrosCat).some(Boolean)));
+    Object.entries(BOTON_FILTRO).forEach(([k, s]) => $(s).setAttribute('aria-pressed', String(filtrosCat[k])));
+    const activos = catalogo.filter((p) => p.activo);
+    const cuentas = {
+      todos: activos.length,
+      bajo: activos.filter(esBajo).length,
+      sinCodigo: activos.filter((p) => !p.codigo_barras).length,
+      inactivos: catalogo.length - activos.length
+    };
+    document.querySelectorAll('[data-cuenta]').forEach((s) => { s.textContent = catalogo.length ? cuentas[s.dataset.cuenta] : ''; });
   }
 
   function pintarCatalogo() {
+    pintarFiltros();
     const q = norm($('#buscarCat').value.trim());
-    const soloBajo = $('#soloBajo').checked;
-    const verInactivos = $('#verInactivos').checked;
-    const sinCodigo = $('#sinCodigo').checked;
+    const { bajo: soloBajo, sinCodigo, inactivos: verInactivos } = filtrosCat;
     const filas = catalogo.filter((p) =>
       (verInactivos || p.activo) &&
-      (!soloBajo || (p.activo && Number(p.stock) <= Number(p.stock_minimo))) &&
+      (!soloBajo || esBajo(p)) &&
       (!sinCodigo || !p.codigo_barras) &&
       (!q || norm(`${p.etiqueta} ${p.categoria ?? ''} ${p.codigo_barras ?? ''} ${p.sku ?? ''}`).includes(q)));
 
@@ -1010,24 +1100,66 @@
       $('#tbCatalogo').innerHTML = '<tr><td colspan="6" class="vacio">Ningún producto coincide con la búsqueda.</td></tr>';
       return;
     }
-    $('#tbCatalogo').innerHTML = filas.map((p) => {
-      const bajo = p.activo && Number(p.stock) <= Number(p.stock_minimo);
-      return `
-      <tr class="${p.activo ? '' : 'inactivo'}">
-        <td>${esc(p.etiqueta)}<small>${esc(p.categoria ?? 'Sin categoría')}${p.activo ? '' : ' · Inactivo'}</small></td>
-        <td class="num">${esc(p.codigo_barras || p.sku || '')}</td>
-        <td class="der num">${cop.format(p.precio_venta)}${pctCelda(p)}</td>
-        <td class="der num">${cop.format(p.costo)}</td>
-        <td class="der num ${bajo ? 'bajo' : ''}">${Number(p.stock)}${bajo ? `<small>Mínimo ${Number(p.stock_minimo)}</small>` : ''}${detalleStock(p)}</td>
-        <td><div class="acciones-fila">
-          <button type="button" class="btn-texto" data-etiqueta="${p.id}">${p.codigo_barras ? 'Etiquetas' : 'Crear código'}</button>
-          <button type="button" class="btn-texto" data-producto="${p.producto_id}">Editar</button>
-        </div></td>
+
+    // Agrupa por producto: cada presentación completa y debajo sus partes
+    const grupos = new Map();
+    filas.forEach((p) => {
+      if (!grupos.has(p.producto_id)) grupos.set(p.producto_id, []);
+      grupos.get(p.producto_id).push(p);
+    });
+    const conCatalizador = new Set(mezclas.map((m) => m.presentacion_id));
+    const porId = Object.fromEntries(catalogo.map((p) => [p.id, p]));
+
+    const filaPres = (p, parte) => `
+      <tr class="cat-presentacion ${p.activo ? '' : 'inactivo'}">
+        <td class="pres-nombre">${parte ? '<span class="rama" aria-hidden="true">└</span>' : ''}${esc(p.presentacion ?? p.etiqueta)}${
+          parte && !filas.includes(porId[p.madre_id]) ? ` <span class="stock-nota">de ${esc(porId[p.madre_id]?.presentacion ?? 'otra presentación')}</span>` : ''}${
+          p.activo ? '' : ' <span class="estado estado-neutro">Inactivo</span>'}</td>
+        <td class="c-codigo num">${p.codigo_barras
+          ? `<span class="codigo">${esc(p.codigo_barras)}</span>`
+          : `<button type="button" class="btn-codigo" data-etiqueta="${p.id}">Crear código</button>${p.sku ? ` <span class="codigo">${esc(p.sku)}</span>` : ''}`}</td>
+        <td class="c-precio der num">${cop.format(p.precio_venta)}</td>
+        <td class="c-gan der num">${ganCelda(p)}</td>
+        <td class="c-stock num">${stockCelda(p)}</td>
+        <td class="c-acciones"><div class="acciones-fila">${p.codigo_barras ? `<button type="button" class="btn-texto" data-etiqueta="${p.id}">Etiquetas</button>` : ''}</div></td>
       </tr>`;
+
+    const ordenados = [...grupos.values()].sort((a, b) => nombreProducto(a[0]).localeCompare(nombreProducto(b[0])));
+    $('#tbCatalogo').innerHTML = ordenados.map((lista) => {
+      const completas = lista.filter((p) => !p.madre_id);
+      const partesSueltas = lista.filter((p) => p.madre_id && !completas.some((c) => c.id === p.madre_id));
+      const ref = completas[0] ?? lista[0];
+      const ids = new Set(catalogo.filter((p) => p.producto_id === ref.producto_id).map((p) => p.id));
+      const info = [
+        ref.categoria ?? 'Sin categoría',
+        typeof ref.marca === 'string' && ref.marca ? ref.marca : null,
+        catalogo.some((p) => p.madre_id && ids.has(p.madre_id)) ? 'se vende por partes' : null,
+        [...ids].some((id) => conCatalizador.has(id)) ? 'lleva catalizador' : null
+      ].filter(Boolean).join(' · ');
+      const filasHtml = completas.map((c) => filaPres(c, false)
+        + lista.filter((p) => p.madre_id === c.id).sort((a, b) => Number(b.fraccion) - Number(a.fraccion)).map((p) => filaPres(p, true)).join('')).join('')
+        + partesSueltas.map((p) => filaPres(p, true)).join('');
+      return `
+      <tr class="cat-producto">
+        <td colspan="6"><div class="cab">
+          <strong>${esc(nombreProducto(ref))}</strong>
+          <span class="info">${esc(info)}</span>
+          <button type="button" class="btn-texto" data-producto="${ref.producto_id}">Editar producto</button>
+        </div></td>
+      </tr>${filasHtml}`;
     }).join('');
   }
 
-  ['#buscarCat', '#soloBajo', '#verInactivos', '#sinCodigo'].forEach((s) => $(s).addEventListener('input', pintarCatalogo));
+  $('#buscarCat').addEventListener('input', pintarCatalogo);
+  $('#filtroTodos').addEventListener('click', () => {
+    Object.keys(filtrosCat).forEach((k) => { filtrosCat[k] = false; });
+    pintarCatalogo();
+  });
+  Object.entries(BOTON_FILTRO).forEach(([k, s]) => $(s).addEventListener('click', () => {
+    filtrosCat[k] = !filtrosCat[k];
+    pintarCatalogo();
+  }));
+  $('#irEntrada').addEventListener('click', () => abrirPestana('entradas'));
   $('#tbCatalogo').addEventListener('click', (e) => {
     const et = e.target.closest('[data-etiqueta]');
     if (et) return abrirEtiquetas(+et.dataset.etiqueta);
@@ -2309,6 +2441,7 @@
     if (error) return aviso(`No se pudieron cargar las mezclas: ${error.message}. ¿Ya se ejecutó 09_mezclas.sql?`, 'error');
     mezclas = data;
     pintarMezclas();
+    pintarCatalogo();   // "lleva catalizador" en el catálogo
   }
 
   // Producto, catalizador (presentaciones completas) y proporción del formulario

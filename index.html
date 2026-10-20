@@ -28,6 +28,7 @@
     --cinta-borde: #C9AE66;
     --alerta: #A1281F;
     --ok: #2F6B3A;
+    --aviso: #8A6410;
     --radio: 6px;
     font-family: "Barlow", system-ui, sans-serif;
     color: var(--tinta);
@@ -37,7 +38,7 @@
     :root {
       --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
       --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
-      --cinta: #C4AB68; --cinta-borde: #9E8850; --alerta: #E57B72; --ok: #7FC08A;
+      --cinta: #C4AB68; --cinta-borde: #9E8850; --alerta: #E57B72; --ok: #7FC08A; --aviso: #E3B94F;
     }
   }
   * { box-sizing: border-box; }
@@ -76,12 +77,6 @@
     font-size: 1.45rem; letter-spacing: .01em; margin-right: auto;
   }
   #usuario { color: var(--suave); }
-  .nav { display: flex; gap: .25rem; }
-  .nav a {
-    color: var(--tinta); text-decoration: none; padding: .4rem .7rem;
-    border-radius: var(--radio); font-weight: 500;
-  }
-  .nav a[aria-current="page"] { background: var(--fondo); box-shadow: inset 0 -3px 0 var(--acento); }
   @media (max-width: 560px) { #usuario { display: none; } }
 
   /* Login */
@@ -95,8 +90,8 @@
 
   /* Caja */
   #pos {
-    display: grid; grid-template-columns: minmax(0, 1fr) 22rem;
-    gap: 1.5rem; padding: 1.25rem; max-width: 78rem; margin: 0 auto;
+    display: grid; grid-template-columns: minmax(0, 1fr) 26rem;
+    gap: 1.5rem; padding: 1.25rem; max-width: 82rem; margin: 0 auto;
   }
 
   /* El lector: una tira de cinta de enmascarar */
@@ -119,6 +114,9 @@
     background: rgba(255,255,255,.55); border-color: var(--cinta-borde);
     color: #1A2127; white-space: nowrap;
   }
+  .btn-camara { display: inline-flex; align-items: center; gap: .45rem; font-weight: 600; min-height: 2.75rem; }
+  .atajos { display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; margin: .55rem 0 0; font-size: .8rem; color: #3D3420; }
+  .atajos kbd { font: inherit; font-weight: 700; background: rgba(255,255,255,.55); border-radius: 4px; padding: 0 .3rem; }
 
   #lector { margin-top: 1rem; max-width: 26rem; border-radius: var(--radio); overflow: hidden; }
 
@@ -135,63 +133,101 @@
   #resultados small { color: var(--suave); display: block; }
 
   /* Carrito */
-  .carrito { margin-top: 1.5rem; }
+  .carrito { margin-top: 1.25rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
   .carrito h2 {
-    font-family: "Barlow Condensed", sans-serif; font-size: 1.35rem;
-    margin: 0 0 .25rem; font-weight: 600;
+    font-family: "Barlow Condensed", sans-serif; font-size: 1.5rem; font-weight: 700;
+    margin: 0; padding: .8rem 1.1rem; border-bottom: 1px solid var(--linea);
   }
-  .vacio { color: var(--suave); padding: 2rem 0; max-width: 34rem; }
+  .carrito h2 span { color: var(--suave); font-weight: 600; }
+  .vacio { color: var(--suave); padding: 1.5rem 1.1rem; max-width: 36rem; margin: 0; }
   #lineas { list-style: none; margin: 0; padding: 0; }
+  #lineas li:last-child { border-bottom: 0; }
   .linea {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto 7rem auto;
     grid-template-areas: "info paso valor quitar";
     gap: .75rem; align-items: center;
-    padding: .85rem 0; border-bottom: 1px solid var(--linea);
+    padding: .85rem 1.1rem; border-bottom: 1px solid var(--linea);
   }
   .linea .info { grid-area: info; min-width: 0; }
   .linea .nombre { font-weight: 600; }
   .linea .meta { color: var(--suave); font-size: .875rem; }
   .linea .falta { color: var(--alerta); font-size: .875rem; font-weight: 500; }
-  .linea .mezcla { color: var(--suave); font-size: .875rem; margin-top: .15rem; }
-  .btn-mezcla { border: 0; background: none; color: var(--acento); font-weight: 600; padding: .15rem .3rem; }
+  .linea .mezcla { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .6rem; margin-top: .45rem; color: var(--suave); font-size: .875rem; }
+  .cat-pill {
+    display: inline-flex; align-items: center; gap: .35rem; color: var(--tinta);
+    background: color-mix(in srgb, var(--acento) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--acento) 35%, transparent);
+    border-radius: var(--radio); padding: .2rem .55rem;
+  }
+  .cat-pill svg { color: var(--acento); flex: none; }
+  .btn-mezcla { border: 0; background: none; color: var(--acento); font-weight: 600; padding: .3rem .25rem; min-height: 2.2rem; }
+  .btn-mezcla.punteado { border: 1px dashed var(--linea); border-radius: var(--radio); padding: .3rem .7rem; }
   .paso {
     grid-area: paso; display: inline-flex; align-items: center;
-    border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel);
+    border: 1px solid var(--linea); border-radius: 8px; background: var(--fondo);
   }
-  .paso button { border: 0; background: none; color: var(--tinta); width: 2.3rem; height: 2.3rem; font-size: 1.15rem; }
-  .paso input { width: 3.2rem; border: 0; text-align: center; padding: 0; background: transparent; }
-  .linea .valor { grid-area: valor; text-align: right; font-weight: 600; }
+  .paso button { border: 0; background: none; color: var(--tinta); width: 2.75rem; height: 2.75rem; font-size: 1.25rem; }
+  .paso input { width: 3.2rem; border: 0; text-align: center; padding: 0; background: transparent; font-weight: 600; }
+  .linea .valor { grid-area: valor; text-align: right; font-weight: 700; }
   .quitar {
     grid-area: quitar; border: 0; background: none; color: var(--suave);
-    width: 2.3rem; height: 2.3rem; font-size: 1.4rem; border-radius: var(--radio);
+    width: 2.75rem; height: 2.75rem; font-size: 1.4rem; border-radius: var(--radio);
   }
+  .quitar:hover { color: var(--alerta); }
 
   /* Resumen */
   .resumen {
-    background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio);
-    padding: 1.25rem; align-self: start; position: sticky; top: 1rem;
-    display: grid; gap: 1.1rem;
+    background: var(--panel); border: 1px solid var(--linea); border-radius: 8px;
+    padding: 0; align-self: start; position: sticky; top: 1rem;
+    display: grid; gap: 0;
   }
-  .metodos { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; }
+  .resumen > * { padding: 1rem 1.15rem; border-bottom: 1px solid var(--linea); }
+  .resumen > :last-child { border-bottom: 0; }
+  .rotulo { font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); }
+  .metodos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .35rem; }
+  .metodos button { min-height: 3rem; font-weight: 600; font-size: .86rem; padding: .3rem .1rem; background: var(--fondo); }
   .metodos button[aria-pressed="true"] {
-    background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600;
+    background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700;
   }
   fieldset { border: 0; padding: 0; margin: 0; }
   legend { font-weight: 500; margin-bottom: .3rem; padding: 0; }
+  legend.rotulo { margin-bottom: .5rem; }
+  .btn-texto { border: 0; background: none; color: var(--acento); font-weight: 600; padding: .4rem .3rem; min-height: 2.75rem; }
+  /* Cliente elegido */
+  .ficha { display: flex; align-items: center; gap: .75rem; padding: .55rem .75rem; background: var(--fondo); border: 1px solid var(--linea); border-radius: 8px; }
+  .ficha .ini { width: 2.3rem; height: 2.3rem; flex: none; border-radius: 50%; background: var(--linea); display: grid; place-items: center; font-weight: 700; font-size: .9rem; }
+  .ficha > div { flex: 1; min-width: 0; }
+  .ficha strong { display: block; overflow-wrap: anywhere; }
+  .ficha small { display: block; color: var(--suave); font-size: .875rem; }
+  .ficha small > span { white-space: nowrap; }
+  .ficha .debe { color: var(--aviso); font-weight: 600; }
+  .ficha .vencido { color: var(--alerta); font-weight: 600; }
+  /* Efectivo recibido */
+  .billetes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .35rem; }
+  .billetes:empty { display: none; }
+  .billetes button {
+    min-height: 2.75rem; border: 1px solid var(--linea); background: var(--fondo); color: var(--tinta);
+    border-radius: var(--radio); font-weight: 600; font-size: .9rem; padding: .2rem;
+  }
+  .billetes button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); }
+  .cambio-fila { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; }
+  .cambio-fila span:first-child { color: var(--suave); }
   .cifras { display: grid; grid-template-columns: 1fr auto; gap: .3rem 1rem; margin: 0; }
   .cifras dt { color: var(--suave); }
   .cifras dd { margin: 0; text-align: right; }
+  .totales { display: grid; gap: .5rem; }
   .total {
     border-top: 2px solid var(--tinta); padding-top: .6rem;
     display: flex; justify-content: space-between; align-items: baseline;
   }
+  .total > span:first-child { font-weight: 600; }
   .total-cifra {
     font-family: "Barlow Condensed", sans-serif; font-weight: 700;
-    font-size: 2.7rem; line-height: 1;
+    font-size: 2.9rem; line-height: 1;
   }
-  #cambio { color: var(--ok); font-weight: 600; }
-  #cobrar { padding: .9rem; font-size: 1.15rem; }
+  #cambio { color: var(--ok); font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.9rem; line-height: 1.1; text-align: right; }
+  #cobrar { width: 100%; padding: .9rem; font-size: 1.25rem; font-weight: 700; min-height: 3.6rem; border-radius: 8px; }
 
   /* Aviso y diálogo */
   #aviso {
@@ -251,8 +287,6 @@
   /* Barra superior: si no cabe en una línea, el menú baja a su propia fila */
   @media (max-width: 1180px) {
     .barra { flex-wrap: wrap; row-gap: .55rem; }
-    .nav { order: 3; width: 100%; flex-wrap: wrap; overflow: visible; }
-    .nav a { white-space: nowrap; }
   }
   /* Celular */
   @media (max-width: 700px) {
@@ -260,10 +294,6 @@
     .tienda { font-size: 1.25rem; }
     #usuario { display: none; }
     #salir { padding: .4rem .7rem; font-size: .9rem; }
-    .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; }
-    .nav a { text-align: center; padding: .5rem .2rem; background: var(--fondo); font-size: .95rem; }
-    .nav a[aria-current="page"] { background: var(--acento); color: var(--acento-tinta); box-shadow: none; }
-    .nav a:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
     main { padding: 1rem; }
     dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
     .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
@@ -272,16 +302,18 @@
   }
   @media (max-width: 420px) {
     .segmentos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .resumen { gap: .4rem 1.5rem; }
-    .resumen strong { font-size: 1.65rem; }
+    .metodos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
   /* Caja */
   @media (max-width: 700px) {
     #pos { padding: .75rem; gap: 1rem; }
-    .cinta { padding: .85rem 1rem .95rem; }
-    .cinta .fila { flex-wrap: wrap; }
-    .cinta input { flex: 1 1 12rem; }
+    .cinta { padding: .75rem .9rem .85rem; }
+    .cinta label { font-size: .95rem; }
+    .cinta input { flex: 1 1 auto; min-width: 0; font-size: 1.15rem; }
+    .btn-camara span, .atajos { display: none; }
+    .btn-camara { width: 2.9rem; justify-content: center; padding: 0; flex: none; }
+    .linea, .carrito h2, .vacio { padding-left: .85rem; padding-right: .85rem; }
     .resumen { position: static; }
     .total-cifra { font-size: 2.3rem; }
     .red { order: 2; }
@@ -297,15 +329,7 @@
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" aria-label="Secciones">
-    <a href="index.html" aria-current="page">Caja</a>
-    <a href="cotizaciones.html">Cotizaciones</a>
-    <a href="pedidos.html">Pedidos</a>
-    <a href="inventario.html">Inventario</a>
-    <a href="cartera.html">Cartera</a>
-    <a href="gastos.html">Gastos</a>
-    <a href="tablero.html">Tablero</a>
-  </nav>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=1"></script>
   <button type="button" class="red ok" id="estadoRed" hidden aria-label="Estado de la conexión y ventas pendientes">En línea</button>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
@@ -331,17 +355,18 @@
 <main id="pos" hidden>
   <section>
     <div class="cinta">
-      <label for="scan">Escanea el código o escribe el nombre del producto</label>
+      <label for="scan">Escanea el código o escribe el nombre, marca o color</label>
       <div class="fila">
         <input id="scan" autocomplete="off" spellcheck="false" enterkeyhint="search">
-        <button class="btn" id="btnCamara" type="button">Usar cámara</button>
+        <button class="btn btn-camara" id="btnCamara" type="button" aria-label="Usar cámara"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 12h8"/></svg><span>Usar cámara</span></button>
       </div>
+      <p class="atajos"><span><kbd>F2</kbd> buscar</span><span><kbd>F9</kbd> cobrar</span><span><kbd>Esc</kbd> limpiar la búsqueda</span></p>
     </div>
     <div id="lector" hidden></div>
     <ul id="resultados" hidden></ul>
 
     <div class="carrito">
-      <h2>Productos de esta venta</h2>
+      <h2>Venta en curso <span id="cuentaLineas"></span></h2>
       <p class="vacio" id="vacio">Aún no hay productos. Pasa el lector por el código de barras o busca por nombre, marca o código de color.</p>
       <ul id="lineas"></ul>
     </div>
@@ -349,12 +374,17 @@
 
   <aside class="resumen" aria-label="Resumen de la venta">
     <div class="campo">
-      <label for="cliente">Cliente</label>
+      <label for="cliente" class="rotulo">Cliente</label>
       <select id="cliente"><option value="">Consumidor final</option></select>
+      <div class="ficha" id="clienteFicha" hidden>
+        <span class="ini" id="fichaIni" aria-hidden="true"></span>
+        <div><strong id="fichaNombre"></strong><small id="fichaDeuda"></small></div>
+        <button type="button" class="btn-texto" id="cambiarCliente">Cambiar</button>
+      </div>
     </div>
 
     <fieldset>
-      <legend>Forma de pago</legend>
+      <legend class="rotulo">Forma de pago</legend>
       <div class="metodos" id="metodos">
         <button type="button" class="btn" data-metodo="efectivo" aria-pressed="true">Efectivo</button>
         <button type="button" class="btn" data-metodo="transferencia" aria-pressed="false">Transferencia</button>
@@ -363,28 +393,31 @@
       </div>
     </fieldset>
 
-    <div class="campo">
-      <label for="descuento">Descuento (pesos)</label>
-      <input id="descuento" type="number" min="0" step="100" inputmode="numeric" value="0" class="num">
-    </div>
-
-    <dl class="cifras num">
-      <dt>Subtotal</dt><dd id="subtotal">$ 0</dd>
-      <dt>Descuento</dt><dd id="descMostrado">$ 0</dd>
-    </dl>
-
-    <div class="total">
-      <span>Total</span>
-      <span class="total-cifra num" id="total">$ 0</span>
+    <div class="totales">
+      <div class="campo">
+        <label for="descuento">Descuento (pesos)</label>
+        <input id="descuento" type="number" min="0" step="100" inputmode="numeric" value="0" class="num">
+      </div>
+      <dl class="cifras num">
+        <dt>Subtotal</dt><dd id="subtotal">$ 0</dd>
+        <dt>Descuento</dt><dd id="descMostrado">$ 0</dd>
+      </dl>
+      <div class="total">
+        <span>Total</span>
+        <span class="total-cifra num" id="total">$ 0</span>
+      </div>
     </div>
 
     <div id="bloqueEfectivo" class="campo">
-      <label for="recibido">Recibido en efectivo</label>
-      <input id="recibido" type="number" min="0" step="1000" inputmode="numeric" class="num">
-      <span id="cambio" class="num" aria-live="polite"></span>
+      <label for="recibido" class="rotulo">Recibido en efectivo</label>
+      <div class="billetes" id="billetes" role="group" aria-label="Valores rápidos"></div>
+      <input id="recibido" type="number" min="0" step="1000" inputmode="numeric" class="num" placeholder="Otro valor">
+      <div class="cambio-fila" id="cambioFila" hidden><span id="cambioRotulo">Cambio</span><span id="cambio" class="num" aria-live="polite"></span></div>
     </div>
 
-    <button class="btn btn-primario" id="cobrar" type="button" disabled>Cobrar venta</button>
+    <div>
+      <button class="btn btn-primario" id="cobrar" type="button" disabled>Cobrar venta</button>
+    </div>
   </aside>
 </main>
 
@@ -430,7 +463,10 @@
     bloqueEfectivo: $('#bloqueEfectivo'), recibido: $('#recibido'), cambio: $('#cambio'),
     cobrar: $('#cobrar'), aviso: $('#aviso'), btnCamara: $('#btnCamara'), lector: $('#lector'),
     dlg: $('#dlgVenta'), dlgTitulo: $('#dlgTitulo'), dlgDetalle: $('#dlgDetalle'),
-    red: $('#estadoRed'), dlgCola: $('#dlgCola')
+    red: $('#estadoRed'), dlgCola: $('#dlgCola'),
+    billetes: $('#billetes'), cambioFila: $('#cambioFila'), cambioRotulo: $('#cambioRotulo'),
+    clienteFicha: $('#clienteFicha'), fichaIni: $('#fichaIni'), fichaNombre: $('#fichaNombre'), fichaDeuda: $('#fichaDeuda'),
+    cuentaLineas: $('#cuentaLineas')
   };
 
   let carrito = [];          // { id, etiqueta, codigo, precio, cantidad, stock }
@@ -627,16 +663,19 @@
     almacen.set('catalogo', { en: catalogoEn, filas: catalogo });
   }
 
+  let listaClientes = [];
   function pintarClientes(data) {
+    listaClientes = data;
     const actual = el.cliente.value;
     el.cliente.innerHTML = '<option value="">Consumidor final</option>' +
       data.map((c) => `<option value="${c.id}">${esc(c.nombre)}${c.documento ? ' (' + esc(c.documento) + ')' : ''}</option>`).join('');
     el.cliente.value = actual;
+    pintarCliente();
   }
 
   async function cargarClientes() {
     if (enLinea && haySesion) {
-      const res = await conLimite(db.from('clientes').select('id, nombre, documento').order('nombre').limit(1000), 8000);
+      const res = await conLimite(db.from('clientes').select('id, nombre, documento, cupo_credito').order('nombre').limit(1000), 8000);
       if (!res.error) {
         await almacen.set('clientes', res.data);
         return pintarClientes(res.data);
@@ -695,6 +734,7 @@
     if (enLinea) {
       verificarDudosa();
       if (cola.length) sincronizar(); else actualizarCatalogo();
+      window.navPendientes?.(db);
     }
     enfocar();
   }
@@ -893,11 +933,12 @@
 
   function lineaCatalizador(i) {
     if (!i.regla) return '';
-    if (!i.completo) return `<div class="mezcla"><button type="button" class="btn-mezcla" data-accion="completo">Vender completo (con catalizador)</button></div>`;
+    if (!i.completo) return `<div class="mezcla"><button type="button" class="btn-mezcla punteado" data-accion="completo">+ Vender completo (con catalizador)</button></div>`;
     const c = catalizadorDe(i);
+    const mas = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
     const texto = !c ? 'Calculando el catalizador…'
       : c.falta ? `<span class="falta">Falta la parte ${esc(textoMedida(c.falta))} en el catalizador. Créala en Inventario.</span>`
-      : `+ ${c.cantidad > 1 ? `${c.cantidad} × ` : ''}${esc(c.etiqueta)} · <span class="num">${cop.format(c.precio * c.cantidad)}</span>`
+      : `<span class="cat-pill">${mas}<span>${c.cantidad > 1 ? `${c.cantidad} × ` : ''}${esc(c.etiqueta)} · <span class="num">${cop.format(c.precio * c.cantidad)}</span></span></span>`
         + (c.cantidad > c.stock ? ` <span class="falta">Stock: ${c.stock}</span>` : '');
     return `<div class="mezcla">${texto} <button type="button" class="btn-mezcla" data-accion="completo">Sin catalizador</button></div>`;
   }
@@ -942,6 +983,8 @@
 
   function pintar() {
     el.vacio.hidden = carrito.length > 0;
+    const unidades = carrito.reduce((s, i) => s + i.cantidad, 0);
+    el.cuentaLineas.textContent = carrito.length ? `· ${unidades} ${unidades === 1 ? 'unidad' : 'unidades'}` : '';
     el.lineas.innerHTML = carrito.map((i) => `
       <li class="linea" data-id="${i.id}">
         <div class="info">
@@ -993,21 +1036,63 @@
 
     el.bloqueEfectivo.hidden = metodo !== 'efectivo';
     const recibido = parseFloat(el.recibido.value);
+    // Billetes rápidos: "Exacto" siempre; los demás solo si alcanzan para el total
+    const billetes = [['Exacto', total], ['$ 50 mil', 50000], ['$ 100 mil', 100000], ['$ 200 mil', 200000]]
+      .filter(([, v], i) => i === 0 || v >= total);
+    el.billetes.innerHTML = carrito.length && total > 0 ? billetes.map(([t, v]) =>
+      `<button type="button" data-billete="${v}" aria-pressed="${recibido === v}">${t}</button>`).join('') : '';
     if (metodo === 'efectivo' && Number.isFinite(recibido) && carrito.length) {
-      el.cambio.textContent = recibido >= total
-        ? `Cambio: ${cop.format(recibido - total)}`
-        : `Faltan ${cop.format(total - recibido)}`;
+      el.cambioFila.hidden = false;
+      el.cambioRotulo.textContent = recibido >= total ? 'Cambio' : 'Faltan';
+      el.cambio.textContent = cop.format(Math.abs(recibido - total));
       el.cambio.style.color = recibido >= total ? 'var(--ok)' : 'var(--alerta)';
     } else {
+      el.cambioFila.hidden = true;
       el.cambio.textContent = '';
     }
 
     el.cobrar.disabled = !carrito.length || procesando;
+    el.cobrar.textContent = procesando ? 'Registrando…' : carrito.length ? `Cobrar ${cop.format(total)}` : 'Cobrar venta';
   }
 
   el.descuento.addEventListener('input', () => { uuidVenta = null; recalcular(); });
   el.recibido.addEventListener('input', recalcular);
-  el.cliente.addEventListener('change', () => { uuidVenta = null; });
+  el.billetes.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-billete]');
+    if (!b) return;
+    el.recibido.value = b.dataset.billete;
+    recalcular();
+  });
+  el.cliente.addEventListener('change', () => { uuidVenta = null; pintarCliente(); });
+  $('#cambiarCliente').addEventListener('click', () => {
+    el.clienteFicha.hidden = true;
+    el.cliente.hidden = false;
+    el.cliente.focus();
+  });
+
+  // ---------- Cliente elegido: nombre, lo que debe y su cupo ----------
+  const iniciales = (n) => String(n ?? '').trim().split(/\s+/).slice(0, 2).map((p) => p[0] ?? '').join('').toUpperCase();
+  async function pintarCliente() {
+    const id = el.cliente.value ? +el.cliente.value : null;
+    el.clienteFicha.hidden = !id;
+    el.cliente.hidden = !!id;
+    if (!id) return;
+    const c = listaClientes.find((x) => x.id === id);
+    const nombre = c?.nombre ?? el.cliente.selectedOptions[0]?.textContent ?? '';
+    el.fichaIni.textContent = iniciales(nombre);
+    el.fichaNombre.textContent = nombre;
+    const cupo = c?.cupo_credito != null ? Number(c.cupo_credito) : null;
+    el.fichaDeuda.textContent = cupo != null ? `Cupo ${cop.format(cupo)}` : '';
+    if (!enLinea || !haySesion) return;
+    const res = await conLimite(db.from('v_cartera_clientes').select('saldo, saldo_vencido').eq('cliente_id', id).maybeSingle(), 5000);
+    if (res.error || +el.cliente.value !== id) return;
+    const saldo = Number(res.data?.saldo ?? 0), vencido = Number(res.data?.saldo_vencido ?? 0);
+    const partes = [];
+    partes.push(saldo > 0 ? `<span>Debe <b class="debe">${cop.format(saldo)}</b></span>` : '<span>Sin deuda</span>');
+    if (vencido > 0) partes.push(`<span class="vencido">${cop.format(vencido)} vencido</span>`);
+    if (cupo != null) partes.push(`<span>cupo libre ${cop.format(Math.max(cupo - saldo, 0))}</span>`);
+    el.fichaDeuda.innerHTML = partes.join(' · ');   // solo cifras formateadas, sin texto del usuario
+  }
 
   el.metodos.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-metodo]');
@@ -1032,7 +1117,7 @@
       aviso(`La venta a crédito que quedó en duda sí se registró (venta ${res.data.id}). No la vuelvas a cobrar.`);
       const { descuento } = calcular();
       if (dudosa.firma === firmaVenta('credito', el.cliente.value ? +el.cliente.value : null, descuento)) {
-        carrito = []; el.descuento.value = 0; el.cliente.value = ''; pintar();
+        carrito = []; el.descuento.value = 0; el.cliente.value = ''; pintarCliente(); pintar();
       }
     }
     dudosa = null;
@@ -1166,6 +1251,7 @@
     el.descuento.value = 0;
     el.recibido.value = '';
     el.cliente.value = '';
+    pintarCliente();
     el.metodos.querySelector('[data-metodo="efectivo"]').click();
     pintar();
     el.dlg.close();
@@ -1290,6 +1376,9 @@
   document.addEventListener('keydown', (e) => {
     if (el.pos.hidden || el.dlg.open || el.dlgCola.open) return;
     const activo = document.activeElement;
+    // Atajos: F2 buscar, F9 cobrar
+    if (e.key === 'F2') { e.preventDefault(); el.scan.focus(); el.scan.select(); return; }
+    if (e.key === 'F9') { e.preventDefault(); if (!el.cobrar.disabled) el.cobrar.click(); return; }
     if ((!activo || activo === document.body) && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       el.scan.focus();
     }
@@ -1301,7 +1390,7 @@
     try { await lectorCamara.stop(); lectorCamara.clear(); } catch (_) {}
     lectorCamara = null;
     el.lector.hidden = true;
-    el.btnCamara.textContent = 'Usar cámara';
+    el.btnCamara.querySelector('span').textContent = 'Usar cámara'; el.btnCamara.setAttribute('aria-label', 'Usar cámara');
   }
 
   el.btnCamara.addEventListener('click', async () => {
@@ -1319,7 +1408,7 @@
           buscar(codigo);
         }
       );
-      el.btnCamara.textContent = 'Cerrar cámara';
+      el.btnCamara.querySelector('span').textContent = 'Cerrar cámara'; el.btnCamara.setAttribute('aria-label', 'Cerrar cámara');
     } catch (err) {
       lectorCamara = null;
       el.lector.hidden = true;

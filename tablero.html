@@ -19,14 +19,14 @@
   :root {
     --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
     --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
-    --cinta: #E8D08A; --alerta: #A1281F; --ok: #2F6B3A; --radio: 6px;
+    --cinta: #E8D08A; --alerta: #A1281F; --ok: #2F6B3A; --aviso: #8A6410; --radio: 6px;
     font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
       --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
-      --cinta: #C4AB68; --alerta: #E57B72; --ok: #7FC08A;
+      --cinta: #C4AB68; --alerta: #E57B72; --ok: #7FC08A; --aviso: #E3B94F;
     }
   }
   * { box-sizing: border-box; }
@@ -38,19 +38,16 @@
   input { font: inherit; color: var(--tinta); background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: .45rem .6rem; }
   label { font-weight: 500; }
   .campo { display: grid; gap: .3rem; }
-  .btn { border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .45rem .85rem; border-radius: var(--radio); white-space: nowrap; }
+  .btn { border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .45rem .85rem; border-radius: var(--radio); white-space: nowrap; min-height: 2.75rem; }
   .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
   .btn-peligro { background: var(--alerta); color: #fff; border-color: var(--alerta); font-weight: 600; }
   .btn-texto { border: 0; background: none; color: var(--acento); padding: .2rem .3rem; font-weight: 600; }
-  h2, h3 { font-family: "Barlow Condensed", sans-serif; font-weight: 600; margin: 0; }
-  h2 { font-size: 1.4rem; } h3 { font-size: 1.2rem; }
+  h2, h3 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; margin: 0; }
+  h2 { font-size: 1.4rem; } h3 { font-size: 1.3rem; }
 
   .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
   .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; margin-right: auto; }
   #usuario { color: var(--suave); }
-  .nav { display: flex; gap: .25rem; overflow-x: auto; }
-  .nav a { color: var(--tinta); text-decoration: none; padding: .4rem .7rem; border-radius: var(--radio); font-weight: 500; }
-  .nav a[aria-current="page"] { background: var(--fondo); box-shadow: inset 0 -3px 0 var(--acento); }
 
   #login { max-width: 22rem; margin: 12vh auto 0; padding: 1.5rem; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: 1rem; }
   #login h1 { font-family: "Barlow Condensed", sans-serif; font-size: 1.8rem; margin: 0; }
@@ -59,22 +56,52 @@
 
   main { max-width: 80rem; margin: 0 auto; padding: 1.25rem; display: grid; gap: 1.75rem; }
 
-  /* Período */
-  .periodo { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: end; }
-  .presets { display: flex; flex-wrap: wrap; gap: .35rem; }
-  .presets button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
-  .rango { display: flex; gap: .5rem; align-items: end; }
+  /* Cabecera: título, período y rango */
+  .periodo { display: grid; gap: .75rem; }
+  .cabecera { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; }
+  .cabecera h1 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 2.1rem; line-height: 1.1; margin: 0; }
+  .segmentado { display: flex; flex-wrap: wrap; gap: .25rem; padding: .25rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 10px; }
+  .segmentado button { border: 0; background: none; color: var(--suave); border-radius: 7px; padding: 0 .9rem; min-height: 2.75rem; font-weight: 500; }
+  .segmentado button:hover { color: var(--tinta); }
+  .segmentado button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); font-weight: 600; }
+  .rango-texto { color: var(--suave); }
+  .rango { display: flex; gap: .5rem; align-items: end; padding: .9rem 1.1rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
+  .rango input { min-height: 2.75rem; }
 
-  /* Indicadores: una línea de cifras sobre una regla gruesa */
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1rem 2rem; padding-bottom: 1.1rem; border-bottom: 2px solid var(--tinta); }
-  .kpis div { display: grid; align-content: start; }
-  .kpis span { color: var(--suave); }
-  .kpis strong { font-family: "Barlow Condensed", sans-serif; font-size: 2.2rem; line-height: 1.05; font-weight: 700; }
-  .kpis small { color: var(--suave); }
+  /* Cuatro cifras grandes */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr)); gap: .75rem; }
+  .kpi { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; padding: 1rem 1.1rem; display: grid; align-content: start; gap: .1rem; }
+  .kpi > span { color: var(--suave); }
+  .kpi strong { font-family: "Barlow Condensed", sans-serif; font-size: 2.3rem; line-height: 1.1; font-weight: 700; }
+  .kpi small { color: var(--suave); font-size: .875rem; }
+  .kpi.destacado { border-color: var(--acento); }
+  .positivo { color: var(--ok); }
+  .sube { color: var(--ok); font-weight: 600; }
+  .baja { color: var(--alerta); font-weight: 600; }
+  /* Cifras de apoyo, más pequeñas */
+  .kpis-sec { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: .75rem 1.5rem; padding: .9rem 1.1rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
+  .kpis-sec div { display: grid; align-content: start; }
+  .kpis-sec span, .kpis-sec small { color: var(--suave); }
+  .kpis-sec small { font-size: .875rem; }
+  .kpis-sec strong { font-family: "Barlow Condensed", sans-serif; font-size: 1.5rem; line-height: 1.15; font-weight: 700; }
 
-  .bloque { background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: 1.1rem 1.25rem; display: grid; gap: .8rem; align-content: start; }
+  .bloque { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; padding: 1.1rem 1.25rem; display: grid; gap: .8rem; align-content: start; }
+  .bloque-cab { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .25rem 1rem; }
+  .bloque-cab small, .bloque-cab a { font-size: .9rem; }
+  .bloque-cab small { color: var(--suave); }
+  .bloque-cab a { color: var(--acento); font-weight: 600; text-decoration: none; }
   .grafico { position: relative; height: 16rem; }
+  .dos { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 1.25rem; align-items: stretch; }
   .tres { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 1.25rem; align-items: start; }
+
+  /* Estados (iguales en toda la app) */
+  .estado { display: inline-block; font-size: .8rem; font-weight: 700; line-height: 1.4; padding: .05rem .55rem; border-radius: 999px; border: 1px solid; white-space: nowrap; text-decoration: none; }
+  .estado-pendiente { color: var(--aviso); border-color: color-mix(in srgb, var(--aviso) 40%, transparent); background: color-mix(in srgb, var(--aviso) 14%, transparent); }
+  .estado-confirmado { color: var(--acento); border-color: color-mix(in srgb, var(--acento) 40%, transparent); background: color-mix(in srgb, var(--acento) 14%, transparent); }
+  .estado-ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+  .estado-mal { color: var(--alerta); border-color: color-mix(in srgb, var(--alerta) 40%, transparent); background: color-mix(in srgb, var(--alerta) 14%, transparent); }
+  .estado-neutro { color: var(--suave); border-color: var(--linea); background: color-mix(in srgb, var(--suave) 12%, transparent); }
+  .margen-bajo { color: var(--aviso); font-weight: 600; }
 
   /* Filas con barra proporcional */
   .barras { list-style: none; margin: 0; padding: 0; display: grid; gap: .7rem; }
@@ -93,6 +120,7 @@
   td.der, th.der { text-align: right; }
   .anulada td { color: var(--suave); text-decoration: line-through; }
   .anulada td:last-child { text-decoration: none; }
+  .anulada .estado { text-decoration: none; }
   .vacio { color: var(--suave); padding: .75rem 0; margin: 0; }
 
   dialog { border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); color: var(--tinta); padding: 1.5rem; width: min(40rem, calc(100% - 1.5rem)); }
@@ -109,17 +137,16 @@
   .resultado td.der { white-space: nowrap; padding-left: .75rem; }
   .resultado .sub td { font-weight: 600; }
   .resultado .final td { font-weight: 700; font-size: 1.15rem; border-top: 2px solid var(--tinta); border-bottom: 0; }
-  .resultado .negativo, .kpis .negativo { color: var(--alerta); }
+  .negativo { color: var(--alerta); }
   .nota-res { color: var(--suave); }
 
   #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
   #aviso.error { background: var(--alerta); color: #fff; }
 
-  @media (max-width: 960px) { .tres { grid-template-columns: 1fr; } }
+  @media (max-width: 960px) { .tres, .dos { grid-template-columns: 1fr; } }
   @media (max-width: 560px) {
     #usuario { display: none; }
     main { padding: 1rem; }
-    .kpis strong { font-size: 1.8rem; }
     .grafico { height: 13rem; }
   }
 
@@ -137,8 +164,6 @@
   /* Barra superior: si no cabe en una línea, el menú baja a su propia fila */
   @media (max-width: 1180px) {
     .barra { flex-wrap: wrap; row-gap: .55rem; }
-    .nav { order: 3; width: 100%; flex-wrap: wrap; overflow: visible; }
-    .nav a { white-space: nowrap; }
   }
   /* Celular */
   @media (max-width: 700px) {
@@ -146,10 +171,6 @@
     .tienda { font-size: 1.25rem; }
     #usuario { display: none; }
     #salir { padding: .4rem .7rem; font-size: .9rem; }
-    .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; }
-    .nav a { text-align: center; padding: .5rem .2rem; background: var(--fondo); font-size: .95rem; }
-    .nav a[aria-current="page"] { background: var(--acento); color: var(--acento-tinta); box-shadow: none; }
-    .nav a:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
     main { padding: 1rem; }
     dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
     .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
@@ -163,16 +184,19 @@
   }
 
   /* Tablero */
-  .kpis { grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr)); }
   .rango { flex-wrap: wrap; }
   @media (max-width: 700px) {
-    .periodo { display: grid; gap: .75rem; }
-    .presets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cabecera h1 { font-size: 1.8rem; }
+    .segmentado { width: 100%; }
+    .segmentado button { flex: 1 1 auto; padding: 0 .6rem; }
     .rango { display: grid; grid-template-columns: 1fr 1fr; }
     .rango > :last-child { grid-column: 1 / -1; }
     .rango input { width: 100%; }
-    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.25rem; }
-    .kpis strong { font-size: 1.55rem; }
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+    .kpi { padding: .75rem .8rem; }
+    .kpi strong { font-size: 1.55rem; }
+    .kpis-sec { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem 1rem; }
+    .kpis-sec strong { font-size: 1.25rem; }
     .bloque { padding: 1rem; }
   }
   /* Logo junto al nombre */
@@ -186,15 +210,7 @@
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" aria-label="Secciones">
-    <a href="index.html">Caja</a>
-    <a href="cotizaciones.html">Cotizaciones</a>
-    <a href="pedidos.html">Pedidos</a>
-    <a href="inventario.html">Inventario</a>
-    <a href="cartera.html">Cartera</a>
-    <a href="gastos.html">Gastos</a>
-    <a href="tablero.html" aria-current="page">Tablero</a>
-  </nav>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=1"></script>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -209,27 +225,44 @@
 
 <main id="app" hidden>
   <section class="periodo" aria-label="Período">
-    <div class="presets" id="presets">
-      <button type="button" class="btn" data-p="hoy" aria-pressed="false">Hoy</button>
-      <button type="button" class="btn" data-p="7" aria-pressed="false">Últimos 7 días</button>
-      <button type="button" class="btn" data-p="mes" aria-pressed="true">Este mes</button>
-      <button type="button" class="btn" data-p="anterior" aria-pressed="false">Mes anterior</button>
+    <div class="cabecera">
+      <h1>Tablero</h1>
+      <div class="segmentado" id="presets" role="group" aria-label="Período">
+        <button type="button" data-p="hoy" aria-pressed="false">Hoy</button>
+        <button type="button" data-p="7" aria-pressed="false">7 días</button>
+        <button type="button" data-p="mes" aria-pressed="true">Este mes</button>
+        <button type="button" data-p="anterior" aria-pressed="false">Mes anterior</button>
+        <button type="button" data-p="rango" aria-pressed="false" aria-expanded="false" aria-controls="frmRango">Elegir fechas…</button>
+      </div>
+      <span class="rango-texto" id="rangoTexto" aria-live="polite"></span>
     </div>
-    <form class="rango" id="frmRango">
+    <form class="rango" id="frmRango" hidden>
       <div class="campo"><label for="desde">Desde</label><input type="date" id="desde" required></div>
       <div class="campo"><label for="hasta">Hasta</label><input type="date" id="hasta" required></div>
-      <button class="btn" type="submit">Ver período</button>
+      <button class="btn btn-primario" type="submit">Ver período</button>
     </form>
   </section>
 
-  <section class="kpis num" aria-label="Indicadores del período">
-    <div><span>Ventas netas</span><strong id="kVentas">$ 0</strong><small id="kDescuentos"></small></div>
-    <div><span>Ventas</span><strong id="kNum">0</strong><small id="kTicket"></small></div>
-    <div><span>Margen bruto</span><strong id="kMargen">$ 0</strong><small id="kMargenPct"></small></div>
+  <section class="kpis num" aria-label="Resultado del período">
+    <div class="kpi"><span>Ventas</span><strong id="kVentas">$ 0</strong><small id="kComparacion"></small><small id="kDescuentos"></small></div>
+    <div class="kpi"><span>Margen bruto</span><strong id="kMargen">$ 0</strong><small id="kMargenPct"></small></div>
+    <div class="kpi" id="kGastosCaja" hidden><span>Gastos</span><strong id="kGastos">$ 0</strong><small id="kGastosDet"></small></div>
+    <div class="kpi destacado" id="kUtilidadCaja" hidden><span>Utilidad</span><strong id="kUtilidad">$ 0</strong><small id="kUtilidadPct"></small></div>
+  </section>
+
+  <section class="kpis-sec num" aria-label="Otras cifras del período">
+    <div><span>Número de ventas</span><strong id="kNum">0</strong><small id="kTicket"></small></div>
     <div><span>Dinero recibido</span><strong id="kRecaudo">$ 0</strong><small id="kAbonos"></small></div>
     <div><span>Vendido a crédito</span><strong id="kCredito">$ 0</strong><small id="kAnuladas"></small></div>
-    <div id="kUtilidadCaja" hidden><span>Utilidad</span><strong id="kUtilidad">$ 0</strong><small id="kUtilidadPct"></small></div>
   </section>
+
+  <div class="dos">
+    <section class="bloque">
+      <div class="bloque-cab"><h2>Ventas por día</h2><small class="num" id="mejorDia"></small></div>
+      <div class="grafico"><canvas id="grafico" aria-label="Gráfico de ventas por día" role="img"></canvas></div>
+    </section>
+    <section class="bloque"><h2>Por forma de pago</h2><ul class="barras num" id="porMetodo"></ul></section>
+  </div>
 
   <div class="tres" id="bloqueResultado" hidden>
     <section class="bloque">
@@ -261,19 +294,13 @@
     </section>
   </div>
 
-  <section class="bloque">
-    <h2>Ventas por día</h2>
-    <div class="grafico"><canvas id="grafico" aria-label="Gráfico de ventas por día" role="img"></canvas></div>
-  </section>
-
-  <div class="tres">
-    <section class="bloque"><h3>Por categoría</h3><ul class="barras num" id="porCategoria"></ul></section>
-    <section class="bloque"><h3>Por forma de pago</h3><ul class="barras num" id="porMetodo"></ul></section>
-    <section class="bloque"><h3>Por socio</h3><ul class="barras num" id="porVendedor"></ul></section>
+  <div class="dos">
+    <section class="bloque"><h3>Ventas por categoría</h3><ul class="barras num" id="porCategoria"></ul></section>
+    <section class="bloque"><h3>Ventas por socio</h3><ul class="barras num" id="porVendedor"></ul></section>
   </div>
 
   <section class="bloque">
-    <h2>Productos más vendidos</h2>
+    <div class="bloque-cab"><h2>Productos más vendidos</h2><a href="#ventasPeriodo" id="verVentas" hidden></a></div>
     <div class="tabla-caja">
       <table>
         <thead><tr><th>Producto</th><th class="der">Unidades</th><th class="der">Ventas</th><th class="der">Margen</th><th class="der">Margen %</th></tr></thead>
@@ -282,7 +309,7 @@
     </div>
   </section>
 
-  <section class="bloque">
+  <section class="bloque" id="ventasPeriodo" tabindex="-1">
     <h2>Ventas del período</h2>
     <div class="tabla-caja">
       <table>
@@ -328,6 +355,8 @@
   const pct = (a, b) => (b > 0 ? `${(a / b * 100).toFixed(1).replace('.', ',')} %` : '');
   const fHora = new Intl.DateTimeFormat('es-CO', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Bogota' });
   const fDia = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short' });
+  const fDiaLargo = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric' });
+  const MARGEN_BAJO = 20;   // % sobre las ventas por debajo del cual el margen se marca en ámbar
 
   const METODOS = { efectivo: 'Efectivo', transferencia: 'Transferencia', tarjeta: 'Tarjeta', credito: 'Crédito' };
   const ESTADOS = { pagada: 'Pagada', pendiente_pago: 'Pendiente de pago', anulada: 'Anulada' };
@@ -337,6 +366,8 @@
 
   let perfiles = {};        // id -> nombre
   let grafico = null;
+  let ultimosDias = null;   // para volver a pintar el gráfico si cambia el tema
+  let cargaActual = 0;      // descarta respuestas de un período que ya no está en pantalla
   let ventaAbierta = null;
 
   const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
@@ -373,21 +404,58 @@
     }
   }
 
+  // Período anterior de la misma duración. Si el período empieza el día 1 de un mes,
+  // se compara con el mismo tramo del mes anterior (1 al 20 de oct. → 1 al 20 de sept.).
+  function periodoAnterior(desde, hasta) {
+    const [a, m, d] = desde.split('-').map(Number);
+    const [a2, m2, d2] = hasta.split('-').map(Number);
+    if (d === 1 && a === a2 && m === m2) {
+      const ini = new Date(Date.UTC(a, m - 2, 1)).toISOString().slice(0, 10);
+      const ultimoAnt = new Date(Date.UTC(a, m - 1, 0)).getUTCDate();
+      const ultimo = new Date(Date.UTC(a2, m2, 0)).getUTCDate();
+      const dia = d2 === ultimo ? ultimoAnt : Math.min(d2, ultimoAnt);
+      return [ini, ini.slice(0, 8) + String(dia).padStart(2, '0')];
+    }
+    const dias = Math.round((Date.UTC(a2, m2 - 1, d2) - Date.UTC(a, m - 1, d)) / 864e5) + 1;
+    return [sumarDias(desde, -dias), sumarDias(desde, -1)];
+  }
+
+  // "1 al 20 de octubre", "28 de sept. al 3 de oct.", con año si no es el actual
+  function textoRango(d, h) {
+    const f = (iso, opt) => new Intl.DateTimeFormat('es-CO', { timeZone: 'UTC', ...opt }).format(new Date(`${iso}T00:00:00Z`));
+    const anio = d.slice(0, 4) !== h.slice(0, 4) || h.slice(0, 4) !== hoyBogota().slice(0, 4) ? { year: 'numeric' } : {};
+    if (d === h) return f(d, { day: 'numeric', month: 'long', ...anio });
+    if (d.slice(0, 7) === h.slice(0, 7)) return `${Number(d.slice(8))} al ${f(h, { day: 'numeric', month: 'long', ...anio })}`;
+    return `${f(d, { day: 'numeric', month: 'short' })} al ${f(h, { day: 'numeric', month: 'short', ...anio })}`;
+  }
+
+  function marcarPreset(p) {
+    $('#presets').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.p === p));
+  }
+
   function aplicarPreset(p) {
     const [d, h] = rangoPreset(p);
     $('#desde').value = d;
     $('#hasta').value = h;
-    $('#presets').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.p === p));
+    $('#frmRango').hidden = true;
+    $('#presets [data-p="rango"]').setAttribute('aria-expanded', 'false');
+    marcarPreset(p);
     cargar();
   }
 
   $('#presets').addEventListener('click', (e) => {
     const b = e.target.closest('[data-p]');
-    if (b) aplicarPreset(b.dataset.p);
+    if (!b) return;
+    if (b.dataset.p !== 'rango') return aplicarPreset(b.dataset.p);
+    // "Elegir fechas…" solo muestra los campos; el período cambia al pulsar "Ver período"
+    const abrir = $('#frmRango').hidden;
+    $('#frmRango').hidden = !abrir;
+    b.setAttribute('aria-expanded', String(abrir));
+    if (abrir) $('#desde').focus();
   });
   $('#frmRango').addEventListener('submit', (e) => {
     e.preventDefault();
-    $('#presets').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+    marcarPreset('rango');
     cargar();
   });
 
@@ -402,6 +470,7 @@
     perfiles = Object.fromEntries((data ?? []).map((p) => [p.id, p.nombre]));
     if (!perfiles[session.user.id]) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
     $('#usuario').textContent = perfiles[session.user.id] ?? session.user.email;
+    navPendientes(db);
     aplicarPreset('mes');
   }
 
@@ -417,20 +486,30 @@
   async function cargar() {
     const desde = $('#desde').value, hasta = $('#hasta').value;
     if (!desde || !hasta || hasta < desde) return aviso('Revisa el rango: la fecha final debe ser igual o posterior a la inicial.', 'error');
+    const esta = ++cargaActual;
+    $('#rangoTexto').textContent = textoRango(desde, hasta);
+    const [antDesde, antHasta] = periodoAnterior(desde, hasta);
 
-    const [rr, rv, rg] = await Promise.all([
+    const [rr, rv, rg, ra] = await Promise.all([
       db.rpc('resumen_ventas', { p_desde: desde, p_hasta: hasta }),
       db.from('ventas').select('id, creado_en, total, metodo_pago, estado, usuario_id, clientes(nombre)')
         .gte('creado_en', `${desde}T00:00:00-05:00`)
         .lt('creado_en', `${sumarDias(hasta, 1)}T00:00:00-05:00`)
         .order('creado_en', { ascending: false })
         .limit(200),
-      db.rpc('resumen_gastos', { p_desde: desde, p_hasta: hasta })
+      db.rpc('resumen_gastos', { p_desde: desde, p_hasta: hasta }),
+      // Para comparar las ventas con el período anterior (mismo cálculo)
+      db.rpc('resumen_ventas', { p_desde: antDesde, p_hasta: antHasta })
     ]);
+    if (esta !== cargaActual) return;   // llegó tarde: ya se pidió otro período
     if (rr.error) return aviso('No se pudo cargar el resumen: ' + rr.error.message, 'error');
     if (rv.error) return aviso('No se pudieron cargar las ventas: ' + rv.error.message, 'error');
 
     pintarKpis(rr.data);
+    pintarComparacion(rr.data, ra.error ? null : ra.data, textoRango(antDesde, antHasta));
+    const n = rr.data.kpis.num_ventas;
+    $('#verVentas').hidden = !rv.data.length;
+    $('#verVentas').textContent = `Ver ${n === 1 ? 'la venta' : `las ${n} ventas`} del período`;
     pintarGrafico(rr.data.por_dia);
     pintarBarras('#porCategoria', rr.data.por_categoria, (x) => x.categoria,
       (x) => `Margen ${cop.format(x.margen)} (${pct(x.margen, x.total) || '0 %'})`);
@@ -447,13 +526,16 @@
   function pintarResultado(r, g) {
     $('#bloqueResultado').hidden = !g;
     $('#kUtilidadCaja').hidden = !g;
+    $('#kGastosCaja').hidden = !g;
     if (!g) return;
     const ventas = Number(r.kpis.ventas_netas), margen = Number(r.margen.margen), costo = Number(r.margen.costo);
     const gastosT = Number(g.total_gastos), utilidad = margen - gastosT;
     const signo = (v) => (v < 0 ? 'negativo' : '');
+    $('#kGastos').textContent = cop.format(gastosT);
+    $('#kGastosDet').textContent = ventas > 0 ? `${pct(gastosT, ventas)} de las ventas · sin retiros de socios` : 'Sin retiros de socios';
     $('#kUtilidad').textContent = cop.format(utilidad);
-    $('#kUtilidad').className = signo(utilidad);
-    $('#kUtilidadPct').textContent = ventas > 0 ? `${pct(utilidad, ventas)} de las ventas · gastos ${cop.format(gastosT)}` : `Gastos ${cop.format(gastosT)}`;
+    $('#kUtilidad').className = utilidad < 0 ? 'negativo' : 'positivo';
+    $('#kUtilidadPct').textContent = ventas > 0 ? `Margen menos gastos · ${pct(utilidad, ventas)} de las ventas` : 'Margen menos gastos';
     $('#rVentas').textContent = cop.format(ventas);
     $('#rCosto').textContent = cop.format(costo);
     $('#rMargen').textContent = cop.format(margen);
@@ -479,7 +561,8 @@
   function pintarKpis(r) {
     const k = r.kpis, m = r.margen;
     $('#kVentas').textContent = cop.format(k.ventas_netas);
-    $('#kDescuentos').textContent = k.descuentos > 0 ? `Descuentos: ${cop.format(k.descuentos)}` : '';
+    $('#kDescuentos').textContent = `${k.num_ventas} ${k.num_ventas === 1 ? 'venta' : 'ventas'}` +
+      (k.descuentos > 0 ? ` · descuentos ${cop.format(k.descuentos)}` : '');
     $('#kNum').textContent = k.num_ventas;
     $('#kTicket').textContent = k.num_ventas ? `Promedio ${cop.format(k.ticket_promedio)}` : '';
     $('#kMargen').textContent = cop.format(m.margen);
@@ -490,7 +573,27 @@
     $('#kAnuladas').textContent = k.anuladas > 0 ? `${k.anuladas} ${k.anuladas === 1 ? 'venta anulada' : 'ventas anuladas'} en el período` : '';
   }
 
+  // Ventas frente al período anterior de la misma duración
+  function pintarComparacion(r, ant, textoAnt) {
+    const el = $('#kComparacion');
+    el.innerHTML = '';
+    if (!ant) return;
+    const hoy = Number(r.kpis.ventas_netas), antes = Number(ant.kpis.ventas_netas);
+    if (!(antes > 0)) { el.textContent = `Sin ventas del ${textoAnt} para comparar`; return; }
+    const cambio = (hoy - antes) / antes * 100;
+    const sube = cambio >= 0;
+    // Solo textos propios y números: no lleva datos del usuario
+    el.innerHTML = `<span class="${sube ? 'sube' : 'baja'}">${sube ? '▲' : '▼'} ${Math.abs(cambio).toFixed(0)} %</span> frente al ${esc(textoAnt)}`;
+  }
+
+  // Convierte el color del tema (#RRGGBB) en rgba con transparencia
+  function conAlfa(color, a) {
+    const m = color.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+    return m ? `rgba(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}, ${a})` : color;
+  }
+
   function pintarGrafico(dias) {
+    ultimosDias = dias;
     const css = getComputedStyle(document.documentElement);
     const acento = css.getPropertyValue('--acento').trim();
     const suave = css.getPropertyValue('--suave').trim();
@@ -498,13 +601,24 @@
     Chart.defaults.font.family = '"Barlow", system-ui, sans-serif';
     Chart.defaults.color = suave;
 
+    // El mejor día va en el acento lleno; los demás, del mismo color más claro
+    const totales = dias.map((d) => Number(d.total));
+    const max = Math.max(0, ...totales);
+    const mejor = max > 0 ? totales.indexOf(max) : -1;
+    $('#mejorDia').textContent = mejor >= 0 && dias.length > 1
+      ? `Mejor día: ${fDiaLargo.format(fechaLocal(dias[mejor].fecha))} · ${cop.format(max)}` : '';
+
     const compacto = new Intl.NumberFormat('es-CO', { notation: 'compact', maximumFractionDigits: 1 });
     if (grafico) grafico.destroy();
     grafico = new Chart($('#grafico'), {
       type: 'bar',
       data: {
         labels: dias.map((d) => fDia.format(fechaLocal(d.fecha))),
-        datasets: [{ data: dias.map((d) => Number(d.total)), backgroundColor: acento, borderRadius: 3, maxBarThickness: 36 }]
+        datasets: [{
+          data: totales,
+          backgroundColor: totales.map((_, i) => (i === mejor || dias.length === 1 ? acento : conAlfa(acento, 0.55))),
+          borderRadius: 3, maxBarThickness: 36
+        }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
@@ -541,7 +655,8 @@
         <td class="der num">${entero.format(p.unidades)}</td>
         <td class="der num">${cop.format(p.total)}</td>
         <td class="der num">${cop.format(p.margen)}</td>
-        <td class="der num">${pct(p.margen, p.total)}</td>
+        <td class="der num">${Number(p.total) > 0 && Number(p.margen) / Number(p.total) * 100 < MARGEN_BAJO
+          ? `<span class="margen-bajo">${pct(p.margen, p.total)} · bajo</span>` : pct(p.margen, p.total)}</td>
       </tr>`).join('') : '<tr><td colspan="5" class="vacio">Sin ventas en el período.</td></tr>';
   }
 
@@ -552,7 +667,7 @@
         <td class="num">${fHora.format(new Date(v.creado_en))}</td>
         <td>${esc(v.clientes?.nombre ?? 'Consumidor final')}</td>
         <td>${esc(perfiles[v.usuario_id] ?? '')}</td>
-        <td>${METODOS[v.metodo_pago]}${v.estado === 'pendiente_pago' ? ' (pendiente)' : ''}${v.estado === 'anulada' ? ' (anulada)' : ''}</td>
+        <td>${METODOS[v.metodo_pago]}${v.estado === 'pendiente_pago' ? ' <span class="estado estado-pendiente">Pendiente de pago</span>' : ''}${v.estado === 'anulada' ? ' <span class="estado estado-neutro">Anulada</span>' : ''}</td>
         <td class="der num">${cop.format(v.total)}</td>
         <td><button type="button" class="btn-texto" data-venta="${v.id}">Ver</button></td>
       </tr>`).join('') : '<tr><td colspan="7" class="vacio">No hay ventas en el período.</td></tr>';
@@ -641,6 +756,10 @@
   });
 
   // ---------- Inicio ----------
+  // Si el equipo pasa de tema claro a oscuro (o al revés), el gráfico toma los colores nuevos
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (ultimosDias) pintarGrafico(ultimosDias);
+  });
   db.auth.onAuthStateChange((evento, s) => {
     if (evento === 'TOKEN_REFRESHED') return;
     setTimeout(() => mostrarSesion(s), 0);

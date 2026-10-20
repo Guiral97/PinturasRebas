@@ -17,14 +17,14 @@
   :root {
     --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
     --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
-    --cinta: #E8D08A; --cinta-borde: #C9AE66; --alerta: #A1281F; --ok: #2F6B3A; --radio: 6px;
+    --cinta: #E8D08A; --cinta-borde: #C9AE66; --alerta: #A1281F; --ok: #2F6B3A; --aviso: #8A6410; --radio: 6px;
     font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
       --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
-      --cinta: #C4AB68; --cinta-borde: #9E8850; --alerta: #E57B72; --ok: #7FC08A;
+      --cinta: #C4AB68; --cinta-borde: #9E8850; --alerta: #E57B72; --ok: #7FC08A; --aviso: #E3B94F;
     }
   }
   * { box-sizing: border-box; }
@@ -38,7 +38,7 @@
   label, legend { font-weight: 500; }
   .campo { display: grid; gap: .3rem; align-content: start; }
   .campo small { color: var(--suave); }
-  .btn { border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .5rem .9rem; border-radius: var(--radio); white-space: nowrap; text-decoration: none; display: inline-block; }
+  .btn { border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .5rem .9rem; border-radius: 8px; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; min-height: 2.75rem; }
   .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
   .btn:disabled { opacity: .45; cursor: not-allowed; }
   .btn-texto { border: 0; background: none; color: var(--acento); padding: .2rem .3rem; font-weight: 600; }
@@ -49,9 +49,6 @@
   .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
   .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; margin-right: auto; }
   #usuario { color: var(--suave); }
-  .nav { display: flex; gap: .25rem; }
-  .nav a { color: var(--tinta); text-decoration: none; padding: .4rem .7rem; border-radius: var(--radio); font-weight: 500; }
-  .nav a[aria-current="page"] { background: var(--fondo); box-shadow: inset 0 -3px 0 var(--acento); }
 
   #login { max-width: 22rem; margin: 12vh auto 0; padding: 1.5rem; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: 1rem; }
   #login h1 { font-family: "Barlow Condensed", sans-serif; font-size: 1.8rem; margin: 0; }
@@ -59,18 +56,34 @@
 
   main { max-width: 80rem; margin: 0 auto; padding: 1.25rem; }
 
-  /* Resumen del mes */
-  .resumen { display: flex; flex-wrap: wrap; gap: .5rem 2.5rem; align-items: baseline; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 2px solid var(--tinta); }
-  .resumen div { display: grid; }
+  /* Cabecera de la pantalla: título, pestañas y total del mes */
+  .cab-pagina { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; margin-bottom: 1rem; }
+  .cab-pagina h1 { margin: 0; font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 2.1rem; line-height: 1.1; }
+  .total-mes { margin-left: auto; display: flex; align-items: baseline; gap: .6rem; }
+  .total-mes span { color: var(--suave); }
+  .total-mes strong { font-family: "Barlow Condensed", sans-serif; font-size: 1.9rem; font-weight: 700; line-height: 1; }
+
+  /* Cifras secundarias del mes */
+  .resumen { display: flex; flex-wrap: wrap; gap: .5rem 2rem; margin: 0 0 1.25rem; padding: .7rem 1rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
+  .resumen div { display: flex; align-items: baseline; gap: .5rem; }
   .resumen span { color: var(--suave); }
-  .resumen strong { font-family: "Barlow Condensed", sans-serif; font-size: 2.3rem; line-height: 1.05; font-weight: 700; }
+  .resumen strong { font-weight: 700; }
   .resumen .alerta strong { color: var(--alerta); }
 
-  /* Pestañas */
-  .pestanas { display: flex; gap: .25rem; border-bottom: 1px solid var(--linea); margin-bottom: 1.25rem; overflow-x: auto; overflow-y: hidden; }
-  .pestanas button { border: 0; background: none; color: var(--suave); padding: .7rem 1rem; font-weight: 600; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; }
-  .pestanas button[aria-selected="true"] { color: var(--tinta); border-bottom-color: var(--acento); }
-  .pestanas .cuenta { display: inline-block; min-width: 1.4rem; padding: 0 .35rem; margin-left: .3rem; border-radius: 999px; background: var(--alerta); color: #fff; font-size: .8rem; text-align: center; }
+  /* Pestañas como control segmentado */
+  .pestanas { display: flex; gap: .25rem; padding: .25rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 10px; overflow-x: auto; }
+  .pestanas button { border: 0; background: none; color: var(--suave); padding: .45rem .9rem; min-height: 2.5rem; font-weight: 500; border-radius: 7px; white-space: nowrap; display: inline-flex; align-items: center; }
+  .pestanas button[aria-selected="true"] { color: var(--acento-tinta); background: var(--acento); font-weight: 600; }
+  .pestanas .cuenta { display: inline-block; min-width: 1.4rem; padding: 0 .35rem; margin-left: .35rem; border-radius: 999px; background: var(--alerta); color: #fff; font-size: .8rem; text-align: center; }
+
+  /* Estados unificados */
+  .estado { display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; font-weight: 700; line-height: 1.4; padding: .05rem .6rem; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+  .estado-pendiente { color: var(--aviso); border-color: color-mix(in srgb, var(--aviso) 45%, transparent); background: color-mix(in srgb, var(--aviso) 14%, transparent); }
+  .estado-confirmado { color: var(--acento); border-color: color-mix(in srgb, var(--acento) 45%, transparent); background: color-mix(in srgb, var(--acento) 14%, transparent); }
+  .estado-ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+  .estado-mal { color: var(--alerta); border-color: color-mix(in srgb, var(--alerta) 45%, transparent); background: color-mix(in srgb, var(--alerta) 14%, transparent); }
+  .estado-neutro { color: var(--suave); border-color: var(--linea); background: color-mix(in srgb, var(--suave) 12%, transparent); }
+  .rotulo { font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); }
 
   .cuerpo { display: grid; grid-template-columns: 24rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
   .tarjeta { background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: 1.25rem; display: grid; gap: 1rem; }
@@ -80,8 +93,37 @@
   legend { padding: 0; margin-bottom: .3rem; }
   .segmentos { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
   .segmentos.dos-op { grid-template-columns: repeat(2, 1fr); }
-  .segmentos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
+  .segmentos button { min-height: 3rem; background: var(--fondo); }
+  .segmentos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
   .ayuda { color: var(--suave); font-size: .92rem; margin: 0; }
+
+  /* Formulario de gasto */
+  #frmGasto h2, #frmFijo h2, #frmMov h2 { font-weight: 700; }
+  .valor-grande { font-family: "Barlow Condensed", sans-serif; font-size: 2rem; font-weight: 700; min-height: 3.4rem; }
+  .pildoras { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .pildoras button { min-height: 2.5rem; padding: .3rem .9rem; border-radius: 999px; border: 1px solid var(--linea); background: var(--fondo); color: var(--tinta); font-weight: 600; }
+  .pildoras button[aria-pressed="true"] { background: var(--acento); border-color: var(--acento); color: var(--acento-tinta); font-weight: 700; }
+  .pildoras .nueva { background: none; border-style: dashed; color: var(--acento); }
+  .foto .btn-foto { border-style: dashed; background: none; flex: 1 1 14rem; min-height: 3.2rem; font-weight: 600; cursor: pointer; }
+  #btnGasto { min-height: 3.2rem; font-size: 1.1rem; }
+
+  /* Gastos fijos del mes, como lista para marcar */
+  .fijos-mes { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; margin-bottom: 1.25rem; }
+  .fijos-mes .cab { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; flex-wrap: wrap; padding: .8rem 1rem; border-bottom: 1px solid var(--linea); }
+  .fijos-mes h2 { font-size: 1.4rem; font-weight: 700; }
+  .fijos-mes ul { list-style: none; margin: 0; padding: 0; }
+  .fijos-mes li { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto 6.5rem; gap: .75rem; align-items: center; padding: .55rem 1rem; border-bottom: 1px solid var(--linea); }
+  .fijos-mes li:last-child { border-bottom: 0; }
+  .fijos-mes li.pagado { color: var(--suave); }
+  .fijos-mes li.pagado .nombre { text-decoration: line-through; }
+  .fijos-mes .cuando { font-size: .9rem; color: var(--suave); }
+  .fijos-mes .cuando.pronto { color: var(--aviso); font-weight: 700; }
+  .fijos-mes .cuando.vencido { color: var(--alerta); font-weight: 700; }
+  .fijos-mes .accion { text-align: right; }
+  .fijos-mes .accion .btn { width: 100%; min-height: 2.5rem; }
+  .fijos-mes .vacio a { color: var(--acento); font-weight: 600; }
+  .ico-ok { color: var(--ok); } .ico-pronto { color: var(--aviso); } .ico-mal { color: var(--alerta); } .ico-pend { color: var(--suave); }
+  .sin-factura { color: var(--suave); font-size: .875rem; }
   .fijo-chip { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .55rem .75rem; background: var(--cinta); color: #1A2127; border: 1px solid var(--cinta-borde); border-radius: var(--radio); font-weight: 600; }
   .fijo-chip .btn-texto { color: #1A2127; text-decoration: underline; }
   .foto { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
@@ -105,13 +147,10 @@
   tfoot td { font-weight: 700; border-top: 2px solid var(--tinta); border-bottom: 0; }
   .acc { white-space: nowrap; text-align: right; }
   .vacio { color: var(--suave); padding: 1.25rem .9rem; margin: 0; }
-  .estado-ok { color: var(--ok); font-weight: 600; }
-  .estado-mal { color: var(--alerta); font-weight: 600; }
-  .estado-pend { color: var(--suave); font-weight: 600; }
 
   /* Socios */
   .socios { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-  .socio { background: var(--panel); border: 1px solid var(--linea); border-left: 4px solid var(--acento); border-radius: var(--radio); padding: 1rem 1.1rem; display: grid; gap: .35rem; }
+  .socio { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; padding: 1rem 1.1rem; display: grid; gap: .35rem; }
   .socio h3 { font-size: 1.35rem; }
   .socio dl { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: .2rem 1rem; }
   .socio dt { color: var(--suave); }
@@ -129,9 +168,6 @@
   @media (max-width: 1000px) {
     .cuerpo { grid-template-columns: 1fr; }
   }
-  @media (max-width: 560px) {
-    .resumen strong { font-size: 1.9rem; }
-  }
 
   /* ===================== Responsivo (común a todas las pantallas) ===================== */
   html { -webkit-text-size-adjust: 100%; }
@@ -145,18 +181,12 @@
   td.num, th, td.der { white-space: nowrap; }
   @media (max-width: 1180px) {
     .barra { flex-wrap: wrap; row-gap: .55rem; }
-    .nav { order: 3; width: 100%; flex-wrap: wrap; overflow: visible; }
-    .nav a { white-space: nowrap; }
   }
   @media (max-width: 700px) {
     .barra { padding: .6rem 1rem; gap: .5rem .6rem; }
     .tienda { font-size: 1.25rem; }
     #usuario { display: none; }
-    #salir { padding: .4rem .7rem; font-size: .9rem; }
-    .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; }
-    .nav a { text-align: center; padding: .5rem .2rem; background: var(--fondo); font-size: .95rem; }
-    .nav a[aria-current="page"] { background: var(--acento); color: var(--acento-tinta); box-shadow: none; }
-    .nav a:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
+    #salir { padding: .4rem .7rem; font-size: .9rem; min-height: 2.5rem; }
     main { padding: 1rem; }
     dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
     .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
@@ -164,16 +194,24 @@
     #login { margin: 6vh 1rem 0; }
   }
   @media (max-width: 420px) {
-    .resumen { gap: .4rem 1.5rem; }
-    .resumen strong { font-size: 1.65rem; }
+    .resumen { gap: .3rem 1.25rem; }
   }
 
   /* Gastos */
   .tabla-caja table { min-width: 36rem; }
   @media (max-width: 700px) {
-    .pestanas button { flex: 1 0 auto; }
+    .pestanas { width: 100%; }
+    .pestanas button { flex: 1 0 auto; justify-content: center; }
+    .total-mes { margin-left: 0; }
     .tarjeta { padding: 1rem; }
     .herramientas .campo { flex: 1 1 9rem; }
+    /* Formularios cómodos en el celular */
+    .tarjeta input, .tarjeta select { min-height: 3rem; }
+    .tarjeta .valor-grande { min-height: 3.6rem; }
+    .tarjeta > .btn, .con-boton .btn, #btnGasto { width: 100%; }
+    .con-boton { flex-wrap: wrap; }
+    .fijos-mes li { grid-template-columns: 1.6rem minmax(0, 1fr) auto; }
+    .fijos-mes .accion { grid-column: 2 / -1; }
   }
   .solo-movil { display: none; }
   @media (max-width: 700px) {
@@ -199,15 +237,7 @@
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" aria-label="Secciones">
-    <a href="index.html">Caja</a>
-    <a href="cotizaciones.html">Cotizaciones</a>
-    <a href="pedidos.html">Pedidos</a>
-    <a href="inventario.html">Inventario</a>
-    <a href="cartera.html">Cartera</a>
-    <a href="gastos.html" aria-current="page">Gastos</a>
-    <a href="tablero.html">Tablero</a>
-  </nav>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=1"></script>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -221,18 +251,21 @@
 </form>
 
 <main id="app" hidden>
+  <div class="cab-pagina">
+    <h1>Gastos</h1>
+    <div class="pestanas" role="tablist">
+      <button role="tab" id="t-gastos" aria-controls="p-gastos" aria-selected="true">Gastos del negocio</button>
+      <button role="tab" id="t-fijos" aria-controls="p-fijos" aria-selected="false">Fijos<span class="cuenta" id="cuentaFijos" hidden></span></button>
+      <button role="tab" id="t-socios" aria-controls="p-socios" aria-selected="false">Socios</button>
+    </div>
+    <div class="total-mes num"><span id="resMesTitulo">Gastos del mes</span><strong id="resMes">$ 0</strong></div>
+  </div>
+
   <section class="resumen num" aria-label="Resumen del mes">
-    <div><span id="resMesTitulo">Gastos del mes</span><strong id="resMes">$ 0</strong></div>
     <div id="resFijosCaja"><span>Fijos por pagar</span><strong id="resFijos">$ 0</strong></div>
     <div id="resDeudaCaja"><span>Por reembolsar a socios</span><strong id="resDeuda">$ 0</strong></div>
     <div><span>Retiros de socios este mes</span><strong id="resRetiros">$ 0</strong></div>
   </section>
-
-  <div class="pestanas" role="tablist">
-    <button role="tab" id="t-gastos" aria-controls="p-gastos" aria-selected="true">Gastos</button>
-    <button role="tab" id="t-fijos" aria-controls="p-fijos" aria-selected="false">Fijos del mes<span class="cuenta" id="cuentaFijos" hidden></span></button>
-    <button role="tab" id="t-socios" aria-controls="p-socios" aria-selected="false">Socios</button>
-  </div>
 
   <!-- ============ GASTOS ============ -->
   <section id="p-gastos" role="tabpanel" aria-labelledby="t-gastos">
@@ -243,22 +276,25 @@
           <span id="chipFijoTexto"></span>
           <button type="button" class="btn-texto" id="quitarFijo">Quitar</button>
         </div>
-        <div class="dos">
-          <div class="campo"><label for="gValor">Valor</label><input id="gValor" type="number" min="1" step="1" inputmode="numeric" class="num" required></div>
-          <div class="campo"><label for="gFecha">Fecha</label><input id="gFecha" type="date" required></div>
-        </div>
-        <div class="campo">
-          <label for="gCategoria">Categoría</label>
-          <div class="con-boton"><select id="gCategoria" required></select><button type="button" class="btn" id="nuevaCategoria">Nueva</button></div>
-        </div>
+        <div class="campo"><label for="gValor">Valor</label><input id="gValor" type="number" min="1" step="1" inputmode="numeric" class="num valor-grande" placeholder="$ 0" required></div>
+        <div class="campo"><label for="gFecha">Fecha</label><input id="gFecha" type="date" required></div>
+        <fieldset>
+          <legend>Categoría</legend>
+          <!-- El select guarda la categoría elegida; las píldoras solo lo manejan -->
+          <select id="gCategoria" class="visually-hidden" tabindex="-1" aria-hidden="true"></select>
+          <div class="pildoras">
+            <span class="pildoras" id="gCategoriaPildoras" style="display:contents"></span>
+            <button type="button" class="nueva" id="nuevaCategoria">+ Nueva</button>
+          </div>
+        </fieldset>
         <div class="campo"><label for="gDesc">Descripción</label><input id="gDesc" required placeholder="Ej: Recibo de luz de septiembre" maxlength="200"></div>
         <div class="campo"><label for="gProveedor">Proveedor o a quién se le pagó</label><input id="gProveedor" placeholder="Opcional" maxlength="120"></div>
         <fieldset>
           <legend>¿De dónde salió la plata?</legend>
           <div class="segmentos" id="gOrigen">
-            <button type="button" class="btn" data-origen="caja" aria-pressed="true">Caja (efectivo)</button>
-            <button type="button" class="btn" data-origen="cuenta" aria-pressed="false">Cuenta del negocio</button>
-            <button type="button" class="btn" data-origen="socio" aria-pressed="false">Un socio lo pagó</button>
+            <button type="button" class="btn" data-origen="caja" aria-pressed="true">Caja</button>
+            <button type="button" class="btn" data-origen="cuenta" aria-pressed="false">Cuenta</button>
+            <button type="button" class="btn" data-origen="socio" aria-pressed="false">Un socio</button>
           </div>
         </fieldset>
         <div class="campo" id="campoSocio" hidden>
@@ -267,9 +303,9 @@
           <small>El negocio le queda debiendo este valor hasta que se le reembolse.</small>
         </div>
         <div class="campo">
-          <span id="fotoEtiqueta" style="font-weight:500">Foto de la factura</span>
+          <span id="fotoEtiqueta" class="visually-hidden">Foto de la factura</span>
           <div class="foto">
-            <label class="btn" for="gFoto" id="btnFoto">Tomar o elegir foto</label>
+            <label class="btn btn-foto" for="gFoto" id="btnFoto"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span id="btnFotoTexto">Foto de la factura</span></label>
             <input id="gFoto" type="file" accept="image/*,application/pdf" aria-labelledby="fotoEtiqueta">
             <span class="nombre-archivo" id="gFotoNombre">Opcional</span>
             <button type="button" class="btn-texto" id="quitarFoto" hidden>Quitar</button>
@@ -280,6 +316,14 @@
       </form>
 
       <section aria-label="Gastos registrados">
+        <section class="fijos-mes" aria-labelledby="tituloFijosLista">
+          <div class="cab">
+            <h2 id="tituloFijosLista">Gastos fijos del mes</h2>
+            <span class="ayuda" id="fijosPagados"></span>
+          </div>
+          <ul id="listaFijosMes"></ul>
+        </section>
+        <h2 style="font-size:1.4rem;font-weight:700;margin-bottom:.6rem">Últimos gastos</h2>
         <div class="herramientas">
           <div class="campo"><label for="fMes">Mes</label><input id="fMes" type="month"></div>
           <div class="campo"><label for="fCategoria">Categoría</label><select id="fCategoria"></select></div>
@@ -287,7 +331,7 @@
         </div>
         <div class="tabla-caja">
           <table>
-            <thead><tr><th class="ocultar-movil">Fecha</th><th>Gasto</th><th class="ocultar-movil">Pagado con</th><th class="der">Valor</th><th class="acc"><span class="visually-hidden">Acciones</span></th></tr></thead>
+            <thead><tr><th class="ocultar-movil">Fecha</th><th>Gasto</th><th class="ocultar-movil">Factura</th><th class="der">Valor</th><th class="acc"><span class="visually-hidden">Acciones</span></th></tr></thead>
             <tbody id="tbGastos"></tbody>
             <tfoot><tr><td class="ocultar-movil"></td><td>Total</td><td class="ocultar-movil"></td><td class="der num" id="totGastos">$ 0</td><td></td></tr></tfoot>
           </table>
@@ -470,6 +514,7 @@
     const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
     if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
     $('#usuario').textContent = perfil?.nombre ?? session.user.email;
+    navPendientes(db);
     await cargarMaestros();
     await Promise.all([cargarGastos(), cargarFijos(), cargarSocios()]);
   }
@@ -516,7 +561,21 @@
     $('#gCategoria').innerHTML = opciones(activas, 'Elige una categoría', actual);
     $('#fjCategoria').innerHTML = opciones(activas, 'Elige una categoría', $('#fjCategoria').value);
     $('#fCategoria').innerHTML = opciones(categorias, 'Todas', $('#fCategoria').value);
+    pintarPildoras();
   }
+
+  // Píldoras de categoría: manejan el select oculto #gCategoria
+  function pintarPildoras() {
+    const actual = $('#gCategoria').value;
+    $('#gCategoriaPildoras').innerHTML = categorias.filter((c) => c.activo).map((c) =>
+      `<button type="button" data-categoria="${esc(c.id)}" aria-pressed="${String(c.id) === actual}">${esc(c.nombre)}</button>`).join('');
+  }
+  $('#gCategoriaPildoras').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-categoria]');
+    if (!b) return;
+    $('#gCategoria').value = b.dataset.categoria;
+    pintarPildoras();
+  });
 
   $('#nuevaCategoria').addEventListener('click', async () => {
     const nombre = prompt('Nombre de la nueva categoría de gasto:');
@@ -557,20 +616,32 @@
     }
     $('#tbGastos').innerHTML = filas.map((g) => {
       const anulado = g.estado === 'anulado';
-      const pago = g.origen === 'socio' ? `Socio: ${esc(g.socio)}` : ORIGENES[g.origen];
-      const detalle = [g.categoria, g.proveedor, g.gasto_fijo ? 'Gasto fijo' : ''].filter(Boolean).map(esc).join(' · ');
+      const pago = g.origen === 'socio' ? `lo pagó ${esc(g.socio)}` : ORIGENES[g.origen].toLowerCase();
+      const detalle = [esc(g.categoria), pago, esc(g.proveedor), g.gasto_fijo ? 'gasto fijo' : ''].filter(Boolean).join(' · ');
+      const factura = g.factura_path
+        ? `<button type="button" class="btn-texto" data-ver="${esc(g.factura_path)}">Ver factura</button>`
+        : (!anulado ? `<button type="button" class="btn-texto" data-adjuntar="${g.id}">Adjuntar</button>` : '<span class="sin-factura">Sin factura</span>');
       return `<tr class="${anulado ? 'anulado' : ''}">
-        <td class="num ocultar-movil">${fCorta.format(fechaLocal(g.fecha))}</td>
-        <td>${esc(g.descripcion)}<small>${detalle}${anulado ? ` · Anulado: ${esc(g.motivo_anulacion)}` : ''}</small><small class="solo-movil">${fCorta.format(fechaLocal(g.fecha))} · ${pago}</small></td>
-        <td class="ocultar-movil">${pago}</td>
-        <td class="der num">${cop.format(g.valor)}</td>
+        <td class="num ocultar-movil">${fechaCorta(g.fecha)}</td>
+        <td>${esc(g.descripcion)}<small>${detalle}${anulado ? ` · Anulado: ${esc(g.motivo_anulacion)}` : ''}</small><small class="solo-movil">${fechaCorta(g.fecha)}</small></td>
+        <td class="ocultar-movil">${factura}</td>
+        <td class="der num"><strong>${cop.format(g.valor)}</strong></td>
         <td class="acc">
-          ${g.factura_path ? `<button type="button" class="btn-texto" data-ver="${esc(g.factura_path)}">Factura</button>`
-            : (!anulado ? `<button type="button" class="btn-texto" data-adjuntar="${g.id}">Adjuntar</button>` : '')}
+          <span class="solo-movil">${factura}</span>
           ${!anulado ? `<button type="button" class="btn-texto peligro" data-anular-gasto="${g.id}">Anular</button>` : ''}
         </td>
       </tr>`;
     }).join('');
+  }
+
+  // "Hoy", "Ayer" o "lun. 19"
+  const fDiaSemana = new Intl.DateTimeFormat('es-CO', { weekday: 'short', day: 'numeric' });
+  function fechaCorta(fecha) {
+    const dias = Math.round((fechaLocal(hoy()) - fechaLocal(fecha)) / 86400000);
+    if (dias === 0) return 'Hoy';
+    if (dias === 1) return 'Ayer';
+    if (dias > 1 && dias < 7) return fDiaSemana.format(fechaLocal(fecha));
+    return fCorta.format(fechaLocal(fecha));
   }
 
   $('#fMes').value = mesDe(hoy());
@@ -634,7 +705,7 @@
     archivoFactura = $('#gFoto').files[0] || null;
     $('#gFotoNombre').textContent = archivoFactura ? archivoFactura.name : 'Opcional';
     $('#quitarFoto').hidden = !archivoFactura;
-    $('#btnFoto').textContent = archivoFactura ? 'Cambiar' : 'Tomar o elegir foto';
+    $('#btnFotoTexto').textContent = archivoFactura ? 'Cambiar foto' : 'Foto de la factura';
   });
   $('#quitarFoto').addEventListener('click', () => { $('#gFoto').value = ''; $('#gFoto').dispatchEvent(new Event('change')); });
 
@@ -669,7 +740,16 @@
     $('#campoSocio').hidden = true;
     $('#gFoto').dispatchEvent(new Event('change'));
     quitarFijo();
+    pintarPildoras();
+    textoBotonGasto();
   }
+
+  // El botón dice el valor: "Registrar gasto de $ 85.000"
+  function textoBotonGasto() {
+    const v = Math.round(Number($('#gValor').value));
+    $('#btnGasto').textContent = v > 0 ? `Registrar gasto de ${cop.format(v)}` : 'Registrar gasto';
+  }
+  $('#gValor').addEventListener('input', textoBotonGasto);
 
   function quitarFijo() {
     fijoElegido = null;
@@ -718,7 +798,7 @@
       aviso(errorLegible(err), 'error');
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Registrar gasto';
+      textoBotonGasto();
     }
   });
 
@@ -744,10 +824,12 @@
     $('#cuentaFijos').title = `${vencidos.length} vencido(s)`;
     $('#tituloFijosMes').textContent = 'Fijos de ' + fMesLargo.format(fechaLocal(hoy()));
 
+    pintarListaFijos();
+
     $('#tbFijos').innerHTML = fijosMes.length ? fijosMes.map((f) => {
       const estado = f.gasto_id
-        ? `<span class="estado-ok">Pagado</span><small>${cop.format(f.valor_pagado)} el ${fCorta.format(fechaLocal(f.fecha_pago))}</small>`
-        : f.vencido ? '<span class="estado-mal">Vencido</span>' : '<span class="estado-pend">Pendiente</span>';
+        ? `<span class="estado estado-ok">Pagado</span><small>${cop.format(f.valor_pagado)} el ${fCorta.format(fechaLocal(f.fecha_pago))}</small>`
+        : f.vencido ? '<span class="estado estado-mal">Vencido</span>' : '<span class="estado estado-neutro">Pendiente</span>';
       return `<tr>
         <td>${esc(f.nombre)}<small>${esc(f.categoria)}</small><small class="solo-movil">Vence ${fCorta.format(fechaLocal(f.vence))}</small><span class="solo-movil">${estado}</span></td>
         <td class="num ocultar-movil">${fCorta.format(fechaLocal(f.vence))}</td>
@@ -766,24 +848,70 @@
       : '<li class="ayuda" style="list-style:none;margin-left:-1.2rem">No hay fijos desactivados.</li>';
   }
 
-  $('#p-fijos').addEventListener('click', (e) => {
-    const p = e.target.closest('[data-pagar]');
-    if (p) {
-      const f = fijosMes.find((x) => x.id === +p.dataset.pagar);
-      limpiarGasto();
-      fijoElegido = f;
-      $('#chipFijo').hidden = false;
-      $('#chipFijoTexto').textContent = `Pago de ${f.nombre} · ${fMesLargo.format(fechaLocal(f.periodo))}`;
-      $('#gValor').value = Math.round(f.valor_estimado) || '';
-      pintarCategorias(f.categoria_id);
-      $('#gDesc').value = `${f.nombre} ${fMesLargo.format(fechaLocal(f.periodo))}`;
-      origenGasto = 'cuenta';
-      marcarSegmento('#gOrigen', 'origen', 'cuenta');
-      abrirPestana('gastos');
-      $('#gValor').focus();
-      $('#gValor').select();
+  // Lista para marcar en la pestaña de gastos: pagado, vencido, vence pronto o pendiente
+  const ICONO_FIJO = {
+    ok: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ico-ok" role="img" aria-label="Pagado"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>',
+    mal: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ico-mal" role="img" aria-label="Vencido"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>',
+    pronto: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ico-pronto" role="img" aria-label="Vence pronto"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    pend: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ico-pend" role="img" aria-label="Pendiente"><circle cx="12" cy="12" r="9"/></svg>'
+  };
+  function pintarListaFijos() {
+    const pagados = fijosMes.filter((f) => f.gasto_id).length;
+    $('#tituloFijosLista').textContent = 'Gastos fijos de ' + fMesLargo.format(fechaLocal(hoy())).replace(/ de \d+$/, '');
+    $('#fijosPagados').textContent = fijosMes.length ? `${pagados} de ${fijosMes.length} pagados` : '';
+    if (!fijosMes.length) {
+      $('#listaFijosMes').innerHTML = '<li class="vacio" style="display:block">Todavía no hay gastos fijos. <a href="#" data-ir-fijos>Crear el primero</a></li>';
       return;
     }
+    // El primario es solo el que vence primero (v_fijos_mes viene ordenado por fecha de vencimiento)
+    const primero = fijosMes.find((f) => !f.gasto_id);
+    const dHoy = fechaLocal(hoy());
+    $('#listaFijosMes').innerHTML = fijosMes.map((f) => {
+      if (f.gasto_id) {
+        return `<li class="pagado">${ICONO_FIJO.ok}
+          <span><span class="nombre">${esc(f.nombre)}</span> <span class="cuando">· pagado el ${fCorta.format(fechaLocal(f.fecha_pago))}</span></span>
+          <span class="num">${cop.format(f.valor_pagado)}</span><span class="accion"><span class="estado estado-ok">Pagado</span></span></li>`;
+      }
+      const dias = Math.round((fechaLocal(f.vence) - dHoy) / 86400000);
+      const tipo = f.vencido || dias < 0 ? 'mal' : dias <= 5 ? 'pronto' : 'pend';
+      const cuando = tipo === 'mal' ? `venció hace ${Math.max(-dias, 1)} ${-dias === 1 ? 'día' : 'días'}`
+        : tipo === 'pronto' ? (dias === 0 ? 'vence hoy' : `vence en ${dias} ${dias === 1 ? 'día' : 'días'}`)
+        : `vence el ${fCorta.format(fechaLocal(f.vence))}`;
+      return `<li>${ICONO_FIJO[tipo]}
+        <span><span class="nombre">${esc(f.nombre)}</span> <span class="cuando ${tipo === 'mal' ? 'vencido' : tipo === 'pronto' ? 'pronto' : ''}">· ${cuando}</span></span>
+        <span class="num" title="Valor aproximado">≈ ${cop.format(f.valor_estimado)}</span>
+        <span class="accion"><button type="button" class="btn ${f === primero ? 'btn-primario' : ''}" data-pagar="${f.id}">Pagar</button></span></li>`;
+    }).join('');
+  }
+
+  function pagarFijo(id) {
+    const f = fijosMes.find((x) => x.id === id);
+    if (!f) return;
+    limpiarGasto();
+    fijoElegido = f;
+    $('#chipFijo').hidden = false;
+    $('#chipFijoTexto').textContent = `Pago de ${f.nombre} · ${fMesLargo.format(fechaLocal(f.periodo))}`;
+    $('#gValor').value = Math.round(f.valor_estimado) || '';
+    pintarCategorias(f.categoria_id);
+    $('#gDesc').value = `${f.nombre} ${fMesLargo.format(fechaLocal(f.periodo))}`;
+    origenGasto = 'cuenta';
+    marcarSegmento('#gOrigen', 'origen', 'cuenta');
+    textoBotonGasto();
+    abrirPestana('gastos');
+    $('#frmGasto').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('#gValor').focus({ preventScroll: true });
+    $('#gValor').select();
+  }
+
+  $('#listaFijosMes').addEventListener('click', (e) => {
+    const p = e.target.closest('[data-pagar]');
+    if (p) return pagarFijo(+p.dataset.pagar);
+    if (e.target.closest('[data-ir-fijos]')) { e.preventDefault(); abrirPestana('fijos'); $('#fjNombre').focus(); }
+  });
+
+  $('#p-fijos').addEventListener('click', (e) => {
+    const p = e.target.closest('[data-pagar]');
+    if (p) return pagarFijo(+p.dataset.pagar);
     const ed = e.target.closest('[data-editar-fijo]');
     if (ed) editarFijo(+ed.dataset.editarFijo);
   });

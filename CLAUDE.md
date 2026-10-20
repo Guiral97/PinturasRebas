@@ -29,10 +29,11 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 | `cartera.html` | Saldos por cliente, facturas con mora, abonos, recordatorio por WhatsApp (`wa.me`, antepone 57 a números de 10 dígitos). |
 | `gastos.html` | Gastos (caja/cuenta/socio), gastos fijos del mes, foto de factura, retiros y reembolsos de socios. |
 | `tablero.html` | Indicadores por período, ventas, margen, gastos y utilidad, top productos, reimpresión y anulación. |
+| `nav.js` | Barra de secciones común (íconos, sección actual, contador de pedidos con `navPendientes(db)`). En celular (≤ 700 px) pasa abajo: Caja, Pedidos, Inventario, Cartera y "Más". Trae sus propios estilos (con `#nav`). |
 | `recibo.js` | `imprimirRecibo(v)`: recibo térmico 58/80 mm en un iframe oculto. Comprobante interno, **no es factura electrónica**. |
 | `etiquetas.js` | Códigos internos EAN-13 (`20` + id a 10 dígitos + dígito de control), SVG de etiquetas, impresión por driver. |
 | `impresora-directa.js` | Impresión de etiquetas sin driver: Web Serial (puerto COM) o Web Bluetooth, ESC/POS raster. |
-| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v8`). El nombre debe ser `sw.js` en minúscula. |
+| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v9`). El nombre debe ser `sw.js` en minúscula. |
 | `config.js` | Configuración compartida (ver abajo). |
 | `logo.svg`, `favicon-32.png`, `favicon-48.png`, `apple-touch-icon.png` | Marca. El logo cambia de color con el tema (estilo dentro del SVG). |
 | `01_…sql` a `09_…sql` | Scripts de base de datos, en orden (ver abajo). |
@@ -98,7 +99,8 @@ No se guarda en la base de datos: se deduce de precio y costo. Precio = costo ×
 
 ## Convenciones de código
 
-- Antes de cambiar una pantalla, léela: todas comparten estilos, el patrón de login, la barra de navegación (Caja, Cotizaciones, Pedidos, Inventario, Cartera, Gastos, Tablero) y el encabezado con logo. Una pantalla nueva va en la barra de **todas** las demás.
+- Antes de cambiar una pantalla, léela: todas comparten estilos, el patrón de login, la barra de navegación y el encabezado con logo. La barra la dibuja `nav.js` (`<nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=1"></script>`); una pantalla nueva se agrega en `SECCIONES` de `nav.js` y cada pantalla llama `navPendientes(db)` al iniciar sesión.
+- Estados con un solo código: `.estado` + `.estado-pendiente` (`--aviso`), `.estado-confirmado` (`--acento`), `.estado-ok` (`--ok`), `.estado-mal` (`--alerta`), `.estado-neutro` (`--suave`); siempre con la palabra, y en alertas con ícono. Un solo botón primario por panel, alto mínimo 2.75rem.
 - `esc()` para todo lo que se inserte en HTML. Nada de `innerHTML` con datos sin escapar.
 - `onAuthStateChange` con `setTimeout(..., 0)`: no consultar dentro del callback.
 - Los formularios donde se escanea evitan que el Enter del lector los envíe.

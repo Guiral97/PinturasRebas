@@ -19,14 +19,14 @@
   :root {
     --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
     --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
-    --cinta: #E8D08A; --cinta-borde: #C9AE66; --alerta: #A1281F; --ok: #2F6B3A; --radio: 6px;
+    --cinta: #E8D08A; --cinta-borde: #C9AE66; --alerta: #A1281F; --ok: #2F6B3A; --aviso: #8A6410; --radio: 6px;
     font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
       --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
-      --cinta: #C4AB68; --cinta-borde: #9E8850; --alerta: #E57B72; --ok: #7FC08A;
+      --cinta: #C4AB68; --cinta-borde: #9E8850; --alerta: #E57B72; --ok: #7FC08A; --aviso: #E3B94F;
     }
   }
   * { box-sizing: border-box; }
@@ -39,7 +39,7 @@
   label, legend { font-weight: 500; }
   .campo { display: grid; gap: .3rem; align-content: start; }
   .ayuda { color: var(--suave); font-size: .875rem; }
-  .btn { border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .5rem .9rem; border-radius: var(--radio); white-space: nowrap; text-decoration: none; display: inline-block; }
+  .btn { border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .5rem .9rem; border-radius: var(--radio); white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; min-height: 2.75rem; }
   .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
   .btn:disabled { opacity: .45; cursor: not-allowed; }
   .btn-peligro { color: var(--alerta); }
@@ -49,9 +49,6 @@
   .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
   .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; margin-right: auto; }
   #usuario { color: var(--suave); }
-  .nav { display: flex; gap: .25rem; flex-wrap: wrap; }
-  .nav a { color: var(--tinta); text-decoration: none; padding: .4rem .7rem; border-radius: var(--radio); font-weight: 500; }
-  .nav a[aria-current="page"] { background: var(--fondo); box-shadow: inset 0 -3px 0 var(--acento); }
 
   #login { max-width: 22rem; margin: 12vh auto 0; padding: 1.5rem; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: 1rem; }
   #login h1 { font-family: "Barlow Condensed", sans-serif; font-size: 1.8rem; margin: 0; }
@@ -77,26 +74,67 @@
   #lista button {
     display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .15rem 1rem; width: 100%;
     text-align: left; background: none; border: 0; border-bottom: 1px solid var(--linea);
-    color: var(--tinta); padding: .75rem .9rem; border-left: 4px solid transparent;
+    color: var(--tinta); padding: .75rem .9rem;
   }
   #lista li:last-child button { border-bottom: 0; }
-  #lista button[aria-current="true"] { border-left-color: var(--acento); background: var(--fondo); }
+  #lista button[aria-current="true"] { background: color-mix(in srgb, var(--acento) 14%, transparent); }
   #lista .nom { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #lista .val { font-weight: 600; text-align: right; }
   #lista .det { color: var(--suave); font-size: .875rem; }
   #lista .ent { font-size: .875rem; text-align: right; color: var(--suave); }
   .vacio { color: var(--suave); padding: 1.25rem .9rem; margin: 0; }
   .atrasado { color: var(--alerta) !important; font-weight: 600; }
-  .hoy { font-weight: 600; color: var(--tinta) !important; }
+  .hoy { font-weight: 700; color: var(--aviso) !important; }
   .falta { color: var(--alerta); font-weight: 600; }
 
-  /* Estado como texto con marca de color */
-  .estado { display: inline-flex; align-items: center; gap: .35rem; font-weight: 600; font-size: .875rem; }
-  .estado::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: currentColor; }
-  .e-pendiente { color: var(--suave); }
-  .e-confirmado { color: var(--acento); }
-  .e-entregado { color: var(--ok); }
-  .e-cancelado { color: var(--alerta); }
+  /* Estados (iguales en toda la app): píldora con la palabra */
+  .estado {
+    display: inline-flex; align-items: center; font-size: .8rem; font-weight: 700; line-height: 1.3;
+    padding: .1rem .6rem; border-radius: 999px; color: var(--c-estado, var(--suave));
+    background: color-mix(in srgb, var(--c-estado, var(--suave)) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c-estado, var(--suave)) 40%, transparent);
+  }
+  .estado-pendiente { --c-estado: var(--aviso); }
+  .estado-confirmado { --c-estado: var(--acento); }
+  .estado-ok { --c-estado: var(--ok); }
+  .estado-mal { --c-estado: var(--alerta); }
+  .estado-neutro { --c-estado: var(--suave); }
+  .ico { flex: none; vertical-align: -.15em; }
+
+  /* Cabecera de la pantalla */
+  .cabecera { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem; margin-bottom: 1.25rem; }
+  .cabecera h1 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 2.1rem; line-height: 1.1; margin: 0; }
+  .cabecera #buscar { flex: 1 1 15rem; max-width: 22rem; min-height: 2.75rem; }
+  .cabecera .segmentos { display: flex; flex-wrap: wrap; gap: .3rem; }
+  .cabecera #btnNuevo { margin-left: auto; }
+
+  /* Tablero por estado */
+  .tablero { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; align-items: start; }
+  .columna { display: grid; gap: .6rem; align-content: start; }
+  .columna > div { display: grid; gap: .6rem; }
+  .columna h2 { display: flex; align-items: center; gap: .5rem; font-size: 1.35rem; font-weight: 700; }
+  .columna h2 .cuenta { color: var(--suave); }
+  .columna .punto { width: .65rem; height: .65rem; border-radius: 50%; background: var(--c-col); }
+  .col-pendiente { --c-col: var(--aviso); }
+  .col-confirmado { --c-col: var(--acento); }
+  .col-entregado { --c-col: var(--ok); }
+  .columna .vacio { padding: .9rem; border: 1px dashed var(--linea); border-radius: 8px; }
+  .tp { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; padding: .9rem; display: grid; gap: .5rem; }
+  .tp-cab { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; }
+  .tp-cab strong { min-width: 0; overflow-wrap: anywhere; }
+  .tp-cab .num { font-weight: 700; white-space: nowrap; }
+  .tp-det { color: var(--suave); font-size: .875rem; }
+  .tp-det a { color: var(--acento); font-weight: 600; }
+  .tp-ent, .tp-falta { display: flex; align-items: center; gap: .35rem; font-size: .875rem; color: var(--suave); }
+  .tp-falta { color: var(--alerta); font-weight: 600; }
+  .tp-acc { display: flex; gap: .5rem; margin-top: .15rem; }
+  .tp-acc .btn { flex: 1 1 0; }
+  .tp-acc .btn-primario { flex-grow: 2; }
+  .tp.entregado { background: transparent; }
+  .tp.entregado .tp-cab strong { font-weight: 600; }
+  .tp.entregado .tp-acc .btn { min-height: 2.5rem; }
+  .cuerpo.solo-panel { grid-template-columns: minmax(0, 1fr); }
+  .btn-volver { justify-self: start; border: 0; background: none; color: var(--acento); font-weight: 600; padding: .4rem 0; min-height: 2.75rem; }
 
   /* Panel derecho */
   .panel { background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: 1.25rem; display: grid; gap: 1.5rem; }
@@ -105,8 +143,8 @@
   .cab p a { color: var(--acento); font-weight: 600; }
   .titulo { display: flex; align-items: baseline; gap: .9rem; flex-wrap: wrap; }
   .acciones { display: flex; flex-wrap: wrap; gap: .5rem; }
-  .nota-caja { margin: 0; padding: .75rem .9rem; border-left: 4px solid var(--linea); background: var(--fondo); border-radius: 0 var(--radio) var(--radio) 0; }
-  .nota-caja.aviso { border-left-color: var(--alerta); }
+  .nota-caja { margin: 0; padding: .75rem .9rem; border: 1px solid var(--linea); background: var(--fondo); border-radius: var(--radio); }
+  .nota-caja.aviso { color: var(--alerta); font-weight: 600; border-color: color-mix(in srgb, var(--alerta) 40%, transparent); background: color-mix(in srgb, var(--alerta) 10%, transparent); }
   .tabla-caja { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; min-width: 36rem; }
   th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--linea); vertical-align: top; }
@@ -191,8 +229,6 @@
   /* Barra superior: si no cabe en una línea, el menú baja a su propia fila */
   @media (max-width: 1180px) {
     .barra { flex-wrap: wrap; row-gap: .55rem; }
-    .nav { order: 3; width: 100%; flex-wrap: wrap; overflow: visible; }
-    .nav a { white-space: nowrap; }
   }
   /* Celular */
   @media (max-width: 700px) {
@@ -200,10 +236,6 @@
     .tienda { font-size: 1.25rem; }
     #usuario { display: none; }
     #salir { padding: .4rem .7rem; font-size: .9rem; }
-    .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; }
-    .nav a { text-align: center; padding: .5rem .2rem; background: var(--fondo); font-size: .95rem; }
-    .nav a[aria-current="page"] { background: var(--acento); color: var(--acento-tinta); box-shadow: none; }
-    .nav a:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
     main { padding: 1rem; }
     dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
     .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
@@ -238,15 +270,7 @@
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" aria-label="Secciones">
-    <a href="index.html">Caja</a>
-    <a href="cotizaciones.html">Cotizaciones</a>
-    <a href="pedidos.html" aria-current="page">Pedidos</a>
-    <a href="inventario.html">Inventario</a>
-    <a href="cartera.html">Cartera</a>
-    <a href="gastos.html">Gastos</a>
-    <a href="tablero.html">Tablero</a>
-  </nav>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=1"></script>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -260,6 +284,18 @@
 </form>
 
 <main id="app" hidden>
+  <div class="cabecera">
+    <h1>Pedidos</h1>
+    <input type="search" id="buscar" placeholder="Buscar por cliente o número" aria-label="Buscar pedido">
+    <div class="segmentos" id="filtroEstado" role="group" aria-label="Filtrar por estado">
+      <button type="button" class="btn" data-filtro="abiertos" aria-pressed="true">Abiertos</button>
+      <button type="button" class="btn" data-filtro="entregado" aria-pressed="false">Entregados</button>
+      <button type="button" class="btn" data-filtro="cancelado" aria-pressed="false">Cancelados</button>
+      <button type="button" class="btn" data-filtro="todos" aria-pressed="false">Todos</button>
+    </div>
+    <button class="btn btn-primario" type="button" id="btnNuevo">+ Nuevo pedido</button>
+  </div>
+
   <section class="resumen num" aria-label="Resumen de pedidos abiertos">
     <div><span>Pedidos abiertos</span><strong id="totAbiertos">0</strong></div>
     <div id="bloqueAtrasados"><span>Para hoy o atrasados</span><strong id="totAtrasados">0</strong></div>
@@ -267,22 +303,29 @@
     <div><span>Valor por entregar</span><strong id="totValor">$ 0</strong></div>
   </section>
 
-  <div class="cuerpo">
-    <section aria-label="Lista de pedidos">
-      <div class="filtros">
-        <button class="btn btn-primario" type="button" id="btnNuevo">Nuevo pedido</button>
-        <div class="segmentos" id="filtroEstado" role="group" aria-label="Filtrar por estado">
-          <button type="button" class="btn" data-filtro="abiertos" aria-pressed="true">Abiertos</button>
-          <button type="button" class="btn" data-filtro="entregado" aria-pressed="false">Entregados</button>
-          <button type="button" class="btn" data-filtro="cancelado" aria-pressed="false">Cancelados</button>
-          <button type="button" class="btn" data-filtro="todos" aria-pressed="false">Todos</button>
-        </div>
-        <input type="search" id="buscar" placeholder="Buscar por cliente o número" aria-label="Buscar pedido">
-      </div>
+  <!-- Tablero por estado (vista "Abiertos") -->
+  <div class="tablero" id="tablero">
+    <section class="columna col-pendiente" aria-labelledby="tPend">
+      <h2 id="tPend"><span class="punto" aria-hidden="true"></span>Pendientes <span class="cuenta" id="cuentaPend">0</span></h2>
+      <div id="colPend"></div>
+    </section>
+    <section class="columna col-confirmado" aria-labelledby="tConf">
+      <h2 id="tConf"><span class="punto" aria-hidden="true"></span>Confirmados <span class="cuenta" id="cuentaConf">0</span></h2>
+      <div id="colConf"></div>
+    </section>
+    <section class="columna col-entregado" aria-labelledby="tEnt">
+      <h2 id="tEnt"><span class="punto" aria-hidden="true"></span>Entregados recientes <span class="cuenta" id="cuentaEnt">0</span></h2>
+      <div id="colEnt"></div>
+    </section>
+  </div>
+
+  <div class="cuerpo" id="cuerpo">
+    <section aria-label="Lista de pedidos" id="seccionLista">
       <ul id="lista"></ul>
     </section>
 
     <section class="panel" aria-live="polite">
+      <button class="btn-volver" type="button" id="volver" hidden>← Volver al tablero</button>
       <p class="vacio" id="panelVacio">Elige un pedido para ver su detalle, o crea uno nuevo. Un pedido se convierte en venta cuando el cliente lo recoge.</p>
 
       <!-- Detalle de un pedido -->
@@ -429,12 +472,16 @@
   const fCorta = new Intl.DateTimeFormat('es-CO', { weekday: 'short', day: 'numeric', month: 'short' });
   const fHora = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' });
   const ESTADOS = { pendiente: 'Pendiente', confirmado: 'Confirmado', entregado: 'Entregado', cancelado: 'Cancelado' };
+  const CLASE_ESTADO = { pendiente: 'estado-pendiente', confirmado: 'estado-confirmado', entregado: 'estado-ok', cancelado: 'estado-neutro' };
+  const ICO_ALERTA = '<svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>';
+  const ICO_RELOJ = '<svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
   const METODOS = { efectivo: 'Efectivo', transferencia: 'Transferencia', tarjeta: 'Tarjeta', credito: 'Crédito' };
 
   document.title = `Pedidos | ${NOMBRE_TIENDA}`;
   $('#nombreTienda').textContent = NOMBRE_TIENDA;
 
   let abiertos = [];        // v_pedidos pendientes y confirmados (para el resumen)
+  let recientes = [];       // últimos pedidos entregados (columna del tablero)
   let pedidos = [];         // lista según el filtro
   let filtro = 'abiertos';
   let actual = null;        // { ...fila de v_pedidos, detalle: [...] }
@@ -506,6 +553,7 @@
     $('#usuario').textContent = perfil?.nombre ?? session.user.email;
 
     await Promise.all([cargarClientes(), cargarTodo()]);
+    window.navPendientes?.(db);
 
     const q = new URLSearchParams(location.search);
     if (q.has('id')) abrirPedido(+q.get('id'));
@@ -532,12 +580,16 @@
   }
 
   async function cargarAbiertos() {
-    const { data, error } = await db.from('v_pedidos').select('*')
-      .in('estado', ['pendiente', 'confirmado'])
-      .order('fecha_entrega', { ascending: true, nullsFirst: false })
-      .order('id');
+    const [{ data, error }, re] = await Promise.all([
+      db.from('v_pedidos').select('*')
+        .in('estado', ['pendiente', 'confirmado'])
+        .order('fecha_entrega', { ascending: true, nullsFirst: false })
+        .order('id'),
+      db.from('v_pedidos').select('*').eq('estado', 'entregado').order('id', { ascending: false }).limit(6)
+    ]);
     if (error) return aviso('No se pudieron cargar los pedidos: ' + error.message, 'error');
     abiertos = data;
+    recientes = re.error ? [] : re.data;
 
     const urgentes = abiertos.filter((p) => p.dias_para_entrega != null && p.dias_para_entrega <= 0).length;
     const faltan = abiertos.filter((p) => p.faltantes > 0).length;
@@ -563,10 +615,73 @@
     pintarLista();
   }
 
-  function pintarLista() {
+  const coincide = (p, q) => !q || norm(`${p.id} ${p.cliente ?? ''} ${p.documento ?? ''} ${p.notas ?? ''}`).includes(q);
+
+  // Tablero de la vista "Abiertos": Pendientes, Confirmados y Entregados recientes
+  function tarjeta(p) {
+    const e = entrega(p);
+    const abierto = p.estado === 'pendiente' || p.estado === 'confirmado';
+    const productos = p.lineas != null ? ` · ${p.lineas} ${Number(p.lineas) === 1 ? 'producto' : 'productos'}` : '';
+    const origen = p.cotizacion_id ? ` · de la <a href="cotizaciones.html?id=${p.cotizacion_id}">cotización ${p.cotizacion_id}</a>` : '';
+    if (!abierto) {
+      return `
+      <article class="tp entregado">
+        <div class="tp-cab"><strong>${esc(p.cliente ?? 'Sin cliente')}</strong><span class="num">${cop.format(neto(p))}</span></div>
+        <div class="tp-det num">N.º ${p.id}${p.venta_id ? ` · venta ${p.venta_id}` : ''}</div>
+        <div class="tp-acc">
+          <button type="button" class="btn" data-ver="${p.id}">Ver</button>
+          ${p.venta_id ? `<button type="button" class="btn" data-recibo="${p.venta_id}">Reimprimir recibo</button>` : ''}
+        </div>
+      </article>`;
+    }
+    const sinFecha = p.dias_para_entrega == null;
+    const icoEnt = e.cls === 'atrasado' ? ICO_ALERTA : e.cls === 'hoy' ? ICO_RELOJ : '';
+    const txtEnt = e.cls === 'atrasado' ? `Entrega atrasada ${e.txt.replace(/^Atrasado\s*/, '')}` : e.txt;
+    const puedeEntregar = !(p.faltantes > 0) && !!p.lineas;
+    const primario = p.estado === 'pendiente'
+      ? `<button type="button" class="btn btn-primario" data-rapida="confirmar" data-id="${p.id}">Confirmar</button>`
+      : `<button type="button" class="btn btn-primario" data-rapida="entregar" data-id="${p.id}" ${puedeEntregar ? '' : 'disabled title="Falta mercancía: revisa el pedido"'}>Entregar y cobrar</button>`;
+    return `
+      <article class="tp">
+        <div class="tp-cab"><strong>${esc(p.cliente ?? 'Sin cliente')}</strong><span class="num">${cop.format(neto(p))}</span></div>
+        <div class="tp-det num">N.º ${p.id}${productos}${origen}</div>
+        <div class="tp-ent num ${e.cls}">${icoEnt}${esc(sinFecha ? 'Sin fecha de entrega' : txtEnt)}</div>
+        ${p.faltantes > 0 ? `<div class="tp-falta">${ICO_ALERTA}Falta mercancía en ${p.faltantes} ${Number(p.faltantes) === 1 ? 'producto' : 'productos'}</div>` : ''}
+        <div class="tp-acc">
+          <button type="button" class="btn" data-ver="${p.id}">Ver</button>
+          ${primario}
+        </div>
+      </article>`;
+  }
+
+  function pintarTablero() {
     const q = norm($('#buscar').value.trim());
-    const filas = pedidos.filter((p) =>
-      !q || norm(`${p.id} ${p.cliente ?? ''} ${p.documento ?? ''} ${p.notas ?? ''}`).includes(q));
+    const col = (lista, cuenta, caja, vacio) => {
+      const filas = lista.filter((p) => coincide(p, q));
+      $(cuenta).textContent = filas.length;
+      $(caja).innerHTML = filas.length ? filas.map(tarjeta).join('')
+        : `<p class="vacio">${q ? 'Ninguno coincide con la búsqueda.' : vacio}</p>`;
+    };
+    col(abiertos.filter((p) => p.estado === 'pendiente'), '#cuentaPend', '#colPend', 'No hay pedidos pendientes. Crea uno con “Nuevo pedido”.');
+    col(abiertos.filter((p) => p.estado === 'confirmado'), '#cuentaConf', '#colConf', 'No hay pedidos confirmados.');
+    col(recientes, '#cuentaEnt', '#colEnt', 'Aún no hay pedidos entregados.');
+  }
+
+  // Qué se ve: en "Abiertos", el tablero (o el pedido abierto a todo lo ancho); en los demás, lista y panel
+  function actualizarVista() {
+    const tablero = filtro === 'abiertos';
+    const conPanel = !$('#vista').hidden || !$('#editor').hidden;
+    $('#tablero').hidden = !tablero || conPanel;
+    $('#cuerpo').hidden = tablero && !conPanel;
+    $('#seccionLista').hidden = tablero;
+    $('#cuerpo').classList.toggle('solo-panel', tablero);
+    $('#volver').hidden = !(tablero && conPanel);
+  }
+
+  function pintarLista() {
+    if (filtro === 'abiertos') pintarTablero();
+    const q = norm($('#buscar').value.trim());
+    const filas = pedidos.filter((p) => coincide(p, q));
 
     if (!filas.length) {
       const msg = pedidos.length ? 'Ningún pedido coincide con la búsqueda.'
@@ -583,7 +698,7 @@
       <li><button type="button" data-id="${p.id}" aria-current="${actual?.id === p.id}">
         <span class="nom">${p.id} · ${esc(p.cliente ?? 'Sin cliente')}</span>
         <span class="val num">${cop.format(neto(p))}</span>
-        <span class="det"><span class="estado e-${p.estado}">${ESTADOS[p.estado]}</span>${extra}</span>
+        <span class="det"><span class="estado ${CLASE_ESTADO[p.estado]}">${ESTADOS[p.estado]}</span>${extra}</span>
         <span class="ent num ${e.cls}">${esc(e.txt)}</span>
       </button></li>`;
     }).join('');
@@ -595,7 +710,52 @@
     if (!b) return;
     filtro = b.dataset.filtro;
     $('#filtroEstado').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    actualizarVista();
     cargarLista();
+  });
+
+  // Tablero: ver, confirmar, entregar y reimprimir desde la tarjeta
+  $('#tablero').addEventListener('click', async (e) => {
+    const ver = e.target.closest('[data-ver]');
+    const rapida = e.target.closest('[data-rapida]');
+    const recibo = e.target.closest('[data-recibo]');
+    if (!ver && !rapida && !recibo) return;
+    if (procesando) return;
+    if (recibo) {
+      recibo.disabled = true;
+      const v = await datosRecibo(+recibo.dataset.recibo);
+      recibo.disabled = false;
+      if (v) imprimirRecibo({ ...v, copia: true });
+      return;
+    }
+    if (editando && !(await confirmarDescartar())) return;
+    const id = +(ver ?? rapida).dataset[ver ? 'ver' : 'id'];
+    if (ver) return abrirPedido(id);
+    if (rapida.dataset.rapida === 'confirmar') return confirmarRapido(id, rapida);
+    await abrirPedido(id);
+    if (actual?.id === id && (actual.estado === 'pendiente' || actual.estado === 'confirmado')
+        && !(actual.faltantes > 0) && actual.lineas) abrirEntrega();
+  });
+
+  // Confirmar sin salir del tablero
+  async function confirmarRapido(id, boton) {
+    procesando = true;
+    boton.disabled = true;
+    const { error } = await db.rpc('cambiar_estado_pedido', { p_pedido_id: id, p_estado: 'confirmado', p_motivo: null });
+    procesando = false;
+    boton.disabled = false;
+    if (error) return aviso('No se cambió el estado: ' + error.message, 'error');
+    aviso(`Pedido ${id}: confirmado.`);
+    await cargarTodo();
+    window.navPendientes?.(db);
+  }
+
+  $('#volver').addEventListener('click', async () => {
+    if (editando && !(await confirmarDescartar())) return;
+    actual = null;
+    mostrarPanel('vacio');
+    ponerUrl(null);
+    pintarLista();
   });
   $('#lista').addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-id]');
@@ -606,10 +766,14 @@
 
   // ---------- Panel ----------
   function mostrarPanel(cual) {
+    const antes = !$('#vista').hidden || !$('#editor').hidden;
     $('#panelVacio').hidden = cual !== 'vacio';
     $('#vista').hidden = cual !== 'vista';
     $('#editor').hidden = cual !== 'editor';
     if (cual !== 'editor') { detenerCamara(); editando = null; }
+    actualizarVista();
+    // Desde el tablero, el pedido se abre arriba
+    if (!antes && cual !== 'vacio' && filtro === 'abiertos') window.scrollTo(0, 0);
   }
 
   async function confirmarDescartar() {
@@ -643,7 +807,7 @@
 
     $('#vTitulo').textContent = `Pedido ${p.id}`;
     $('#vEstado').textContent = ESTADOS[p.estado];
-    $('#vEstado').className = `estado e-${p.estado}`;
+    $('#vEstado').className = `estado ${CLASE_ESTADO[p.estado]}`;
     $('#vCliente').textContent = [p.cliente ?? 'Sin cliente', p.documento, p.telefono].filter(Boolean).join(' · ');
 
     const e = entrega(p);
@@ -750,6 +914,7 @@
     aviso(`Pedido ${actual.id}: ${ESTADOS[estado].toLowerCase()}.`);
     const id = actual.id;
     await cargarTodo();
+    window.navPendientes?.(db);
     abrirPedido(id);
   }
 
@@ -928,6 +1093,7 @@
     editando = null;
     aviso(eraNuevo ? `Pedido ${id} creado.` : `Pedido ${id} actualizado.`);
     await cargarTodo();
+    window.navPendientes?.(db);
     abrirPedido(id);
   });
 
@@ -1063,6 +1229,7 @@
 
     const id = actual.id;
     await cargarTodo();
+    window.navPendientes?.(db);
     abrirPedido(id);
   });
 
@@ -1092,6 +1259,7 @@
   }
 
   // ---------- Inicio ----------
+  actualizarVista();
   // onAuthStateChange también avisa la sesión inicial. Las consultas se sacan
   // del callback con setTimeout para no bloquear el cliente de Supabase.
   db.auth.onAuthStateChange((evento, s) => {
