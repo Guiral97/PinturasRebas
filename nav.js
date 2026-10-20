@@ -1,5 +1,5 @@
 // Barra de navegación común a todas las pantallas.
-// Uso: <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=1"></script>
+// Uso: <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=2"></script>
 // justo en la cabecera (se ejecuta en el momento y llena la barra).
 // En el celular (≤ 700 px) la barra pasa abajo: Caja, Pedidos, Inventario, Cartera y "Más".
 // Después de iniciar sesión, cada pantalla llama navPendientes(db) para el contador de pedidos.
@@ -53,7 +53,7 @@
   // Con id: gana sobre las reglas .nav que traiga cada pantalla
   const estilo = document.createElement('style');
   estilo.textContent = `
-    #nav { display: flex; flex-wrap: wrap; gap: 2px; margin: 0 auto; }
+    #nav { display: flex; flex-wrap: wrap; gap: 2px; margin: 0 auto 0 1rem; } /* pegada a la marca: no se mueve según lo que haya a la derecha */
     #nav a, #nav .nav-mas {
       position: relative; display: flex; align-items: center; gap: .45rem;
       padding: .45rem .7rem; border-radius: 8px; border: 0; background: none; box-shadow: none;
@@ -70,7 +70,7 @@
     }
     #nav .nav-mas, #nav .nav-menu { display: none; }
     @media (max-width: 1180px) and (min-width: 701px) {
-      #nav { order: 3; width: 100%; justify-content: center; }
+      #nav { order: 3; width: 100%; justify-content: center; margin: 0; }
     }
     @media (max-width: 700px) {
       #nav {
