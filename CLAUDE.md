@@ -32,10 +32,10 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 | `recibo.js` | `imprimirRecibo(v)`: recibo térmico 58/80 mm en un iframe oculto. Comprobante interno, **no es factura electrónica**. |
 | `etiquetas.js` | Códigos internos EAN-13 (`20` + id a 10 dígitos + dígito de control), SVG de etiquetas, impresión por driver. |
 | `impresora-directa.js` | Impresión de etiquetas sin driver: Web Serial (puerto COM) o Web Bluetooth, ESC/POS raster. |
-| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v6`). El nombre debe ser `sw.js` en minúscula. |
+| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v7`). El nombre debe ser `sw.js` en minúscula. |
 | `config.js` | Configuración compartida (ver abajo). |
 | `logo.svg`, `favicon-32.png`, `favicon-48.png`, `apple-touch-icon.png` | Marca. El logo cambia de color con el tema (estilo dentro del SVG). |
-| `01_…sql` a `08_…sql` | Scripts de base de datos, en orden (ver abajo). |
+| `01_…sql` a `09_…sql` | Scripts de base de datos, en orden (ver abajo). |
 | `98_borrar_datos_prueba.sql`, `99_datos_prueba.sql`, `99_borrar_productos_por_codigo.sql` | Datos de prueba y limpieza. |
 | `CONTEXTO_PROYECTO_Pinturas_Rebas.md` | Contexto antiguo (antes de 04). **Este `CLAUDE.md` lo reemplaza.** |
 
@@ -66,6 +66,7 @@ Define `window.APP_CONFIG` con `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `NOMBRE_TIEN
 6. `06_ventas_sin_conexion.sql`: columnas de la caja en `ventas` (`uuid_caja`, `sin_conexion`, `revisar`…), `registrar_venta_caja` (idempotente por uuid), `v_ventas_revisar`, `marcar_venta_revisada`.
 7. `07_gastos.sql`: `categorias_gasto`, `gastos_fijos`, `gastos`, `movimientos_socios`, vistas, funciones de registro y anulación, `resumen_gastos`, bucket de facturas.
 8. `08_fracciones.sql`: **venta por partes** (ver abajo); reemplaza `v_catalogo`, `registrar_movimiento`, `registrar_venta` y `registrar_venta_caja`.
+9. `09_mezclas.sql`: **venta completa** (ver abajo): tabla maestra `mezclas`. No reemplaza funciones.
 
 **Cambios de base de datos:** siempre en un **script nuevo numerado** (`09_…sql`), sin tocar los anteriores, con un encabezado que diga qué hace y después de cuál se ejecuta. Si un script reemplaza una función, copia la versión **más reciente** (hoy `registrar_venta*` y `registrar_movimiento` viven en `08`). Al reemplazar una vista, conserva las columnas en el mismo orden y agrega las nuevas al final.
 
@@ -84,6 +85,12 @@ Define `window.APP_CONFIG` con `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `NOMBRE_TIEN
 - Compras y stock inicial **solo en la madre**. Las partes no tienen entradas propias; sus ventas se registran como unidades enteras de la parte.
 - `stock_vendible(id)` y `v_catalogo.stock`: madre = galones cerrados; parte = cuántas alcanzan con galones cerrados + lo que queda del abierto. `v_catalogo` agrega al final `madre_id`, `fraccion`, `abierto` (fracción que queda del tarro abierto) y `tiene_fracciones`.
 - El costo de la parte lo pone un trigger: costo de la madre × fracción, y se actualiza cuando cambia el de la madre.
+
+### Venta completa: producto + catalizador (09)
+
+- `mezclas` (maestro): `presentacion_id` (producto, presentación completa, única), `catalizador_id` (presentación completa) y `proporcion` = unidades del catalizador por unidad del producto. Ej.: Galón de poliuretano → 1/4 de Galón de catalizador = `0.25`. Se configura en Inventario › Mezclas, que muestra qué parte del catalizador corresponde a cada medida y cuál falta crear.
+- La regla de la completa aplica a sus partes. La caja calcula lo necesario (medida × proporción × cantidad) y elige la presentación del catalizador (completa o parte) que lo da exacto con menos envases (tolerancia 2 %). La agrega como otro ítem de la venta (precio y stock propios); sin parte exacta, no deja cobrar el completo.
+- Por defecto el producto entra completo; en la línea se puede vender sin catalizador. Las reglas se guardan en IndexedDB para vender sin conexión. `elegirCatalizador` está igual en `index.html` e `inventario.html`.
 
 ### % de ganancia (inventario.html)
 

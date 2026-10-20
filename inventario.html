@@ -144,6 +144,8 @@
 
   /* Clientes */
   .clientes { display: grid; grid-template-columns: 22rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  /* Mezclas */
+  .medidas { list-style: none; margin: 0; padding: 0; font-size: .9rem; }
 
   /* Diálogo de producto */
   dialog { border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); color: var(--tinta); padding: 0; width: min(70rem, calc(100% - 1.5rem)); max-height: calc(100vh - 2rem); }
@@ -374,6 +376,7 @@
     <button role="tab" id="t-catalogo" aria-controls="p-catalogo" aria-selected="true">Catálogo</button>
     <button role="tab" id="t-entradas" aria-controls="p-entradas" aria-selected="false">Entradas de mercancía</button>
     <button role="tab" id="t-carga" aria-controls="p-carga" aria-selected="false">Carga rápida</button>
+    <button role="tab" id="t-mezclas" aria-controls="p-mezclas" aria-selected="false">Mezclas</button>
     <button role="tab" id="t-clientes" aria-controls="p-clientes" aria-selected="false">Clientes</button>
   </div>
 
@@ -552,6 +555,31 @@
     </div>
   </section>
 
+  <!-- ============ MEZCLAS ============ -->
+  <section id="p-mezclas" role="tabpanel" aria-labelledby="t-mezclas" hidden>
+    <div class="clientes">
+      <form class="tarjeta" id="frmMezcla">
+        <h2 id="tituloMezcla">Nueva mezcla</h2>
+        <p class="carga-nota">Para vender “completo”: al vender el producto, o una de sus partes, la caja agrega sola el catalizador que corresponde a esa medida.</p>
+        <div class="campo"><label for="mzBase">Producto</label><input id="mzBase" list="mzOpciones" autocomplete="off" required placeholder="Ej: Poliuretano 2K · Galón"><small>Presentación completa. La regla aplica también a sus partes.</small></div>
+        <div class="campo"><label for="mzCat">Catalizador</label><input id="mzCat" list="mzOpciones" autocomplete="off" required placeholder="Ej: Catalizador 2K · Galón"><small>Presentación completa. Crea en ella las partes que se envasan (1/4, 1/16, 1/144…).</small></div>
+        <div class="campo"><label for="mzProp">Cantidad de catalizador</label><input id="mzProp" required placeholder="1/4" inputmode="decimal"><small id="mzAyuda">Por cada unidad del producto.</small></div>
+        <datalist id="mzOpciones"></datalist>
+        <div class="con-boton">
+          <button class="btn btn-primario" type="submit">Guardar mezcla</button>
+          <button class="btn" type="button" id="cancelarMezcla" hidden>Cancelar edición</button>
+        </div>
+      </form>
+
+      <div class="tabla-caja">
+        <table>
+          <thead><tr><th>Producto</th><th>Catalizador</th><th>Medidas que vende la caja</th><th></th></tr></thead>
+          <tbody id="tbMezclas"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ CLIENTES ============ -->
   <section id="p-clientes" role="tabpanel" aria-labelledby="t-clientes" hidden>
     <div class="clientes">
@@ -692,12 +720,13 @@
   $('#nombreTienda').textContent = NOMBRE_TIENDA;
 
   // ---------- Estado ----------
-  let catalogo = [], marcas = [], categorias = [], proveedores = [], clientes = [];
+  let catalogo = [], marcas = [], categorias = [], proveedores = [], clientes = [], mezclas = [];
   let productoEditando = null;     // id del producto abierto en el diálogo
   let seleccionEntrada = null;     // presentación elegida en Entradas
   let tipoMov = 'compra';
   let codigoPendiente = '';        // código escaneado que no existe
   let clienteEditando = null;
+  let mezclaEditando = null;
   let lectorCamara = null;
 
   // ---------- Utilidades ----------
@@ -752,7 +781,7 @@
     const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
     if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
     $('#usuario').textContent = perfil?.nombre ?? session.user.email;
-    await Promise.all([cargarCatalogo(), cargarMaestros(), cargarClientes(), cargarMovimientos()]);
+    await Promise.all([cargarCatalogo(), cargarMaestros(), cargarClientes(), cargarMovimientos(), cargarMezclas()]);
   }
 
   $('#login').addEventListener('submit', async (e) => {
@@ -764,7 +793,7 @@
   $('#salir').addEventListener('click', () => db.auth.signOut());
 
   // ---------- Pestañas ----------
-  const tabs = ['catalogo', 'entradas', 'carga', 'clientes'];
+  const tabs = ['catalogo', 'entradas', 'carga', 'mezclas', 'clientes'];
   function abrirPestana(nombre) {
     tabs.forEach((t) => {
       $(`#t-${t}`).setAttribute('aria-selected', t === nombre);
@@ -784,6 +813,7 @@
     catalogo = data;
     pintarCatalogo();
     pintarCarga();
+    pintarMezclas();
   }
 
   async function cargarMaestros() {
@@ -898,7 +928,7 @@
   function textoFraccion(v) {
     v = Number(v);
     if (!(v > 0 && v < 1)) return '';
-    for (let d = 2; d <= 128; d++) {
+    for (let d = 2; d <= 400; d++) {
       const n = Math.round(v * d);
       if (n >= 1 && Math.abs(n / d - v) < 1e-6) return `${n}/${d}`;
     }
@@ -2122,6 +2152,124 @@
     aviso(clienteEditando ? 'Cliente actualizado.' : 'Cliente guardado.');
     limpiarCliente();
     cargarClientes();
+  });
+
+  // ---------- Mezclas (venta completa con catalizador) ----------
+  // "1/4", "0,25", "2" -> número mayor que 0
+  function leerProporcion(t) {
+    t = String(t ?? '').trim().replace(',', '.');
+    const m = t.match(/^(\d+)\s*\/\s*(\d+)$/);
+    const v = m ? +m[1] / +m[2] : Number(t);
+    return Number.isFinite(v) && v > 0 ? v : null;
+  }
+  const textoMedida = (v) => (Number(v) >= 1 ? String(+Number(v).toFixed(4)).replace('.', ',') : textoFraccion(v));
+  // Medida en unidades de la presentación completa: la completa vale 1, una parte su fracción
+  const medida = (p) => (p.madre_id ? Number(p.fraccion) : 1);
+
+  // Igual que en index.html: la presentación del catalizador (la completa o una de sus partes)
+  // que da exactamente lo necesario, con el menor número de envases. Tolera el redondeo de la fracción.
+  function elegirCatalizador(opciones, necesita) {
+    const lista = opciones.filter((o) => medida(o) > 0).sort((a, b) => medida(b) - medida(a));
+    for (const o of lista) {
+      const n = Math.round(necesita / medida(o));
+      if (n >= 1 && Math.abs(n * medida(o) - necesita) <= necesita * 0.02) return { ...o, cantidad: n };
+    }
+    return null;
+  }
+
+  async function cargarMezclas() {
+    const { data, error } = await db.from('mezclas').select('id, presentacion_id, catalizador_id, proporcion');
+    if (error) return aviso(`No se pudieron cargar las mezclas: ${error.message}. ¿Ya se ejecutó 09_mezclas.sql?`, 'error');
+    mezclas = data;
+    pintarMezclas();
+  }
+
+  const completasActivas = () => catalogo.filter((p) => !p.madre_id && p.activo);
+  const familia = (id) => catalogo.filter((p) => p.activo && (p.id === id || p.madre_id === id));
+  const completaPorEtiqueta = (t) => completasActivas().find((p) => p.etiqueta === t.trim());
+
+  function pintarMezclas() {
+    $('#mzOpciones').innerHTML = completasActivas().map((p) => `<option value="${esc(p.etiqueta)}"></option>`).join('');
+    const porId = Object.fromEntries(catalogo.map((p) => [p.id, p]));
+    $('#tbMezclas').innerHTML = mezclas.length ? mezclas.map((m) => {
+      const base = porId[m.presentacion_id], cat = porId[m.catalizador_id];
+      const opciones = familia(m.catalizador_id);
+      const medidas = familia(m.presentacion_id).sort((a, b) => medida(b) - medida(a)).map((p) => {
+        const necesita = medida(p) * Number(m.proporcion);
+        const o = elegirCatalizador(opciones, necesita);
+        return `<li>${esc(p.presentacion)} → ${o
+          ? `${o.cantidad > 1 ? `${o.cantidad} × ` : ''}${esc(o.presentacion)}`
+          : `<span class="neg">falta la parte ${esc(textoMedida(necesita))} en el catalizador</span>`}</li>`;
+      }).join('');
+      return `
+      <tr>
+        <td>${esc(base?.etiqueta ?? 'Presentación borrada')}</td>
+        <td>${esc(cat?.etiqueta ?? 'Presentación borrada')}<small>${esc(textoMedida(m.proporcion))} por unidad</small></td>
+        <td><ul class="medidas">${medidas}</ul></td>
+        <td><div class="acciones-fila">
+          <button type="button" class="btn-texto" data-mezcla="${m.id}">Editar</button>
+          <button type="button" class="btn-texto" data-quitar-mezcla="${m.id}">Quitar</button>
+        </div></td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="4" class="vacio">Aún no hay mezclas. Ej.: Poliuretano · Galón lleva 1/4 de Catalizador · Galón.</td></tr>';
+  }
+
+  function ayudaMezcla() {
+    const base = completaPorEtiqueta($('#mzBase').value), cat = completaPorEtiqueta($('#mzCat').value);
+    $('#mzAyuda').textContent = base && cat
+      ? `Cuánto ${cat.presentacion} de catalizador va por cada ${base.presentacion} de producto. Ej.: 1/4.`
+      : 'Por cada unidad del producto.';
+  }
+  ['#mzBase', '#mzCat'].forEach((s) => $(s).addEventListener('input', ayudaMezcla));
+
+  function limpiarMezcla() {
+    mezclaEditando = null;
+    $('#frmMezcla').reset();
+    $('#tituloMezcla').textContent = 'Nueva mezcla';
+    $('#cancelarMezcla').hidden = true;
+    ayudaMezcla();
+  }
+  $('#cancelarMezcla').addEventListener('click', limpiarMezcla);
+
+  $('#tbMezclas').addEventListener('click', async (e) => {
+    const ed = e.target.closest('[data-mezcla]');
+    if (ed) {
+      const m = mezclas.find((x) => x.id === +ed.dataset.mezcla);
+      mezclaEditando = m.id;
+      $('#mzBase').value = catalogo.find((p) => p.id === m.presentacion_id)?.etiqueta ?? '';
+      $('#mzCat').value = catalogo.find((p) => p.id === m.catalizador_id)?.etiqueta ?? '';
+      $('#mzProp').value = textoMedida(m.proporcion);
+      $('#tituloMezcla').textContent = 'Editar mezcla';
+      $('#cancelarMezcla').hidden = false;
+      ayudaMezcla();
+      $('#mzProp').focus();
+      return;
+    }
+    const q = e.target.closest('[data-quitar-mezcla]');
+    if (q && confirm('¿Quitar esta mezcla? La caja dejará de agregar el catalizador a este producto.')) {
+      const { error } = await db.from('mezclas').delete().eq('id', +q.dataset.quitarMezcla);
+      if (error) return aviso(error.message, 'error');
+      if (mezclaEditando === +q.dataset.quitarMezcla) limpiarMezcla();
+      cargarMezclas();
+    }
+  });
+
+  $('#frmMezcla').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const base = completaPorEtiqueta($('#mzBase').value), cat = completaPorEtiqueta($('#mzCat').value);
+    const proporcion = leerProporcion($('#mzProp').value);
+    if (!base) return aviso('Elige el producto de la lista (una presentación completa, no una parte).', 'error');
+    if (!cat) return aviso('Elige el catalizador de la lista (una presentación completa, no una parte).', 'error');
+    if (base.id === cat.id) return aviso('El producto y el catalizador deben ser distintos.', 'error');
+    if (!proporcion) return aviso('Escribe la cantidad de catalizador, por ejemplo 1/4.', 'error');
+    const datos = { presentacion_id: base.id, catalizador_id: cat.id, proporcion };
+    const { error } = mezclaEditando
+      ? await db.from('mezclas').update(datos).eq('id', mezclaEditando)
+      : await db.from('mezclas').insert(datos);
+    if (error) return aviso(error.code === '23505' ? 'Ese producto ya tiene una mezcla: edítala en la lista.' : error.message, 'error');
+    aviso(mezclaEditando ? 'Mezcla actualizada.' : 'Mezcla guardada.');
+    limpiarMezcla();
+    cargarMezclas();
   });
 
   // ---------- Inicio ----------

@@ -153,6 +153,8 @@
   .linea .nombre { font-weight: 600; }
   .linea .meta { color: var(--suave); font-size: .875rem; }
   .linea .falta { color: var(--alerta); font-size: .875rem; font-weight: 500; }
+  .linea .mezcla { color: var(--suave); font-size: .875rem; margin-top: .15rem; }
+  .btn-mezcla { border: 0; background: none; color: var(--acento); font-weight: 600; padding: .15rem .3rem; }
   .paso {
     grid-area: paso; display: inline-flex; align-items: center;
     border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel);
@@ -447,6 +449,8 @@
   let cola = [];             // ventas pendientes por enviar
   let catalogo = [];         // copia local de v_catalogo
   let catalogoEn = null;
+  let mezclas = [];          // venta completa: { presentacion_id, catalizador_id, proporcion }
+  const CAMPOS = 'id, etiqueta, codigo_barras, sku, precio_venta, stock, madre_id, fraccion';
 
   document.title = `Caja de ventas | ${NOMBRE_TIENDA}`;
   $('#nombreTienda').textContent = NOMBRE_TIENDA;
@@ -594,10 +598,9 @@
   // ---------- Catálogo y clientes guardados en el equipo ----------
   async function actualizarCatalogo() {
     if (!haySesion) return;
-    const campos = 'id, etiqueta, codigo_barras, sku, precio_venta, stock, activo';
     const todo = [];
     for (let desde = 0; ; desde += 1000) {
-      const res = await conLimite(db.from('v_catalogo').select(campos).order('id').range(desde, desde + 999), 15000);
+      const res = await conLimite(db.from('v_catalogo').select(`${CAMPOS}, activo`).order('id').range(desde, desde + 999), 15000);
       if (res.error) { if (esErrorDeRed(res)) marcarSinRed(); return; }
       todo.push(...res.data);
       if (res.data.length < 1000) break;
@@ -605,11 +608,15 @@
     catalogo = todo;
     catalogoEn = new Date().toISOString();
     await almacen.set('catalogo', { en: catalogoEn, filas: catalogo });
+    // Si 09_mezclas.sql aún no se ejecutó, la caja sigue sin venta completa
+    const mz = await conLimite(db.from('mezclas').select('presentacion_id, catalizador_id, proporcion'), 8000);
+    if (!mz.error) { mezclas = mz.data; await almacen.set('mezclas', mezclas); }
   }
 
   async function cargarCatalogoLocal() {
     const c = await almacen.get('catalogo');
     if (c) { catalogo = c.filas; catalogoEn = c.en; }
+    mezclas = (await almacen.get('mezclas')) || [];
   }
 
   function descontarLocal(items) {
@@ -742,7 +749,7 @@
     if (!texto) return;
 
     if (enLinea && haySesion) {
-      const campos = 'id, etiqueta, codigo_barras, sku, precio_venta, stock';
+      const campos = CAMPOS;
       let fallo = false;
       // 1) Coincidencia exacta por código de barras o SKU
       if (/^[\w.\-]+$/.test(texto)) {
@@ -806,6 +813,90 @@
     el.resultados.innerHTML = '';
   }
 
+  // ---------- Venta completa (producto + catalizador) ----------
+  // Medida en unidades de la presentación completa: la completa vale 1, una parte su fracción
+  const medida = (p) => (p.madre_id ? Number(p.fraccion) : 1);
+  const reglaDe = (p) => mezclas.find((m) => m.presentacion_id === (p.madre_id ?? p.id));
+
+  // 0.0069… -> "1/144"; 1.5 -> "1,5"
+  function textoMedida(v) {
+    v = Number(v);
+    if (v > 0 && v < 1) {
+      for (let d = 2; d <= 400; d++) {
+        const n = Math.round(v * d);
+        if (n >= 1 && Math.abs(n / d - v) < 1e-6) return `${n}/${d}`;
+      }
+    }
+    return String(+v.toFixed(4)).replace('.', ',');
+  }
+
+  // Igual que en inventario.html: la presentación del catalizador (la completa o una de sus partes)
+  // que da exactamente lo necesario, con el menor número de envases. Tolera el redondeo de la fracción.
+  function elegirCatalizador(opciones, necesita) {
+    const lista = opciones.filter((o) => medida(o) > 0).sort((a, b) => medida(b) - medida(a));
+    for (const o of lista) {
+      const n = Math.round(necesita / medida(o));
+      if (n >= 1 && Math.abs(n * medida(o) - necesita) <= necesita * 0.02) return { ...o, cantidad: n };
+    }
+    return null;
+  }
+
+  // El catalizador y sus partes, con precio y stock al día si hay internet
+  async function cargarCatalizador(item) {
+    const id = item.regla.catalizador_id;
+    let opciones = null;
+    if (enLinea && haySesion) {
+      const res = await conLimite(db.from('v_catalogo').select(CAMPOS)
+        .eq('activo', true).or(`id.eq.${id},madre_id.eq.${id}`), 5000);
+      if (!res.error) opciones = res.data;
+      else if (esErrorDeRed(res)) marcarSinRed();
+    }
+    item.opcionesCat = opciones ?? catalogo.filter((p) => p.activo && (p.id === id || p.madre_id === id));
+    pintar();
+  }
+
+  // Lo que lleva la línea: { id, etiqueta, precio, cantidad, stock }, { falta: medida } o null
+  function catalizadorDe(i) {
+    if (!i.completo || !i.opcionesCat) return null;
+    const necesita = medida(i) * Number(i.regla.proporcion) * i.cantidad;
+    const o = elegirCatalizador(i.opcionesCat, necesita);
+    if (!o) return { falta: necesita };
+    return { id: o.id, etiqueta: o.etiqueta, precio: Number(o.precio_venta), cantidad: o.cantidad, stock: Number(o.stock) };
+  }
+
+  // Lo que se registra: productos y catalizadores, sumando si una presentación se repite
+  function itemsVenta() {
+    const items = [];
+    const sumar = (presentacion_id, cantidad, precio, etiqueta) => {
+      const ya = items.find((x) => x.presentacion_id === presentacion_id);
+      if (ya) ya.cantidad += cantidad;
+      else items.push({ presentacion_id, cantidad, precio, etiqueta });
+    };
+    carrito.forEach((i) => {
+      sumar(i.id, i.cantidad, i.precio, i.etiqueta);
+      const c = catalizadorDe(i);
+      if (c && !c.falta) sumar(c.id, c.cantidad, c.precio, c.etiqueta);
+    });
+    return items;
+  }
+
+  // Producto más su catalizador
+  function valorLinea(i) {
+    const c = catalizadorDe(i);
+    return i.precio * i.cantidad + (c && !c.falta ? c.precio * c.cantidad : 0);
+  }
+
+  function lineaCatalizador(i) {
+    if (!i.regla) return '';
+    if (!i.completo) return `<div class="mezcla"><button type="button" class="btn-mezcla" data-accion="completo">Vender completo (con catalizador)</button></div>`;
+    const c = catalizadorDe(i);
+    const texto = !c ? 'Calculando el catalizador…'
+      : c.falta ? `<span class="falta">Falta la parte ${esc(textoMedida(c.falta))} en el catalizador. Créala en Inventario.</span>`
+      : `+ ${c.cantidad > 1 ? `${c.cantidad} × ` : ''}${esc(c.etiqueta)} · <span class="num">${cop.format(c.precio * c.cantidad)}</span>`
+        + (c.cantidad > c.stock ? ` <span class="falta">Stock: ${c.stock}</span>` : '');
+    return `<div class="mezcla">${texto} <button type="button" class="btn-mezcla" data-accion="completo">Sin catalizador</button></div>`;
+  }
+
   // ---------- Carrito ----------
   function agregar(p) {
     uuidVenta = null;
@@ -813,10 +904,15 @@
     if (existente) {
       existente.cantidad += 1;
     } else {
-      carrito.push({
+      const item = {
         id: p.id, etiqueta: p.etiqueta, codigo: p.codigo_barras || p.sku || '',
-        precio: Number(p.precio_venta), cantidad: 1, stock: Number(p.stock)
-      });
+        precio: Number(p.precio_venta), cantidad: 1, stock: Number(p.stock),
+        madre_id: p.madre_id ?? null, fraccion: p.fraccion ?? null
+      };
+      // Si lleva catalizador, se vende completo de una vez (se puede quitar en la línea)
+      item.regla = reglaDe(item);
+      if (item.regla) { item.completo = true; cargarCatalizador(item); }
+      carrito.push(item);
     }
     const item = existente ?? carrito[carrito.length - 1];
     if (item.cantidad > item.stock) aviso(`Solo hay ${item.stock} de ${item.etiqueta} en inventario.`, 'error');
@@ -847,13 +943,14 @@
           <div class="nombre">${esc(i.etiqueta)}</div>
           <div class="meta num">${esc(i.codigo)} · ${cop.format(i.precio)} c/u</div>
           ${i.cantidad > i.stock ? `<div class="falta">Stock disponible: ${i.stock}</div>` : ''}
+          ${lineaCatalizador(i)}
         </div>
         <div class="paso">
           <button type="button" data-accion="menos" aria-label="Quitar una unidad">−</button>
           <input type="number" min="1" step="1" value="${i.cantidad}" class="num" aria-label="Cantidad de ${esc(i.etiqueta)}">
           <button type="button" data-accion="mas" aria-label="Agregar una unidad">+</button>
         </div>
-        <div class="valor num">${cop.format(i.precio * i.cantidad)}</div>
+        <div class="valor num">${cop.format(valorLinea(i))}</div>
         <button type="button" class="quitar" data-accion="quitar" aria-label="Quitar ${esc(i.etiqueta)} de la venta">×</button>
       </li>`).join('');
     recalcular();
@@ -867,6 +964,7 @@
     if (b.dataset.accion === 'mas') cambiarCantidad(id, item.cantidad + 1);
     if (b.dataset.accion === 'menos') cambiarCantidad(id, item.cantidad - 1);
     if (b.dataset.accion === 'quitar') quitar(id);
+    if (b.dataset.accion === 'completo') { item.completo = !item.completo; uuidVenta = null; pintar(); }
   });
 
   el.lineas.addEventListener('change', (e) => {
@@ -877,7 +975,7 @@
 
   // ---------- Totales ----------
   function calcular() {
-    const subtotal = carrito.reduce((s, i) => s + i.precio * i.cantidad, 0);
+    const subtotal = itemsVenta().reduce((s, i) => s + i.precio * i.cantidad, 0);
     const descuento = Math.min(Math.max(parseFloat(el.descuento.value) || 0, 0), subtotal);
     return { subtotal, descuento, total: subtotal - descuento };
   }
@@ -917,7 +1015,7 @@
 
   // Huella de la venta en pantalla: si es la misma que quedó en duda, se reutiliza su código
   function firmaVenta(metodoVenta, clienteId, descuento) {
-    return JSON.stringify([carrito.map((i) => [i.id, i.cantidad]), clienteId, metodoVenta, descuento]);
+    return JSON.stringify([itemsVenta().map((i) => [i.presentacion_id, i.cantidad]), clienteId, metodoVenta, descuento]);
   }
 
   // Al volver internet: ¿la venta a crédito que quedó en duda sí se registró?
@@ -944,6 +1042,13 @@
     const clienteId = el.cliente.value ? +el.cliente.value : null;
     const clienteNombre = clienteId ? el.cliente.selectedOptions[0].textContent : null;
 
+    const sinCatalizador = carrito.find((i) => i.completo && (!catalizadorDe(i) || catalizadorDe(i).falta));
+    if (sinCatalizador) {
+      aviso(catalizadorDe(sinCatalizador)
+        ? `Falta la parte ${textoMedida(catalizadorDe(sinCatalizador).falta)} del catalizador de ${sinCatalizador.etiqueta}. Créala en Inventario o vende sin catalizador.`
+        : `Todavía se está calculando el catalizador de ${sinCatalizador.etiqueta}. Intenta de nuevo.`, 'error');
+      return;
+    }
     if (metodoVenta === 'credito' && !clienteId) {
       aviso('Selecciona un cliente para vender a crédito.', 'error');
       el.cliente.focus();
@@ -965,7 +1070,7 @@
     if (dudosa && dudosa.firma === firma) uuidVenta = dudosa.uuid;
     uuidVenta = uuidVenta ?? nuevoUuid();
     const uuidCobro = uuidVenta;
-    const items = carrito.map((i) => ({ presentacion_id: i.id, cantidad: i.cantidad, precio: i.precio, etiqueta: i.etiqueta }));
+    const items = itemsVenta();
     const base = {
       fecha: new Date().toISOString(),
       cliente: clienteNombre,
