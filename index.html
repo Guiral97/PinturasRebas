@@ -826,6 +826,11 @@
         const n = Math.round(v * d);
         if (n >= 1 && Math.abs(n / d - v) < 1e-6) return `${n}/${d}`;
       }
+      // Igual que en inventario.html: fracción guardada con redondeo (1/36 -> 0,0278), la de uso común más cercana
+      const comun = [2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32, 36, 48, 64, 72, 96, 100, 128, 144, 192, 256, 288, 384]
+        .map((d) => [Math.round(v * d), d]).filter(([n]) => n >= 1)
+        .map(([n, d]) => [n, d, Math.abs(n / d - v)]).sort((a, b) => a[2] - b[2])[0];
+      if (comun && comun[2] <= v * 0.01) return `${comun[0]}/${comun[1]}`;
     }
     return String(+v.toFixed(4)).replace('.', ',');
   }

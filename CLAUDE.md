@@ -32,7 +32,7 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 | `recibo.js` | `imprimirRecibo(v)`: recibo térmico 58/80 mm en un iframe oculto. Comprobante interno, **no es factura electrónica**. |
 | `etiquetas.js` | Códigos internos EAN-13 (`20` + id a 10 dígitos + dígito de control), SVG de etiquetas, impresión por driver. |
 | `impresora-directa.js` | Impresión de etiquetas sin driver: Web Serial (puerto COM) o Web Bluetooth, ESC/POS raster. |
-| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v7`). El nombre debe ser `sw.js` en minúscula. |
+| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v8`). El nombre debe ser `sw.js` en minúscula. |
 | `config.js` | Configuración compartida (ver abajo). |
 | `logo.svg`, `favicon-32.png`, `favicon-48.png`, `apple-touch-icon.png` | Marca. El logo cambia de color con el tema (estilo dentro del SVG). |
 | `01_…sql` a `09_…sql` | Scripts de base de datos, en orden (ver abajo). |

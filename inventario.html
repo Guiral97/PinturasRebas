@@ -145,7 +145,73 @@
   /* Clientes */
   .clientes { display: grid; grid-template-columns: 22rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
   /* Mezclas */
-  .medidas { list-style: none; margin: 0; padding: 0; font-size: .9rem; }
+  .mezclas { display: grid; grid-template-columns: minmax(0, 29rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .mz-editor { background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); }
+  .mz-cab { padding: 1.15rem 1.3rem 0; }
+  .mz-cab h2, .mz-lista-cab h2 { font-size: 1.75rem; font-weight: 700; }
+  .mz-cab p { margin: .1rem 0 0; color: var(--suave); }
+  .mz-pasos { padding: 1.1rem 1.3rem; display: grid; gap: 1.15rem; }
+  .mz-paso { display: grid; gap: .45rem; border: 0; margin: 0; padding: 0; min-width: 0; }
+  .mz-paso:disabled { opacity: .5; }
+  .mz-titulo { font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); padding: 0; margin-bottom: .1rem; }
+  .mz-ayuda { color: var(--suave); font-size: .875rem; margin: 0; }
+  .mz-elegido { display: flex; align-items: center; gap: .75rem; padding: .65rem .85rem; background: var(--fondo); border: 1px solid var(--linea); border-radius: var(--radio); }
+  .mz-elegido div { flex: 1; min-width: 0; }
+  .mz-elegido strong { display: block; }
+  .mz-elegido small { color: var(--suave); font-size: .875rem; }
+  .mz-elegido .btn-texto, .mz-tabla .btn-texto { min-height: 2.75rem; }
+  .mz-buscador input { min-height: 2.75rem; }
+  .mz-buscador .mz-ayuda { display: block; margin-top: .4rem; }
+  .mz-resultados { list-style: none; margin: .35rem 0 0; padding: 0; background: var(--fondo); border: 1px solid var(--linea); border-radius: var(--radio); max-height: 21rem; overflow: auto; }
+  .mz-resultados li + li { border-top: 1px solid var(--linea); }
+  .mz-resultados button { display: grid; gap: .35rem; width: 100%; text-align: left; background: none; border: 0; color: var(--tinta); padding: .6rem .75rem; }
+  .mz-resultados button:hover, .mz-resultados [aria-selected="true"] button { background: var(--panel); }
+  .mz-resultados mark { background: none; color: var(--aviso); font-weight: 700; }
+  .mz-resultados .vacio { padding: .8rem .75rem; }
+  .mz-medidas { display: flex; flex-wrap: wrap; gap: .25rem; font-size: .8rem; }
+  .mz-medidas span { padding: 0 .45rem; border: 1px solid var(--linea); border-radius: 4px; color: var(--suave); }
+  .mz-medidas span:first-child { border-color: var(--acento); color: var(--acento); font-weight: 600; }
+  .mz-frase { margin: 0; font-size: 1.05rem; }
+  .mz-relacion { color: var(--suave); }
+  .mz-chips { display: flex; flex-wrap: wrap; gap: .45rem; }
+  .mz-chips button { min-width: 3.4rem; min-height: 2.75rem; padding: .4rem .7rem; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--fondo); color: var(--tinta); font-weight: 600; font-size: 1.05rem; }
+  .mz-chips button[aria-pressed="true"] { background: var(--acento); border-color: var(--acento); color: var(--acento-tinta); }
+  .mz-chips input { width: 5.5rem; min-height: 2.75rem; text-align: center; border-style: dashed; background: var(--fondo); }
+  .mz-chips input.activa { border: 2px solid var(--acento); }
+  .mz-previa { border-top: 1px solid var(--linea); padding: 1rem 1.3rem 1.1rem; display: grid; gap: .5rem; }
+  .mz-previa-cab { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; font-size: .9rem; }
+  .mz-previa table { min-width: 0; font-size: .95rem; }
+  .mz-previa th, .mz-previa td { padding: .45rem 0; }
+  .mz-previa td:last-child, .mz-previa th:last-child { text-align: right; white-space: nowrap; }
+  .mz-previa tr:last-child td { border-bottom: 1px solid var(--linea); }
+  .mz-previa .btn { padding: .3rem .65rem; font-size: .875rem; color: var(--acento); font-weight: 600; }
+  .mz-pie { border-top: 1px solid var(--linea); padding: .85rem 1.3rem; display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
+  .mz-pie .btn { min-height: 2.75rem; }
+  .bien { color: var(--ok); font-weight: 600; }
+  .mz-lista { display: grid; gap: .9rem; }
+  .mz-lista-cab { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+  .mz-lista-cab h2 { margin-right: auto; }
+  .mz-lista-cab h2 span { color: var(--suave); font-weight: 600; }
+  .mz-lista-cab input { max-width: 19rem; min-height: 2.75rem; }
+  .mz-tabla td { vertical-align: middle; }
+  .mz-grande { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.3rem; white-space: nowrap; }
+  .mz-tabla tr.editando { background: var(--fondo); }
+  @media (max-width: 900px) { .mezclas { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 700px) {
+    .mz-cab, .mz-pasos, .mz-previa, .mz-pie { padding-left: 1rem; padding-right: 1rem; }
+    .mz-pie .btn { flex: 1 1 auto; }
+    /* Las mezclas guardadas pasan a tarjetas */
+    .mz-tabla { min-width: 0; }
+    .mz-tabla thead { display: none; }
+    .mz-tabla tbody { display: block; }
+    .mz-tabla tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .15rem .75rem; padding: .75rem .9rem; border-bottom: 1px solid var(--linea); }
+    .mz-tabla tr:last-child { border-bottom: 0; }
+    .mz-tabla td { border: 0; padding: 0; }
+    .mz-tabla td:nth-child(1), .mz-tabla td:nth-child(2), .mz-tabla td:nth-child(4) { grid-column: 1; }
+    .mz-tabla td:nth-child(3) { grid-column: 2; grid-row: 1 / span 2; text-align: right; }
+    .mz-tabla td:nth-child(5) { grid-column: 2; grid-row: 3; align-self: end; }
+    .mz-tabla td.vacio { grid-column: 1 / -1; grid-row: auto; padding: .5rem 0; }
+  }
 
   /* Diálogo de producto */
   dialog { border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); color: var(--tinta); padding: 0; width: min(70rem, calc(100% - 1.5rem)); max-height: calc(100vh - 2rem); }
@@ -557,26 +623,82 @@
 
   <!-- ============ MEZCLAS ============ -->
   <section id="p-mezclas" role="tabpanel" aria-labelledby="t-mezclas" hidden>
-    <div class="clientes">
-      <form class="tarjeta" id="frmMezcla">
-        <h2 id="tituloMezcla">Nueva mezcla</h2>
-        <p class="carga-nota">Para vender “completo”: al vender el producto, o una de sus partes, la caja agrega sola el catalizador que corresponde a esa medida.</p>
-        <div class="campo"><label for="mzBase">Producto</label><input id="mzBase" list="mzOpciones" autocomplete="off" required placeholder="Escribe el nombre: poliuretano…"><small>Puedes elegir el galón o una de sus partes: la regla se guarda en el galón y aplica a todas sus partes.</small></div>
-        <div class="campo"><label for="mzCat">Catalizador</label><input id="mzCat" list="mzOpciones" autocomplete="off" required placeholder="Escribe el nombre: catalizador…"><small>Igual: el galón o una de sus partes. Las partes que se envasan (1/4, 1/16, 1/144…) se crean en el catalizador.</small></div>
-        <div class="campo"><label for="mzProp">Cantidad de catalizador</label><input id="mzProp" required placeholder="1/4" inputmode="decimal"><small id="mzAyuda">Por cada unidad del producto.</small></div>
-        <datalist id="mzOpciones"></datalist>
-        <div class="con-boton">
-          <button class="btn btn-primario" type="submit">Guardar mezcla</button>
-          <button class="btn" type="button" id="cancelarMezcla" hidden>Cancelar edición</button>
+    <div class="mezclas">
+      <form class="mz-editor" id="frmMezcla" novalidate>
+        <div class="mz-cab">
+          <h2 id="tituloMezcla">Nueva mezcla</h2>
+          <p>La caja le pone el catalizador a cada medida que vendas.</p>
+        </div>
+
+        <div class="mz-pasos">
+          <div class="mz-paso">
+            <label class="mz-titulo" for="mzBuscarBase">1 · Producto</label>
+            <div class="mz-elegido" id="mzBaseElegido" hidden></div>
+            <div class="mz-buscador" id="mzBaseBuscador">
+              <input id="mzBuscarBase" type="search" autocomplete="off" spellcheck="false" placeholder="Busca el producto: poliuretano…"
+                role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="mzBaseLista">
+              <ul class="mz-resultados" id="mzBaseLista" role="listbox" aria-label="Productos" hidden></ul>
+            </div>
+          </div>
+
+          <div class="mz-paso">
+            <label class="mz-titulo" for="mzBuscarCat">2 · Catalizador</label>
+            <div class="mz-elegido" id="mzCatElegido" hidden></div>
+            <div class="mz-buscador" id="mzCatBuscador">
+              <input id="mzBuscarCat" type="search" autocomplete="off" spellcheck="false" placeholder="Busca el catalizador…"
+                role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="mzCatLista">
+              <ul class="mz-resultados" id="mzCatLista" role="listbox" aria-label="Catalizadores" hidden></ul>
+              <small class="mz-ayuda">Se busca por producto: la presentación completa y sus partes salen juntas.</small>
+            </div>
+          </div>
+
+          <fieldset class="mz-paso" id="pasoProp" disabled>
+            <legend class="mz-titulo">3 · ¿Cuánto catalizador lleva?</legend>
+            <p class="mz-frase">Por cada <strong id="mzUnidadBase">galón</strong> de producto van</p>
+            <div class="mz-chips" id="mzChips">
+              <button type="button" data-prop="1/2" aria-pressed="false">1/2</button>
+              <button type="button" data-prop="1/3" aria-pressed="false">1/3</button>
+              <button type="button" data-prop="1/4" aria-pressed="false">1/4</button>
+              <button type="button" data-prop="1/5" aria-pressed="false">1/5</button>
+              <button type="button" data-prop="1/8" aria-pressed="false">1/8</button>
+              <input id="mzOtra" inputmode="decimal" autocomplete="off" placeholder="Otra" aria-label="Otra cantidad de catalizador">
+            </div>
+            <p class="mz-frase">de <span id="mzUnidadCat">galón</span> de catalizador. <span class="mz-relacion" id="mzRelacion"></span></p>
+            <small class="mz-ayuda" id="mzEspera">Elige el producto y el catalizador para continuar.</small>
+          </fieldset>
+        </div>
+
+        <div class="mz-previa" id="mzPrevia" hidden>
+          <div class="mz-previa-cab">
+            <h3>Así lo vende la caja</h3>
+            <span id="mzCobertura"></span>
+          </div>
+          <table>
+            <thead><tr><th>Vendes</th><th>Lleva de catalizador</th><th><span class="visually-hidden">Estado</span></th></tr></thead>
+            <tbody id="mzFilas"></tbody>
+          </table>
+          <p class="mz-ayuda" id="mzNotaFalta" hidden>Las medidas en rojo no se pueden vender completas hasta crear esa parte del catalizador.</p>
+        </div>
+
+        <div class="mz-pie">
+          <button class="btn" type="button" id="cancelarMezcla">Cancelar</button>
+          <button class="btn btn-primario" type="submit" id="guardarMezcla" disabled>Guardar mezcla</button>
         </div>
       </form>
 
-      <div class="tabla-caja">
-        <table>
-          <thead><tr><th>Producto</th><th>Catalizador</th><th>Medidas que vende la caja</th><th></th></tr></thead>
-          <tbody id="tbMezclas"></tbody>
-        </table>
-      </div>
+      <section class="mz-lista" aria-labelledby="tituloMezclas">
+        <div class="mz-lista-cab">
+          <h2 id="tituloMezclas">Mezclas guardadas <span id="mzTotal"></span></h2>
+          <input type="search" id="buscarMezcla" placeholder="Buscar por producto o catalizador" aria-label="Buscar mezcla">
+        </div>
+        <div class="tabla-caja">
+          <table class="mz-tabla">
+            <thead><tr><th>Producto</th><th>Catalizador</th><th>Mezcla</th><th>Medidas</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
+            <tbody id="tbMezclas"></tbody>
+          </table>
+        </div>
+        <p class="mz-ayuda">En la caja, el producto entra completo con su catalizador; en cada línea se puede vender sin catalizador.</p>
+      </section>
     </div>
   </section>
 
@@ -924,6 +1046,7 @@
     const v = m ? +m[1] / +m[2] : Number(t);
     return Number.isFinite(v) && v > 0 && v < 1 ? v : null;
   }
+  const DENOMINADORES = [2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32, 36, 48, 64, 72, 96, 100, 128, 144, 192, 256, 288, 384];
   // 0.02777… -> "1/36"
   function textoFraccion(v) {
     v = Number(v);
@@ -932,6 +1055,10 @@
       const n = Math.round(v * d);
       if (n >= 1 && Math.abs(n / d - v) < 1e-6) return `${n}/${d}`;
     }
+    // Fracción guardada con redondeo (1/36 -> 0,0278): la de uso común más cercana, a menos del 1 %
+    const comun = DENOMINADORES.map((d) => [Math.round(v * d), d]).filter(([n]) => n >= 1)
+      .map(([n, d]) => [n, d, Math.abs(n / d - v)]).sort((a, b) => a[2] - b[2])[0];
+    if (comun && comun[2] <= v * 0.01) return `${comun[0]}/${comun[1]}`;
     return String(+v.toFixed(4)).replace('.', ',');
   }
 
@@ -2184,74 +2311,267 @@
     pintarMezclas();
   }
 
+  // Producto, catalizador (presentaciones completas) y proporción del formulario
+  const mz = { base: null, cat: null, prop: 0.25 };
+  const unidad = (p) => (p?.presentacion ?? 'unidad').toLowerCase();
   const familia = (id) => catalogo.filter((p) => p.activo && (p.id === id || p.madre_id === id));
-  // Se puede elegir la completa o una de sus partes: la regla se guarda en la completa
-  function completaPorEtiqueta(t) {
-    const p = catalogo.find((x) => x.activo && x.etiqueta === t.trim());
-    return p?.madre_id ? catalogo.find((x) => x.id === p.madre_id) : p;
+  const partesDe = (id) => familia(id).filter((p) => p.madre_id).sort((a, b) => medida(b) - medida(a));
+  // La etiqueta termina en la presentación: "Marca Producto Galón" -> "Marca Producto"
+  function nombreProducto(p) {
+    const t = p.etiqueta ?? '', s = p.presentacion ?? '';
+    return (s && t.endsWith(s) && t.slice(0, -s.length).trim()) || t;
+  }
+  function resumenMedidas(c) {
+    const partes = partesDe(c.id);
+    return partes.length
+      ? `${c.presentacion} y ${partes.length} ${partes.length === 1 ? 'parte' : 'partes'}: ${partes.map((p) => textoMedida(p.fraccion)).join(', ')}`
+      : `${c.presentacion} · sin partes`;
+  }
+  // "4 : 1" cuando producto y catalizador se miden igual (galón con galón)
+  function relacion(prop) {
+    const inv = 1 / prop;
+    if (Math.abs(inv - Math.round(inv)) < 1e-6) return `${Math.round(inv)} : 1`;
+    return `1 : ${textoMedida(prop)}`;
+  }
+  // Cada medida del producto con el catalizador que le toca (o null si falta esa parte)
+  function medidasMezcla(baseId, catId, prop) {
+    const opciones = familia(catId);
+    return familia(baseId).sort((a, b) => medida(b) - medida(a)).map((p) => {
+      const necesita = medida(p) * prop;
+      return { p, necesita, o: elegirCatalizador(opciones, necesita) };
+    });
+  }
+  function resaltar(texto, q) {
+    const i = q ? texto.toLowerCase().indexOf(q.toLowerCase()) : -1;
+    if (i < 0) return esc(texto);
+    return `${esc(texto.slice(0, i))}<mark>${esc(texto.slice(i, i + q.length))}</mark>${esc(texto.slice(i + q.length))}`;
+  }
+
+  // Buscador por producto: cada resultado es una presentación completa con sus partes
+  function buscadorMezcla(cual, ids) {
+    const input = $(ids.input), lista = $(ids.lista), caja = $(ids.caja);
+    let resultados = [], activo = -1;
+
+    function marcar(i) {
+      activo = i;
+      lista.querySelectorAll('[role="option"]').forEach((li, j) => li.setAttribute('aria-selected', String(j === i)));
+      if (i >= 0) {
+        input.setAttribute('aria-activedescendant', `${lista.id}-${i}`);
+        lista.children[i]?.scrollIntoView({ block: 'nearest' });
+      } else input.removeAttribute('aria-activedescendant');
+    }
+    function cerrar() {
+      lista.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      marcar(-1);
+    }
+    function pintar() {
+      const q = input.value.trim();
+      const palabras = norm(q).split(/\s+/).filter(Boolean);
+      if (!palabras.length) { resultados = []; lista.innerHTML = ''; return cerrar(); }
+      const otro = cual === 'base' ? mz.cat : mz.base;
+      resultados = catalogo.filter((c) => c.activo && !c.madre_id && c.id !== otro?.id &&
+        palabras.every((w) => norm(familia(c.id).map((p) => `${p.etiqueta} ${p.codigo_barras ?? ''} ${p.sku ?? ''}`).join(' ')).includes(w)))
+        .slice(0, 8);
+      const resalte = q.split(/\s+/)[0];
+      lista.innerHTML = resultados.length ? resultados.map((c, i) => `
+        <li role="option" id="${lista.id}-${i}" aria-selected="false"><button type="button" tabindex="-1" data-i="${i}">
+          <strong>${resaltar(nombreProducto(c), resalte)}</strong>
+          <span class="mz-medidas"><span>${esc(c.presentacion)}</span>${partesDe(c.id).map((p) => `<span>${esc(textoMedida(p.fraccion))}</span>`).join('')}</span>
+        </button></li>`).join('')
+        : '<li class="vacio">Ningún producto coincide. Revisa el nombre o créalo en el Catálogo.</li>';
+      lista.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      marcar(resultados.length ? 0 : -1);
+    }
+    function elegir(c) {
+      mz[cual] = c;
+      input.value = '';
+      cerrar();
+      pintarEditor();
+      if (!mz.base) $('#mzBuscarBase').focus();
+      else if (!mz.cat) $('#mzBuscarCat').focus();
+      else ($('#mzChips [aria-pressed="true"]') ?? $('#mzChips button')).focus();
+    }
+
+    input.addEventListener('input', pintar);
+    input.addEventListener('focus', () => { if (input.value.trim()) pintar(); });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (lista.hidden) return pintar();
+        if (!resultados.length) return;
+        marcar((activo + (e.key === 'ArrowDown' ? 1 : -1) + resultados.length) % resultados.length);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();   // nunca envía el formulario desde el buscador
+        if (!lista.hidden && activo >= 0) elegir(resultados[activo]);
+      } else if (e.key === 'Escape' && !lista.hidden) {
+        e.preventDefault();
+        cerrar();
+      }
+    });
+    lista.addEventListener('mousedown', (e) => e.preventDefault());   // el foco sigue en el buscador
+    lista.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-i]');
+      if (b) elegir(resultados[+b.dataset.i]);
+    });
+    caja.addEventListener('focusout', (e) => { if (!caja.contains(e.relatedTarget)) cerrar(); });
+  }
+  buscadorMezcla('base', { input: '#mzBuscarBase', lista: '#mzBaseLista', caja: '#mzBaseBuscador' });
+  buscadorMezcla('cat', { input: '#mzBuscarCat', lista: '#mzCatLista', caja: '#mzCatBuscador' });
+
+  const checkSvg = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-label="Lista"><path d="M3.5 9.5l3.5 3.5 7.5-8"/></svg>';
+
+  function pintarEditor() {
+    [['base', 'Base'], ['cat', 'Cat']].forEach(([cual, Cual]) => {
+      const c = mz[cual], tarjeta = $(`#mz${Cual}Elegido`);
+      tarjeta.hidden = !c;
+      $(`#mz${Cual}Buscador`).hidden = !!c;
+      tarjeta.innerHTML = c ? `
+        <div><strong>${esc(nombreProducto(c))}</strong><small>${esc(resumenMedidas(c))}</small></div>
+        <button type="button" class="btn-texto" data-cambiar="${cual}">Cambiar</button>` : '';
+    });
+
+    const listo = !!(mz.base && mz.cat);
+    $('#pasoProp').disabled = !listo;
+    $('#mzEspera').hidden = listo;
+    $('#mzUnidadBase').textContent = mz.base ? unidad(mz.base) : 'galón';
+    $('#mzUnidadCat').textContent = mz.cat ? unidad(mz.cat) : 'galón';
+    let enChip = false;
+    $('#mzChips').querySelectorAll('[data-prop]').forEach((b) => {
+      const si = mz.prop != null && Math.abs(leerProporcion(b.dataset.prop) - mz.prop) < 1e-9;
+      enChip = enChip || si;
+      b.setAttribute('aria-pressed', String(si));
+    });
+    $('#mzOtra').classList.toggle('activa', mz.prop != null && !enChip);
+    $('#mzRelacion').textContent = listo && mz.prop && mz.base.presentacion === mz.cat.presentacion ? `Mezcla ${relacion(mz.prop)}` : '';
+
+    const completo = listo && !!mz.prop;
+    $('#guardarMezcla').disabled = !completo;
+    $('#mzPrevia').hidden = !completo;
+    if (!completo) return;
+    const filas = medidasMezcla(mz.base.id, mz.cat.id, mz.prop);
+    const faltan = filas.filter((f) => !f.o).length;
+    $('#mzCobertura').className = faltan ? 'neg' : 'bien';
+    $('#mzCobertura').textContent = faltan ? `${filas.length - faltan} de ${filas.length} medidas listas` : 'Todas las medidas listas';
+    $('#mzNotaFalta').hidden = !faltan;
+    $('#mzFilas').innerHTML = filas.map(({ p, necesita, o }) => `
+      <tr>
+        <td>${esc(p.presentacion)}</td>
+        <td>${o
+          ? esc(`${o.cantidad > 1 ? `${o.cantidad} × ` : ''}${o.presentacion}`)
+          : `<span class="neg">${esc(`${textoMedida(necesita)} de ${mz.cat.presentacion}`)} · no existe</span>`}</td>
+        <td>${o ? `<span class="bien">${checkSvg}</span>`
+          : necesita < 1 ? `<button type="button" class="btn" data-crear="${necesita}">Crear ${esc(textoMedida(necesita))}</button>` : ''}</td>
+      </tr>`).join('');
+  }
+
+  $('#frmMezcla').addEventListener('click', (e) => {
+    const cambiar = e.target.closest('[data-cambiar]');
+    if (cambiar) {
+      mz[cambiar.dataset.cambiar] = null;
+      pintarEditor();
+      $(cambiar.dataset.cambiar === 'base' ? '#mzBuscarBase' : '#mzBuscarCat').focus();
+      return;
+    }
+    const chip = e.target.closest('[data-prop]');
+    if (chip) {
+      mz.prop = leerProporcion(chip.dataset.prop);
+      $('#mzOtra').value = '';
+      pintarEditor();
+      return;
+    }
+    const crear = e.target.closest('[data-crear]');
+    if (crear) crearParteCatalizador(mz.cat, Number(crear.dataset.crear));
+  });
+  $('#mzOtra').addEventListener('input', () => {
+    mz.prop = leerProporcion($('#mzOtra').value);
+    pintarEditor();
+  });
+  $('#mzOtra').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); });
+
+  // Abre el catalizador en el editor de producto con la parte que falta ya agregada
+  async function crearParteCatalizador(cat, fraccion) {
+    await abrirProducto(cat.producto_id);
+    const div = document.querySelector(`#presLista .pres[data-id="${cat.id}"]`);
+    if (!dlg.open || !div) return;
+    const grupo = div.closest('.grupo-pres');
+    const parte = filaFraccion({ fraccion }, div);
+    grupo.querySelector('.partes-lista').appendChild(parte);
+    grupo.refrescar();
+    parte.scrollIntoView({ block: 'center' });
+    campoDe(parte, 'pct').focus();
+    aviso(`Se agregó la parte ${textoMedida(fraccion)}. Revisa el precio y guarda el producto.`);
   }
 
   function pintarMezclas() {
-    $('#mzOpciones').innerHTML = catalogo.filter((p) => p.activo).map((p) => `<option value="${esc(p.etiqueta)}"></option>`).join('');
     const porId = Object.fromEntries(catalogo.map((p) => [p.id, p]));
-    $('#tbMezclas').innerHTML = mezclas.length ? mezclas.map((m) => {
-      const base = porId[m.presentacion_id], cat = porId[m.catalizador_id];
-      const opciones = familia(m.catalizador_id);
-      const medidas = familia(m.presentacion_id).sort((a, b) => medida(b) - medida(a)).map((p) => {
-        const necesita = medida(p) * Number(m.proporcion);
-        const o = elegirCatalizador(opciones, necesita);
-        return `<li>${esc(p.presentacion)} → ${o
-          ? `${o.cantidad > 1 ? `${o.cantidad} × ` : ''}${esc(o.presentacion)}`
-          : `<span class="neg">falta la parte ${esc(textoMedida(necesita))} en el catalizador</span>`}</li>`;
-      }).join('');
+    // Lo elegido en el formulario, con los datos recién cargados (por ejemplo, tras crear una parte)
+    if (mz.base) mz.base = porId[mz.base.id] ?? null;
+    if (mz.cat) mz.cat = porId[mz.cat.id] ?? null;
+    pintarEditor();
+
+    const q = norm($('#buscarMezcla').value.trim());
+    $('#mzTotal').textContent = mezclas.length || '';
+    const filas = mezclas.map((m) => ({ m, base: porId[m.presentacion_id], cat: porId[m.catalizador_id] }))
+      .filter(({ base, cat }) => !q || norm(`${base?.etiqueta ?? ''} ${cat?.etiqueta ?? ''}`).includes(q))
+      .sort((a, b) => (a.base?.etiqueta ?? '').localeCompare(b.base?.etiqueta ?? ''));
+    $('#tbMezclas').innerHTML = filas.length ? filas.map(({ m, base, cat }) => {
+      const prop = Number(m.proporcion);
+      const medidas = base && cat ? medidasMezcla(base.id, cat.id, prop) : [];
+      const faltan = medidas.filter((x) => !x.o);
+      const editando = m.id === mezclaEditando;
+      const cuanto = `${textoMedida(prop)}${prop < 1 ? ' de' : ''} ${unidad(cat)} por ${unidad(base)}`;
       return `
-      <tr>
-        <td>${esc(base?.etiqueta ?? 'Presentación borrada')}</td>
-        <td>${esc(cat?.etiqueta ?? 'Presentación borrada')}<small>${esc(textoMedida(m.proporcion))} por unidad</small></td>
-        <td><ul class="medidas">${medidas}</ul></td>
+      <tr class="${editando ? 'editando' : ''}">
+        <td>${esc(base ? nombreProducto(base) : 'Presentación borrada')}<small>${esc(base?.presentacion ?? '')}${editando ? ' · editando' : ''}</small></td>
+        <td>${esc(cat ? nombreProducto(cat) : 'Presentación borrada')}<small>${esc(cat?.presentacion ?? '')}</small></td>
+        <td class="num"><span class="mz-grande">${esc(base && cat && base.presentacion === cat.presentacion ? relacion(prop) : textoMedida(prop))}</span><small>${esc(cuanto)}</small></td>
+        <td>${faltan.length
+          ? `<span class="neg">Falta ${faltan.length} de ${medidas.length}</span><small>${esc(faltan.map((x) => `${textoMedida(x.necesita)} de ${cat.presentacion}`).join(', '))}</small>`
+          : `<span class="bien">Todas listas (${medidas.length})</span>`}</td>
         <td><div class="acciones-fila">
           <button type="button" class="btn-texto" data-mezcla="${m.id}">Editar</button>
           <button type="button" class="btn-texto" data-quitar-mezcla="${m.id}">Quitar</button>
         </div></td>
       </tr>`;
-    }).join('') : '<tr><td colspan="4" class="vacio">Aún no hay mezclas. Ej.: Poliuretano · Galón lleva 1/4 de Catalizador · Galón.</td></tr>';
+    }).join('')
+      : `<tr><td colspan="5" class="vacio">${mezclas.length ? 'Ninguna mezcla coincide con la búsqueda.' : 'Aún no hay mezclas. Crea la primera con el formulario: producto, catalizador y cuánto lleva.'}</td></tr>`;
   }
-
-  function ayudaMezcla() {
-    const base = completaPorEtiqueta($('#mzBase').value), cat = completaPorEtiqueta($('#mzCat').value);
-    $('#mzAyuda').textContent = base && cat
-      ? `Cuánto de ${cat.etiqueta} va por cada ${base.etiqueta}. Ej.: 1/4. Aplica también a sus partes.`
-      : 'Por cada unidad completa del producto (ej.: por galón).';
-  }
-  ['#mzBase', '#mzCat'].forEach((s) => $(s).addEventListener('input', ayudaMezcla));
+  $('#buscarMezcla').addEventListener('input', pintarMezclas);
 
   function limpiarMezcla() {
     mezclaEditando = null;
-    $('#frmMezcla').reset();
+    Object.assign(mz, { base: null, cat: null, prop: 0.25 });
+    $('#mzOtra').value = '';
+    $('#mzBuscarBase').value = '';
+    $('#mzBuscarCat').value = '';
     $('#tituloMezcla').textContent = 'Nueva mezcla';
-    $('#cancelarMezcla').hidden = true;
-    ayudaMezcla();
+    pintarMezclas();
   }
-  $('#cancelarMezcla').addEventListener('click', limpiarMezcla);
+  $('#cancelarMezcla').addEventListener('click', () => { limpiarMezcla(); $('#mzBuscarBase').focus(); });
 
   $('#tbMezclas').addEventListener('click', async (e) => {
     const ed = e.target.closest('[data-mezcla]');
     if (ed) {
       const m = mezclas.find((x) => x.id === +ed.dataset.mezcla);
       mezclaEditando = m.id;
-      $('#mzBase').value = catalogo.find((p) => p.id === m.presentacion_id)?.etiqueta ?? '';
-      $('#mzCat').value = catalogo.find((p) => p.id === m.catalizador_id)?.etiqueta ?? '';
-      $('#mzProp').value = textoMedida(m.proporcion);
+      mz.base = catalogo.find((p) => p.id === m.presentacion_id) ?? null;
+      mz.cat = catalogo.find((p) => p.id === m.catalizador_id) ?? null;
+      mz.prop = Number(m.proporcion);
+      const enChip = [...$('#mzChips').querySelectorAll('[data-prop]')].some((b) => Math.abs(leerProporcion(b.dataset.prop) - mz.prop) < 1e-9);
+      $('#mzOtra').value = enChip ? '' : textoMedida(mz.prop);
       $('#tituloMezcla').textContent = 'Editar mezcla';
-      $('#cancelarMezcla').hidden = false;
-      ayudaMezcla();
-      $('#mzProp').focus();
+      pintarMezclas();
+      $('#frmMezcla').scrollIntoView({ block: 'start', behavior: 'smooth' });
+      ($('#mzChips [aria-pressed="true"]') ?? $('#mzOtra')).focus({ preventScroll: true });
       return;
     }
     const q = e.target.closest('[data-quitar-mezcla]');
     if (q && confirm('¿Quitar esta mezcla? La caja dejará de agregar el catalizador a este producto.')) {
       const { error } = await db.from('mezclas').delete().eq('id', +q.dataset.quitarMezcla);
       if (error) return aviso(error.message, 'error');
+      aviso('Mezcla quitada.');
       if (mezclaEditando === +q.dataset.quitarMezcla) limpiarMezcla();
       cargarMezclas();
     }
@@ -2259,21 +2579,23 @@
 
   $('#frmMezcla').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const base = completaPorEtiqueta($('#mzBase').value), cat = completaPorEtiqueta($('#mzCat').value);
-    const proporcion = leerProporcion($('#mzProp').value);
-    if (!base) return aviso('Elige el producto de la lista.', 'error');
-    if (!cat) return aviso('Elige el catalizador de la lista.', 'error');
-    if (base.id === cat.id) return aviso('El producto y el catalizador deben ser distintos.', 'error');
-    if (!proporcion) return aviso('Escribe la cantidad de catalizador, por ejemplo 1/4.', 'error');
-    const datos = { presentacion_id: base.id, catalizador_id: cat.id, proporcion };
+    if (!mz.base) return aviso('Elige el producto.', 'error');
+    if (!mz.cat) return aviso('Elige el catalizador.', 'error');
+    if (mz.base.id === mz.cat.id) return aviso('El producto y el catalizador deben ser distintos.', 'error');
+    if (!mz.prop) return aviso('Elige cuánto catalizador lleva, por ejemplo 1/4.', 'error');
+    const datos = { presentacion_id: mz.base.id, catalizador_id: mz.cat.id, proporcion: mz.prop };
+    const boton = $('#guardarMezcla');
+    boton.disabled = true;
     const { error } = mezclaEditando
       ? await db.from('mezclas').update(datos).eq('id', mezclaEditando)
       : await db.from('mezclas').insert(datos);
+    boton.disabled = false;
     if (error) return aviso(error.code === '23505' ? 'Ese producto ya tiene una mezcla: edítala en la lista.' : error.message, 'error');
     aviso(mezclaEditando ? 'Mezcla actualizada.' : 'Mezcla guardada.');
     limpiarMezcla();
     cargarMezclas();
   });
+  pintarEditor();
 
   // ---------- Inicio ----------
   aplicarTipo();
