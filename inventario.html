@@ -561,8 +561,8 @@
       <form class="tarjeta" id="frmMezcla">
         <h2 id="tituloMezcla">Nueva mezcla</h2>
         <p class="carga-nota">Para vender “completo”: al vender el producto, o una de sus partes, la caja agrega sola el catalizador que corresponde a esa medida.</p>
-        <div class="campo"><label for="mzBase">Producto</label><input id="mzBase" list="mzOpciones" autocomplete="off" required placeholder="Ej: Poliuretano 2K · Galón"><small>Presentación completa. La regla aplica también a sus partes.</small></div>
-        <div class="campo"><label for="mzCat">Catalizador</label><input id="mzCat" list="mzOpciones" autocomplete="off" required placeholder="Ej: Catalizador 2K · Galón"><small>Presentación completa. Crea en ella las partes que se envasan (1/4, 1/16, 1/144…).</small></div>
+        <div class="campo"><label for="mzBase">Producto</label><input id="mzBase" list="mzOpciones" autocomplete="off" required placeholder="Escribe el nombre: poliuretano…"><small>Puedes elegir el galón o una de sus partes: la regla se guarda en el galón y aplica a todas sus partes.</small></div>
+        <div class="campo"><label for="mzCat">Catalizador</label><input id="mzCat" list="mzOpciones" autocomplete="off" required placeholder="Escribe el nombre: catalizador…"><small>Igual: el galón o una de sus partes. Las partes que se envasan (1/4, 1/16, 1/144…) se crean en el catalizador.</small></div>
         <div class="campo"><label for="mzProp">Cantidad de catalizador</label><input id="mzProp" required placeholder="1/4" inputmode="decimal"><small id="mzAyuda">Por cada unidad del producto.</small></div>
         <datalist id="mzOpciones"></datalist>
         <div class="con-boton">
@@ -2184,12 +2184,15 @@
     pintarMezclas();
   }
 
-  const completasActivas = () => catalogo.filter((p) => !p.madre_id && p.activo);
   const familia = (id) => catalogo.filter((p) => p.activo && (p.id === id || p.madre_id === id));
-  const completaPorEtiqueta = (t) => completasActivas().find((p) => p.etiqueta === t.trim());
+  // Se puede elegir la completa o una de sus partes: la regla se guarda en la completa
+  function completaPorEtiqueta(t) {
+    const p = catalogo.find((x) => x.activo && x.etiqueta === t.trim());
+    return p?.madre_id ? catalogo.find((x) => x.id === p.madre_id) : p;
+  }
 
   function pintarMezclas() {
-    $('#mzOpciones').innerHTML = completasActivas().map((p) => `<option value="${esc(p.etiqueta)}"></option>`).join('');
+    $('#mzOpciones').innerHTML = catalogo.filter((p) => p.activo).map((p) => `<option value="${esc(p.etiqueta)}"></option>`).join('');
     const porId = Object.fromEntries(catalogo.map((p) => [p.id, p]));
     $('#tbMezclas').innerHTML = mezclas.length ? mezclas.map((m) => {
       const base = porId[m.presentacion_id], cat = porId[m.catalizador_id];
@@ -2217,8 +2220,8 @@
   function ayudaMezcla() {
     const base = completaPorEtiqueta($('#mzBase').value), cat = completaPorEtiqueta($('#mzCat').value);
     $('#mzAyuda').textContent = base && cat
-      ? `Cuánto ${cat.presentacion} de catalizador va por cada ${base.presentacion} de producto. Ej.: 1/4.`
-      : 'Por cada unidad del producto.';
+      ? `Cuánto de ${cat.etiqueta} va por cada ${base.etiqueta}. Ej.: 1/4. Aplica también a sus partes.`
+      : 'Por cada unidad completa del producto (ej.: por galón).';
   }
   ['#mzBase', '#mzCat'].forEach((s) => $(s).addEventListener('input', ayudaMezcla));
 
@@ -2258,8 +2261,8 @@
     e.preventDefault();
     const base = completaPorEtiqueta($('#mzBase').value), cat = completaPorEtiqueta($('#mzCat').value);
     const proporcion = leerProporcion($('#mzProp').value);
-    if (!base) return aviso('Elige el producto de la lista (una presentación completa, no una parte).', 'error');
-    if (!cat) return aviso('Elige el catalizador de la lista (una presentación completa, no una parte).', 'error');
+    if (!base) return aviso('Elige el producto de la lista.', 'error');
+    if (!cat) return aviso('Elige el catalizador de la lista.', 'error');
     if (base.id === cat.id) return aviso('El producto y el catalizador deben ser distintos.', 'error');
     if (!proporcion) return aviso('Escribe la cantidad de catalizador, por ejemplo 1/4.', 'error');
     const datos = { presentacion_id: base.id, catalizador_id: cat.id, proporcion };
