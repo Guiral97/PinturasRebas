@@ -31,14 +31,14 @@
 
   const enlace = ([href, nombre, ic, principal]) => `
     <a href="${href}" class="${principal ? '' : 'nav-secundaria'}"${href === pagina ? ' aria-current="page"' : ''}>
-      ${icono(ic)}<span>${nombre}</span>${ic === 'pedidos' ? '<b class="nav-cuenta" data-pedidos hidden></b>' : ''}
+      ${icono(ic)}<span data-t="${nombre}">${nombre}</span>${ic === 'pedidos' ? '<b class="nav-cuenta" data-pedidos hidden></b>' : ''}
     </a>`;
   const secundariaActual = SECCIONES.some(([h, , , p]) => h === pagina && !p);
   nav.innerHTML = SECCIONES.map(enlace).join('') + `
-    <button type="button" class="nav-mas"${secundariaActual ? ' aria-current="page"' : ''} aria-expanded="false" aria-controls="navMenu">${icono('mas')}<span>Más</span></button>
+    <button type="button" class="nav-mas"${secundariaActual ? ' aria-current="page"' : ''} aria-expanded="false" aria-controls="navMenu">${icono('mas')}<span data-t="Más">Más</span></button>
     <div class="nav-menu" id="navMenu" hidden>
       ${SECCIONES.filter((s) => !s[3]).map(([href, nombre, ic]) =>
-        `<a href="${href}"${href === pagina ? ' aria-current="page"' : ''}>${icono(ic)}<span>${nombre}</span></a>`).join('')}
+        `<a href="${href}"${href === pagina ? ' aria-current="page"' : ''}>${icono(ic)}<span data-t="${nombre}">${nombre}</span></a>`).join('')}
     </div>`;
 
   const mas = nav.querySelector('.nav-mas'), menu = nav.querySelector('.nav-menu');
@@ -53,7 +53,11 @@
   // Con id: gana sobre las reglas .nav que traiga cada pantalla
   const estilo = document.createElement('style');
   estilo.textContent = `
-    #nav { display: flex; flex-wrap: wrap; gap: 2px; margin: 0 auto 0 1rem; } /* pegada a la marca: no se mueve según lo que haya a la derecha */
+    /* flex: 1 ocupa el espacio libre: la barra arranca junto a la marca y no se mueve según lo que haya a la derecha */
+    #nav { display: flex; flex-wrap: wrap; gap: 2px; flex: 1; margin: 0; }
+    /* Reserva el ancho en negrita para que el botón activo no empuje a los demás */
+    #nav a > span, #nav .nav-mas > span { display: inline-flex; flex-direction: column; align-items: center; }
+    #nav a > span::after, #nav .nav-mas > span::after { content: attr(data-t); font-weight: 600; height: 0; overflow: hidden; visibility: hidden; }
     #nav a, #nav .nav-mas {
       position: relative; display: flex; align-items: center; gap: .45rem;
       padding: .45rem .7rem; border-radius: 8px; border: 0; background: none; box-shadow: none;
@@ -70,7 +74,7 @@
     }
     #nav .nav-mas, #nav .nav-menu { display: none; }
     @media (max-width: 1180px) and (min-width: 701px) {
-      #nav { order: 3; width: 100%; justify-content: center; margin: 0; }
+      #nav { order: 3; flex-basis: 100%; justify-content: center; }
     }
     @media (max-width: 700px) {
       #nav {
