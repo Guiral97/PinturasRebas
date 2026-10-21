@@ -15,7 +15,7 @@
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="config.js"></script>
 <script src="etiquetas.js?v=20261010c"></script>
-<script src="impresora-directa.js?v=20261010c"></script>
+<script src="impresora-directa.js?v=20261021a"></script>
 <style>
   :root {
     color-scheme: light dark;   /* barras de desplazamiento y controles según el tema */
@@ -1957,6 +1957,12 @@
   $('[data-directo="ble"]').hidden = !ID?.soportaBluetooth();
   $('[data-directo="serial"]').hidden = !ID?.soportaSerial();
   $('#etDirecto').hidden = !ID || (!ID.soportaBluetooth() && !ID.soportaSerial());
+  // iPhone/iPad: ningún navegador de Apple permite Bluetooth desde una página web
+  const esIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  if (ID && $('#etDirecto').hidden && esIOS) {
+    $('#etDirecto').hidden = false;
+    $('#etDirectoEstado').textContent = 'En iPhone y iPad no se puede imprimir directo: Apple no permite Bluetooth en Safari ni en Chrome. Usa un celular Android o el computador, o abre la app en el navegador gratuito Bluefy.';
+  }
 
   function estadoDirecto(texto, error = false) {
     const p = $('#etDirectoEstado');

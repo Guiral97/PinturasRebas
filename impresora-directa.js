@@ -28,7 +28,10 @@
 
   const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   const soportaBluetooth = () => !!(navigator.bluetooth && navigator.bluetooth.requestDevice);
-  const soportaSerial = () => !!(navigator.serial && navigator.serial.requestPort);
+  // En Android, Web Serial solo ve impresoras Bluetooth clásicas emparejadas; la
+  // DIG-M220 llega al celular por BLE, así que allí se usa el botón "Bluetooth"
+  const esAndroid = () => /Android/i.test(navigator.userAgent);
+  const soportaSerial = () => !!(navigator.serial && navigator.serial.requestPort) && !esAndroid();
 
   // ---------- Dibujo de la etiqueta ----------
   function cargarImagen(svg) {
