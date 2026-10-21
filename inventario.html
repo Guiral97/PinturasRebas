@@ -18,6 +18,7 @@
 <script src="impresora-directa.js?v=20261010c"></script>
 <style>
   :root {
+    color-scheme: light dark;   /* barras de desplazamiento y controles según el tema */
     --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
     --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
     --cinta: #E8D08A; --cinta-borde: #C9AE66; --alerta: #A1281F; --ok: #2F6B3A; --aviso: #8A6410;
@@ -266,10 +267,7 @@
   }
 
   /* Diálogo de producto */
-  /* El diálogo ocupa toda la ventana y se desplaza él: la barra queda en el borde derecho, como la de la página */
-  dialog { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 1rem .75rem;
-           border: 0; background: transparent; color: var(--tinta); overflow-y: auto; color-scheme: light dark; }
-  dialog > form { width: min(70rem, 100%); margin: 0 auto; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); }
+  dialog { border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); color: var(--tinta); padding: 0; width: min(70rem, calc(100% - 1.5rem)); max-height: calc(100vh - 2rem); }
   dialog::backdrop { background: rgba(10, 14, 18, .45); }
   .dlg-cuerpo { padding: 1.25rem 1.5rem; display: grid; gap: 1.1rem; }
   .dlg-pie { display: flex; justify-content: flex-end; gap: .5rem; padding: 1rem 1.5rem; border-top: 1px solid var(--linea); position: sticky; bottom: 0; background: var(--panel); }
@@ -349,7 +347,7 @@
 
   /* Etiquetas */
   .acciones-fila { display: flex; gap: .15rem; justify-content: flex-end; white-space: nowrap; }
-  #dlgEtiquetas > form { width: min(30rem, 100%); }
+  #dlgEtiquetas { width: min(30rem, calc(100% - 1.5rem)); }
   .et-prod { border-left: 4px solid var(--acento); padding-left: .8rem; }
   .et-prod strong { display: block; }
   .et-prod span { color: var(--suave); font-variant-numeric: tabular-nums; }
@@ -429,7 +427,7 @@
     #usuario { display: none; }
     #salir { padding: .4rem .7rem; font-size: .9rem; }
     main { padding: 1rem; }
-    dialog { padding: .6rem; }
+    dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
     .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
     #aviso { left: .75rem; right: .75rem; transform: none; max-width: none; bottom: .75rem; }
     #login { margin: 6vh 1rem 0; }
