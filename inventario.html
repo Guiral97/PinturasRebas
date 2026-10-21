@@ -103,6 +103,33 @@
   .filtro .punto { width: .55rem; height: .55rem; border-radius: 50%; background: var(--aviso); }
   .filtro[aria-pressed="true"] { border-color: var(--acento); background: color-mix(in srgb, var(--acento) 14%, transparent); }
 
+  /* Panel de filtros del catálogo */
+  .panel-filtros { display: grid; gap: .85rem; padding: 1rem; margin-bottom: 1rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
+  .pf-fila { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .65rem; }
+  .pf-buscar { flex: 999 1 18rem; }
+  .pf-mas { display: contents; }
+  .pf-mas .campo { flex: 1 1 10rem; }
+  .panel-filtros .campo { font-size: .85rem; color: var(--suave); }
+  .panel-filtros input, .panel-filtros select { min-height: 2.75rem; background: var(--fondo); font-size: 1rem; }
+  .panel-filtros select.activo { border-color: var(--acento); background: color-mix(in srgb, var(--acento) 14%, var(--fondo)); }
+  .pf-abrir { display: none; min-height: 2.75rem; align-items: center; gap: .4rem; font-weight: 600; }
+  .pf-num { min-width: 1.3rem; padding: 0 .3rem; border-radius: 999px; background: var(--acento); color: var(--acento-tinta); font-size: .8rem; text-align: center; }
+  .pf-segunda { align-items: center; justify-content: space-between; gap: .75rem 1.5rem; }
+  .pf-segunda .filtros { align-items: center; }
+  .pf-etq { font-size: .85rem; font-weight: 500; color: var(--suave); margin-right: .2rem; }
+  .pf-mostrar { display: flex; align-items: center; gap: .6rem; }
+  .seg-estado { display: flex; gap: 2px; padding: 3px; background: var(--fondo); border: 1px solid var(--linea); border-radius: 8px; }
+  .seg-estado button { min-height: 2.3rem; padding: 0 .75rem; border: 0; border-radius: 6px; background: none; color: var(--suave); font-weight: 600; white-space: nowrap; }
+  .seg-estado button:hover { color: var(--tinta); }
+  .seg-estado button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); }
+  .seg-estado .cuenta { font-weight: 500; opacity: .8; font-variant-numeric: tabular-nums; }
+  .pf-resumen { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; padding-top: .75rem; border-top: 1px solid var(--linea); color: var(--suave); font-size: .93rem; min-height: 2.6rem; }
+  .pf-resumen strong { color: var(--tinta); font-variant-numeric: tabular-nums; }
+  .pf-aplicados { display: contents; }
+  .pf-quitar { display: inline-flex; align-items: center; gap: .35rem; min-height: 2rem; padding: 0 .5rem 0 .7rem; border: 0; border-radius: var(--radio); background: color-mix(in srgb, var(--suave) 18%, transparent); color: var(--tinta); font-weight: 500; font-size: .9rem; }
+  .pf-quitar:hover { background: color-mix(in srgb, var(--suave) 28%, transparent); }
+  .pf-resumen .btn-texto { min-height: 2rem; }
+
   /* Estados unificados */
   .estado {
     display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; font-weight: 700; line-height: 1.5;
@@ -448,6 +475,19 @@
     .cab-acciones { margin-left: 0; width: 100%; }
     .cab-acciones .btn { flex: 1 1 auto; }
     .herramientas .buscar { max-width: none; }
+    /* Filtros: categoría, marca y orden se abren con el botón "Filtros" */
+    .panel-filtros { padding: .85rem; }
+    .pf-buscar { flex-basis: 10rem; }
+    .pf-abrir { display: inline-flex; }
+    .pf-mas { display: none; }
+    .panel-filtros.abierto .pf-mas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; flex: 1 1 100%; }
+    .panel-filtros.abierto .pf-mas .campo:last-child { grid-column: 1 / -1; }
+    .pf-segunda .filtros { flex-wrap: nowrap; overflow-x: auto; margin: 0 -.85rem; padding: 0 .85rem .2rem; }
+    .pf-segunda .filtro { flex: none; }
+    .pf-segunda .pf-etq { display: none; }
+    .pf-mostrar { flex: 1 1 100%; }
+    .seg-estado { flex: 1; }
+    .seg-estado button { flex: 1; padding: 0 .4rem; }
     /* El catálogo pasa a tarjetas: cada presentación en dos renglones */
     .cat-tabla { min-width: 0; }
     .cat-tabla thead { display: none; }
@@ -517,13 +557,45 @@
 
   <!-- ============ CATÁLOGO ============ -->
   <section id="p-catalogo" role="tabpanel" aria-labelledby="t-catalogo">
-    <div class="herramientas">
-      <input type="search" class="buscar" id="buscarCat" placeholder="Nombre, marca, color o código" aria-label="Buscar en el catálogo">
-      <div class="filtros" role="group" aria-label="Filtros del catálogo">
-        <button type="button" class="filtro" id="filtroTodos" aria-pressed="true">Todos <span class="cuenta" data-cuenta="todos"></span></button>
-        <button type="button" class="filtro" id="soloBajo" aria-pressed="false"><span class="punto" aria-hidden="true"></span>Stock bajo <span class="cuenta" data-cuenta="bajo"></span></button>
-        <button type="button" class="filtro" id="sinCodigo" aria-pressed="false">Sin código <span class="cuenta" data-cuenta="sinCodigo"></span></button>
-        <button type="button" class="filtro" id="verInactivos" aria-pressed="false">Inactivos <span class="cuenta" data-cuenta="inactivos"></span></button>
+    <div class="panel-filtros" id="panelFiltros" aria-label="Filtros del catálogo" role="search">
+      <div class="pf-fila">
+        <label class="campo pf-buscar">Buscar
+          <input type="search" id="buscarCat" placeholder="Nombre, marca, color o código" autocomplete="off" spellcheck="false">
+        </label>
+        <button type="button" class="btn pf-abrir" id="pfAbrir" aria-expanded="false" aria-controls="pfMas">Filtros <span class="pf-num" id="pfNum" hidden></span></button>
+        <div class="pf-mas" id="pfMas">
+          <label class="campo">Categoría <select id="fCategoria"><option value="">Todas</option></select></label>
+          <label class="campo">Marca <select id="fMarca"><option value="">Todas</option></select></label>
+          <label class="campo">Ordenar por
+            <select id="fOrden">
+              <option value="nombre">Nombre A–Z</option>
+              <option value="stock">Stock: menos primero</option>
+              <option value="ganancia">Ganancia: menor primero</option>
+              <option value="precio">Precio: mayor primero</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="pf-fila pf-segunda">
+        <div class="filtros" role="group" aria-labelledby="pfRevisar">
+          <span class="pf-etq" id="pfRevisar">Revisar</span>
+          <button type="button" class="filtro" id="soloBajo" aria-pressed="false"><span class="punto" aria-hidden="true"></span>Stock bajo <span class="cuenta" data-cuenta="bajo"></span></button>
+          <button type="button" class="filtro" id="sinCodigo" aria-pressed="false"><span class="punto" style="background: var(--suave)" aria-hidden="true"></span>Sin código <span class="cuenta" data-cuenta="sinCodigo"></span></button>
+          <button type="button" class="filtro" id="gananciaBaja" aria-pressed="false" title="Menos de 20 % sobre el costo"><span class="punto" style="background: var(--alerta)" aria-hidden="true"></span>Ganancia &lt; 20 % <span class="cuenta" data-cuenta="ganancia"></span></button>
+          <button type="button" class="filtro" id="porPartes" aria-pressed="false"><span class="punto" style="background: var(--acento)" aria-hidden="true"></span>Por partes <span class="cuenta" data-cuenta="partes"></span></button>
+        </div>
+        <div class="pf-mostrar" role="group" aria-labelledby="pfMostrar">
+          <span class="pf-etq" id="pfMostrar">Mostrar</span>
+          <div class="seg-estado">
+            <button type="button" data-estado="activos" aria-pressed="true">Activos <span class="cuenta" data-cuenta="activos"></span></button>
+            <button type="button" data-estado="inactivos" aria-pressed="false">Inactivos <span class="cuenta" data-cuenta="inactivos"></span></button>
+            <button type="button" data-estado="todos" aria-pressed="false">Todos <span class="cuenta" data-cuenta="todos"></span></button>
+          </div>
+        </div>
+      </div>
+      <div class="pf-resumen" aria-live="polite">
+        <span id="pfMostrando"></span>
+        <span class="pf-aplicados" id="pfAplicados"></span>
       </div>
     </div>
     <div class="tabla-caja">
@@ -1072,39 +1144,93 @@
     return `<span class="stock-num">${n}</span>${abierto}`;
   }
 
-  // Filtros del catálogo (Todos apaga los demás)
-  const filtrosCat = { bajo: false, sinCodigo: false, inactivos: false };
-  const BOTON_FILTRO = { bajo: '#soloBajo', sinCodigo: '#sinCodigo', inactivos: '#verInactivos' };
+  // Filtros del catálogo: los de "Revisar" se combinan; "Mostrar" elige activos, inactivos o todos
+  const filtrosCat = { bajo: false, sinCodigo: false, ganancia: false, partes: false };
+  const BOTON_FILTRO = { bajo: '#soloBajo', sinCodigo: '#sinCodigo', ganancia: '#gananciaBaja', partes: '#porPartes' };
+  const NOMBRE_FILTRO = { bajo: 'Stock bajo', sinCodigo: 'Sin código', ganancia: 'Ganancia < 20 %', partes: 'Por partes' };
+  const REVISAR = {
+    bajo: esBajo,
+    sinCodigo: (p) => !p.codigo_barras,
+    ganancia: (p) => { const pct = pctSobreCosto(p.costo, p.precio_venta); return pct != null && pct < GANANCIA_BAJA; },
+    partes: (p) => !!(p.madre_id || p.tiene_fracciones)
+  };
+  let estadoCat = 'activos';
+  const marcaDe = (p) => (typeof p.marca === 'string' ? p.marca : '');
+  const enEstado = (p) => estadoCat === 'todos' || (estadoCat === 'activos' ? p.activo : !p.activo);
 
-  function pintarFiltros() {
-    $('#filtroTodos').setAttribute('aria-pressed', String(!Object.values(filtrosCat).some(Boolean)));
+  // Opciones de categoría y marca según lo que hay en el catálogo (conserva la elegida)
+  function opcionesFiltro(sel, valores) {
+    const actual = sel.value;
+    const lista = [...new Set(valores.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+    sel.innerHTML = `<option value="">Todas (${lista.length})</option>` + lista.map((v) => `<option>${esc(v)}</option>`).join('');
+    sel.value = lista.includes(actual) ? actual : '';
+  }
+
+  function pintarFiltros(visibles, base) {
     Object.entries(BOTON_FILTRO).forEach(([k, s]) => $(s).setAttribute('aria-pressed', String(filtrosCat[k])));
+    document.querySelectorAll('[data-estado]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.estado === estadoCat)));
     const activos = catalogo.filter((p) => p.activo);
     const cuentas = {
-      todos: activos.length,
-      bajo: activos.filter(esBajo).length,
-      sinCodigo: activos.filter((p) => !p.codigo_barras).length,
-      inactivos: catalogo.length - activos.length
+      todos: catalogo.length,
+      activos: activos.length,
+      inactivos: catalogo.length - activos.length,
+      ...Object.fromEntries(Object.entries(REVISAR).map(([k, f]) => [k, activos.filter(f).length]))
     };
     document.querySelectorAll('[data-cuenta]').forEach((s) => { s.textContent = catalogo.length ? cuentas[s.dataset.cuenta] : ''; });
+    $('#fCategoria').classList.toggle('activo', !!$('#fCategoria').value);
+    $('#fMarca').classList.toggle('activo', !!$('#fMarca').value);
+
+    // Resumen: cuántas se ven y los filtros puestos, cada uno con su ✕
+    const q = $('#buscarCat').value.trim();
+    const aplicados = [
+      q && ['q', `“${q}”`],
+      $('#fCategoria').value && ['categoria', $('#fCategoria').value],
+      $('#fMarca').value && ['marca', $('#fMarca').value],
+      ...Object.keys(filtrosCat).filter((k) => filtrosCat[k]).map((k) => [k, NOMBRE_FILTRO[k]]),
+      estadoCat !== 'activos' && ['estado', estadoCat === 'todos' ? 'Con inactivos' : 'Solo inactivos']
+    ].filter(Boolean);
+    const enPanel = aplicados.filter(([k]) => k === 'categoria' || k === 'marca').length;
+    $('#pfNum').hidden = !enPanel;
+    $('#pfNum').textContent = enPanel;
+    $('#pfMostrando').innerHTML = catalogo.length
+      ? `Mostrando <strong>${visibles}</strong> de ${base} ${base === 1 ? 'presentación' : 'presentaciones'}`
+      : '';
+    $('#pfAplicados').innerHTML = aplicados.length
+      ? aplicados.map(([k, t]) => `<button type="button" class="pf-quitar" data-quitar="${k}" aria-label="Quitar filtro ${esc(t)}">${esc(t)}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`).join('')
+        + '<button type="button" class="btn-texto" data-quitar="todo">Limpiar filtros</button>'
+      : '';
+  }
+
+  function quitarFiltro(k) {
+    if (k === 'q' || k === 'todo') $('#buscarCat').value = '';
+    if (k === 'categoria' || k === 'todo') $('#fCategoria').value = '';
+    if (k === 'marca' || k === 'todo') $('#fMarca').value = '';
+    if (k === 'estado' || k === 'todo') estadoCat = 'activos';
+    if (k in filtrosCat) filtrosCat[k] = false;
+    if (k === 'todo') Object.keys(filtrosCat).forEach((f) => { filtrosCat[f] = false; });
+    pintarCatalogo();
   }
 
   function pintarCatalogo() {
-    pintarFiltros();
+    opcionesFiltro($('#fCategoria'), catalogo.map((p) => p.categoria));
+    opcionesFiltro($('#fMarca'), catalogo.map(marcaDe));
     const q = norm($('#buscarCat').value.trim());
-    const { bajo: soloBajo, sinCodigo, inactivos: verInactivos } = filtrosCat;
-    const filas = catalogo.filter((p) =>
-      (verInactivos || p.activo) &&
-      (!soloBajo || esBajo(p)) &&
-      (!sinCodigo || !p.codigo_barras) &&
-      (!q || norm(`${p.etiqueta} ${p.categoria ?? ''} ${p.codigo_barras ?? ''} ${p.sku ?? ''}`).includes(q)));
+    const cat = $('#fCategoria').value, marca = $('#fMarca').value;
+    const base = catalogo.filter(enEstado);
+    const filas = base.filter((p) =>
+      Object.keys(filtrosCat).every((k) => !filtrosCat[k] || REVISAR[k](p)) &&
+      (!cat || p.categoria === cat) &&
+      (!marca || marcaDe(p) === marca) &&
+      (!q || norm(`${p.etiqueta} ${p.categoria ?? ''} ${marcaDe(p)} ${p.codigo_barras ?? ''} ${p.sku ?? ''}`).includes(q)));
+    pintarFiltros(filas.length, base.length);
 
     if (!catalogo.length) {
       $('#tbCatalogo').innerHTML = '<tr><td colspan="6" class="vacio">El catálogo está vacío. Crea tu primer producto con el botón “Nuevo producto”.</td></tr>';
       return;
     }
     if (!filas.length) {
-      $('#tbCatalogo').innerHTML = '<tr><td colspan="6" class="vacio">Ningún producto coincide con la búsqueda.</td></tr>';
+      $('#tbCatalogo').innerHTML = '<tr><td colspan="6" class="vacio">Ningún producto coincide con los filtros. <button type="button" class="btn-texto" data-quitar="todo">Limpiar filtros</button></td></tr>';
       return;
     }
 
@@ -1131,7 +1257,14 @@
         <td class="c-acciones"><div class="acciones-fila">${p.codigo_barras ? `<button type="button" class="btn-texto" data-etiqueta="${p.id}">Etiquetas</button>` : ''}</div></td>
       </tr>`;
 
-    const ordenados = [...grupos.values()].sort((a, b) => nombreProducto(a[0]).localeCompare(nombreProducto(b[0])));
+    // Orden de los productos: por nombre o por la presentación que más pesa en el criterio
+    const porNombre = (a, b) => nombreProducto(a[0]).localeCompare(nombreProducto(b[0]));
+    const clave = {
+      stock: (l) => Math.min(...l.map((p) => Number(p.stock))),
+      ganancia: (l) => Math.min(...l.map((p) => pctSobreCosto(p.costo, p.precio_venta) ?? Infinity)),
+      precio: (l) => -Math.max(...l.map((p) => Number(p.precio_venta)))
+    }[$('#fOrden').value];
+    const ordenados = [...grupos.values()].sort((a, b) => (clave ? clave(a) - clave(b) : 0) || porNombre(a, b));
     $('#tbCatalogo').innerHTML = ordenados.map((lista) => {
       const completas = lista.filter((p) => !p.madre_id);
       const partesSueltas = lista.filter((p) => p.madre_id && !completas.some((c) => c.id === p.madre_id));
@@ -1158,14 +1291,24 @@
   }
 
   $('#buscarCat').addEventListener('input', pintarCatalogo);
-  $('#filtroTodos').addEventListener('click', () => {
-    Object.keys(filtrosCat).forEach((k) => { filtrosCat[k] = false; });
-    pintarCatalogo();
-  });
+  $('#buscarCat').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); });
+  ['#fCategoria', '#fMarca', '#fOrden'].forEach((s) => $(s).addEventListener('change', pintarCatalogo));
   Object.entries(BOTON_FILTRO).forEach(([k, s]) => $(s).addEventListener('click', () => {
     filtrosCat[k] = !filtrosCat[k];
     pintarCatalogo();
   }));
+  document.querySelectorAll('[data-estado]').forEach((b) => b.addEventListener('click', () => {
+    estadoCat = b.dataset.estado;
+    pintarCatalogo();
+  }));
+  $('#pfAbrir').addEventListener('click', () => {
+    const abierto = $('#panelFiltros').classList.toggle('abierto');
+    $('#pfAbrir').setAttribute('aria-expanded', String(abierto));
+  });
+  $('#p-catalogo').addEventListener('click', (e) => {
+    const q = e.target.closest('[data-quitar]');
+    if (q) quitarFiltro(q.dataset.quitar);
+  });
   $('#irEntrada').addEventListener('click', () => abrirPestana('entradas'));
   $('#tbCatalogo').addEventListener('click', (e) => {
     const et = e.target.closest('[data-etiqueta]');
