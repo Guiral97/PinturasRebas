@@ -138,6 +138,13 @@
   .resultado .sub td { font-weight: 600; }
   .resultado .final td { font-weight: 700; font-size: 1.15rem; border-top: 2px solid var(--tinta); border-bottom: 0; }
   .negativo { color: var(--alerta); }
+
+  /* Costos de los productos */
+  .costos-filtros { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: space-between; }
+  .costos-filtros input { min-height: 2.75rem; flex: 1 1 16rem; max-width: 24rem; }
+  #tbCostos small { color: var(--suave); display: block; }
+  #tbCostos .parte td:first-child { padding-left: 1.4rem; }
+  @media (max-width: 700px) { .costos-filtros input { max-width: none; } }
   .nota-res { color: var(--suave); }
 
   #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
@@ -309,6 +316,32 @@
     </div>
   </section>
 
+  <section class="bloque" id="costos">
+    <div class="bloque-cab"><h2>Costos de los productos</h2><small>Inventario de hoy, no depende del período</small></div>
+    <div class="kpis-sec num">
+      <div><span>Inventario al costo</span><strong id="cValorCosto">$ 0</strong><small id="cUnidades"></small></div>
+      <div><span>Inventario a precio de venta</span><strong id="cValorVenta">$ 0</strong><small id="cGananciaEsp"></small></div>
+      <div><span>Ganancia promedio sobre el costo</span><strong id="cGanProm">–</strong><small>Ponderada por el inventario</small></div>
+      <div><span>Por revisar</span><strong id="cRevisar">0</strong><small id="cRevisarDet"></small></div>
+    </div>
+    <div class="costos-filtros">
+      <div class="segmentado" id="filtroCostos" role="group" aria-label="Mostrar">
+        <button type="button" data-f="todos" aria-pressed="true">Todos</button>
+        <button type="button" data-f="baja" aria-pressed="false">Ganancia baja</button>
+        <button type="button" data-f="sin" aria-pressed="false">Sin costo</button>
+        <button type="button" data-f="subio" aria-pressed="false">Costo subió</button>
+      </div>
+      <input type="search" id="buscarCosto" placeholder="Buscar producto, marca o categoría" aria-label="Buscar producto">
+    </div>
+    <div class="tabla-caja">
+      <table>
+        <thead><tr><th>Producto</th><th class="der">Costo</th><th class="der">Precio</th><th class="der">Ganancia</th><th class="der">Stock</th><th class="der">Valor al costo</th><th class="der">Última compra</th></tr></thead>
+        <tbody id="tbCostos"></tbody>
+      </table>
+    </div>
+    <small class="nota-res" id="costosNota"></small>
+  </section>
+
   <section class="bloque" id="ventasPeriodo" tabindex="-1">
     <h2>Ventas del período</h2>
     <div class="tabla-caja">
@@ -472,6 +505,7 @@
     $('#usuario').textContent = perfiles[session.user.id] ?? session.user.email;
     navPendientes(db);
     aplicarPreset('mes');
+    cargarCostos();
   }
 
   $('#login').addEventListener('submit', async (e) => {
@@ -673,6 +707,120 @@
       </tr>`).join('') : '<tr><td colspan="7" class="vacio">No hay ventas en el período.</td></tr>';
   }
 
+  // ---------- Costos de los productos ----------
+  const GANANCIA_BAJA = 20;   // % sobre el costo por debajo del cual se marca en ámbar (igual que en Inventario)
+  let costos = [];
+  let filtroCostos = 'todos';
+  const norm = (t) => String(t ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  const fCompra = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: '2-digit', timeZone: 'America/Bogota' });
+
+  async function cargarCostos() {
+    const [rc, rm] = await Promise.all([
+      db.from('v_catalogo').select('id, etiqueta, categoria, costo, precio_venta, stock, activo, madre_id, abierto')
+        .eq('activo', true).order('etiqueta').limit(2000),
+      db.from('movimientos_inventario').select('presentacion_id, costo_unitario, creado_en')
+        .eq('tipo', 'compra').not('costo_unitario', 'is', null)
+        .order('creado_en', { ascending: false }).limit(5000)
+    ]);
+    if (rc.error) return aviso('No se pudieron cargar los costos: ' + rc.error.message, 'error');
+
+    // Última y penúltima compra de cada presentación (llegan de la más reciente a la más vieja)
+    const compras = {};
+    for (const m of rm.data ?? []) {
+      const l = (compras[m.presentacion_id] ??= []);
+      if (l.length < 2) l.push(m);
+    }
+    costos = rc.data.map((p) => {
+      const costo = Number(p.costo) || 0, precio = Number(p.precio_venta) || 0;
+      const parte = !!p.madre_id;
+      // Las partes salen del tarro de la madre: no suman inventario propio para no contarlo dos veces.
+      // La madre suma sus envases cerrados más lo que queda del abierto.
+      const unidades = parte ? 0 : Math.max(0, Number(p.stock)) + (Number(p.abierto) || 0);
+      const [ult, ant] = compras[p.id] ?? [];
+      const cambio = ult && ant && Number(ant.costo_unitario) > 0
+        ? (Number(ult.costo_unitario) - Number(ant.costo_unitario)) / Number(ant.costo_unitario) * 100 : null;
+      return {
+        ...p, costo, precio, parte, unidades, ult, cambio,
+        ganancia: costo > 0 ? (precio - costo) / costo * 100 : null,
+        texto: norm(`${p.etiqueta} ${p.categoria ?? ''}`)
+      };
+    });
+    pintarResumenCostos();
+    pintarCostos();
+  }
+
+  function pintarResumenCostos() {
+    const conStock = costos.filter((p) => p.unidades > 0);
+    const valorCosto = conStock.reduce((s, p) => s + p.unidades * p.costo, 0);
+    // El precio de venta solo se compara donde hay costo, para que la ganancia no se infle
+    const valorVentaConCosto = conStock.filter((p) => p.costo > 0).reduce((s, p) => s + p.unidades * p.precio, 0);
+    const valorVenta = conStock.reduce((s, p) => s + p.unidades * p.precio, 0);
+    const unidades = conStock.reduce((s, p) => s + p.unidades, 0);
+    $('#cValorCosto').textContent = cop.format(valorCosto);
+    $('#cUnidades').textContent = `${entero.format(unidades)} unidades en ${conStock.length} ${conStock.length === 1 ? 'presentación' : 'presentaciones'}`;
+    $('#cValorVenta').textContent = cop.format(valorVenta);
+    $('#cGananciaEsp').textContent = valorCosto > 0 ? `Ganancia esperada ${cop.format(valorVentaConCosto - valorCosto)}` : '';
+    $('#cGanProm').textContent = valorCosto > 0 ? pct(valorVentaConCosto - valorCosto, valorCosto) : '–';
+
+    const sin = costos.filter((p) => !(p.costo > 0)).length;
+    const baja = costos.filter((p) => p.ganancia !== null && p.ganancia < GANANCIA_BAJA).length;
+    $('#cRevisar').textContent = sin + baja;
+    $('#cRevisar').className = sin + baja ? 'negativo' : '';
+    $('#cRevisarDet').textContent = `${sin} sin costo · ${baja} con ganancia menor a ${GANANCIA_BAJA} %`;
+  }
+
+  function celdaGanancia(p) {
+    if (p.ganancia === null) return '<span class="estado estado-pendiente">⚠ Sin costo</span>';
+    const t = `${p.ganancia.toFixed(1).replace('.', ',')} %`;
+    if (p.ganancia <= 0) return `<span class="estado estado-mal">⚠ ${t} · pérdida</span>`;
+    return p.ganancia < GANANCIA_BAJA ? `<span class="margen-bajo">${t} · baja</span>` : t;
+  }
+
+  function celdaCompra(p) {
+    if (!p.ult) return p.parte ? '<small>Sale de la presentación completa</small>' : '<small>Sin compras con costo</small>';
+    let cambio = '';
+    if (p.cambio !== null && Math.abs(p.cambio) >= 0.5) {
+      cambio = p.cambio > 0
+        ? ` <span class="baja">▲ ${p.cambio.toFixed(0)} %</span>`
+        : ` <span class="sube">▼ ${Math.abs(p.cambio).toFixed(0)} %</span>`;
+    }
+    return `${cop.format(p.ult.costo_unitario)}${cambio}<small>${fCompra.format(new Date(p.ult.creado_en))}</small>`;
+  }
+
+  function pintarCostos() {
+    const q = norm($('#buscarCosto').value.trim());
+    const lista = costos.filter((p) =>
+      (!q || p.texto.includes(q)) &&
+      (filtroCostos === 'todos' ||
+       (filtroCostos === 'sin' && !(p.costo > 0)) ||
+       (filtroCostos === 'baja' && p.ganancia !== null && p.ganancia < GANANCIA_BAJA) ||
+       (filtroCostos === 'subio' && p.cambio > 0)))
+      // Lo que más plata tiene quieta primero
+      .sort((a, b) => b.unidades * b.costo - a.unidades * a.costo || a.etiqueta.localeCompare(b.etiqueta, 'es'));
+    const MAX = 300;
+    $('#tbCostos').innerHTML = lista.length ? lista.slice(0, MAX).map((p) => `
+      <tr class="${p.parte ? 'parte' : ''}">
+        <td>${esc(p.etiqueta)}${p.categoria ? `<small>${esc(p.categoria)}</small>` : ''}</td>
+        <td class="der num">${p.costo > 0 ? cop.format(p.costo) : '–'}</td>
+        <td class="der num">${cop.format(p.precio)}</td>
+        <td class="der num">${celdaGanancia(p)}</td>
+        <td class="der num">${p.parte ? '–' : entero.format(p.unidades)}</td>
+        <td class="der num">${p.unidades > 0 && p.costo > 0 ? cop.format(p.unidades * p.costo) : '–'}</td>
+        <td class="der num">${celdaCompra(p)}</td>
+      </tr>`).join('') : '<tr><td colspan="7" class="vacio">No hay productos con ese filtro.</td></tr>';
+    $('#costosNota').textContent = (lista.length > MAX ? `Se muestran ${MAX} de ${lista.length}; usa la búsqueda para ver los demás. ` : '') +
+      'Ganancia sobre el costo. "Última compra" compara el costo de la última entrada con el de la anterior. Las partes no suman al inventario: se cuentan en su presentación completa.';
+  }
+
+  $('#filtroCostos').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-f]');
+    if (!b) return;
+    filtroCostos = b.dataset.f;
+    $('#filtroCostos').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    pintarCostos();
+  });
+  $('#buscarCosto').addEventListener('input', pintarCostos);
+
   // ---------- Detalle y anulación ----------
   $('#tbVentas').addEventListener('click', (e) => {
     const b = e.target.closest('[data-venta]');
@@ -753,6 +901,7 @@
     $('#dlgVenta').close();
     aviso(`Venta ${ventaAbierta.id} anulada. La mercancía volvió al inventario.`);
     cargar();
+    cargarCostos();
   });
 
   // ---------- Inicio ----------
