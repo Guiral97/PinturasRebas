@@ -266,7 +266,10 @@
   }
 
   /* Diálogo de producto */
-  dialog { border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); color: var(--tinta); padding: 0; width: min(70rem, calc(100% - 1.5rem)); max-height: calc(100vh - 2rem); }
+  /* El diálogo ocupa toda la ventana y se desplaza él: la barra queda en el borde derecho, como la de la página */
+  dialog { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 1rem .75rem;
+           border: 0; background: transparent; color: var(--tinta); overflow-y: auto; color-scheme: light dark; }
+  dialog > form { width: min(70rem, 100%); margin: 0 auto; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); }
   dialog::backdrop { background: rgba(10, 14, 18, .45); }
   .dlg-cuerpo { padding: 1.25rem 1.5rem; display: grid; gap: 1.1rem; }
   .dlg-pie { display: flex; justify-content: flex-end; gap: .5rem; padding: 1rem 1.5rem; border-top: 1px solid var(--linea); position: sticky; bottom: 0; background: var(--panel); }
@@ -346,7 +349,7 @@
 
   /* Etiquetas */
   .acciones-fila { display: flex; gap: .15rem; justify-content: flex-end; white-space: nowrap; }
-  #dlgEtiquetas { width: min(30rem, calc(100% - 1.5rem)); }
+  #dlgEtiquetas > form { width: min(30rem, 100%); }
   .et-prod { border-left: 4px solid var(--acento); padding-left: .8rem; }
   .et-prod strong { display: block; }
   .et-prod span { color: var(--suave); font-variant-numeric: tabular-nums; }
@@ -426,7 +429,7 @@
     #usuario { display: none; }
     #salir { padding: .4rem .7rem; font-size: .9rem; }
     main { padding: 1rem; }
-    dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
+    dialog { padding: .6rem; }
     .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
     #aviso { left: .75rem; right: .75rem; transform: none; max-width: none; bottom: .75rem; }
     #login { margin: 6vh 1rem 0; }
@@ -975,6 +978,12 @@
     $('#usuario').textContent = perfil?.nombre ?? session.user.email;
     navPendientes(db);
     await Promise.all([cargarCatalogo(), cargarMaestros(), cargarClientes(), cargarMovimientos(), cargarMezclas()]);
+    // Llegó desde otra pantalla (ej. Tablero) con ?producto=ID: abre ese producto una sola vez
+    const idProducto = Number(new URLSearchParams(location.search).get('producto'));
+    if (idProducto) {
+      history.replaceState(null, '', location.pathname);
+      abrirProducto(idProducto);
+    }
   }
 
   $('#login').addEventListener('submit', async (e) => {

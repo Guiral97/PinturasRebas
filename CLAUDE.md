@@ -101,6 +101,7 @@ No se guarda en la base de datos: se deduce de precio y costo. Precio = costo ×
 
 - Antes de cambiar una pantalla, léela: todas comparten estilos, el patrón de login, la barra de navegación y el encabezado con logo. La barra la dibuja `nav.js` (`<nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=3"></script>`); una pantalla nueva se agrega en `SECCIONES` de `nav.js` y cada pantalla llama `navPendientes(db)` al iniciar sesión.
 - Estados con un solo código: `.estado` + `.estado-pendiente` (`--aviso`), `.estado-confirmado` (`--acento`), `.estado-ok` (`--ok`), `.estado-mal` (`--alerta`), `.estado-neutro` (`--suave`); siempre con la palabra, y en alertas con ícono. Un solo botón primario por panel, alto mínimo 2.75rem.
+- Desplazamiento: siempre con la barra del borde derecho de la ventana, nunca una barra interna en paneles o diálogos. Un diálogo largo ocupa toda la ventana con fondo transparente y se desplaza él; la caja visible es su `form` (ver `inventario.html`).
 - `esc()` para todo lo que se inserte en HTML. Nada de `innerHTML` con datos sin escapar.
 - `onAuthStateChange` con `setTimeout(..., 0)`: no consultar dentro del callback.
 - Los formularios donde se escanea evitan que el Enter del lector los envíe.

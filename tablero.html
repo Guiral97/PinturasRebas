@@ -144,6 +144,8 @@
   .costos-filtros input { min-height: 2.75rem; flex: 1 1 16rem; max-width: 24rem; }
   #tbCostos small { color: var(--suave); display: block; }
   #tbCostos .parte td:first-child { padding-left: 1.4rem; }
+  .ir-producto { color: var(--acento); font-weight: 500; text-decoration: none; }
+  .ir-producto:hover, .ir-producto:focus-visible { text-decoration: underline; }
   @media (max-width: 700px) { .costos-filtros input { max-width: none; } }
   .nota-res { color: var(--suave); }
 
@@ -716,7 +718,7 @@
 
   async function cargarCostos() {
     const [rc, rm] = await Promise.all([
-      db.from('v_catalogo').select('id, etiqueta, categoria, costo, precio_venta, stock, activo, madre_id, abierto')
+      db.from('v_catalogo').select('id, producto_id, etiqueta, categoria, costo, precio_venta, stock, activo, madre_id, abierto')
         .eq('activo', true).order('etiqueta').limit(2000),
       db.from('movimientos_inventario').select('presentacion_id, costo_unitario, creado_en')
         .eq('tipo', 'compra').not('costo_unitario', 'is', null)
@@ -800,7 +802,7 @@
     const MAX = 300;
     $('#tbCostos').innerHTML = lista.length ? lista.slice(0, MAX).map((p) => `
       <tr class="${p.parte ? 'parte' : ''}">
-        <td>${esc(p.etiqueta)}${p.categoria ? `<small>${esc(p.categoria)}</small>` : ''}</td>
+        <td><a class="ir-producto" href="inventario.html?producto=${encodeURIComponent(p.producto_id)}" title="Abrir en Inventario">${esc(p.etiqueta)}</a>${p.categoria ? `<small>${esc(p.categoria)}</small>` : ''}</td>
         <td class="der num">${p.costo > 0 ? cop.format(p.costo) : '–'}</td>
         <td class="der num">${cop.format(p.precio)}</td>
         <td class="der num">${celdaGanancia(p)}</td>
