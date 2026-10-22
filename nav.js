@@ -101,6 +101,10 @@
       #aviso { bottom: calc(4.6rem + env(safe-area-inset-bottom)) !important; }
     }
     @media print { #nav { display: none !important; } }
+    /* Solo con sesión: en el ingreso (o mientras se revisa la sesión) no hay secciones a las que ir.
+       La pantalla de trabajo es main#app, o main#pos en la caja. */
+    body:not(:has(main#app:not([hidden]), main#pos:not([hidden]))) #nav { display: none !important; }
+    body:not(:has(main#app:not([hidden]), main#pos:not([hidden]))) { padding-bottom: 0; }
   `;
   document.head.appendChild(estilo);
 

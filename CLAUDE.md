@@ -33,7 +33,8 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 | `recibo.js` | `imprimirRecibo(v)`: recibo térmico 58/80 mm en un iframe oculto. Comprobante interno, **no es factura electrónica**. |
 | `etiquetas.js` | Códigos internos EAN-13 (`20` + id a 10 dígitos + dígito de control), SVG de etiquetas, impresión por driver. |
 | `impresora-directa.js` | Impresión de etiquetas sin driver: Web Serial (puerto COM) o Web Bluetooth, ESC/POS raster. |
-| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v12`). El nombre debe ser `sw.js` en minúscula. |
+| `fotos.js` | Fotos de productos (10): URL pública, mapas `porProducto` / `porPresentacion`, `reducir` (800 px, WebP o JPEG), `subir`, `borrar`. Lo usan inventario, caja y cotizaciones. |
+| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v13`). Guarda también las fotos de productos (guardado primero). El nombre debe ser `sw.js` en minúscula. |
 | `config.js` | Configuración compartida (ver abajo). |
 | `logo.svg`, `favicon-32.png`, `favicon-48.png`, `apple-touch-icon.png` | Marca. El logo cambia de color con el tema (estilo dentro del SVG). |
 | `01_…sql` a `09_…sql` | Scripts de base de datos, en orden (ver abajo). |
@@ -68,6 +69,7 @@ Define `window.APP_CONFIG` con `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `NOMBRE_TIEN
 7. `07_gastos.sql`: `categorias_gasto`, `gastos_fijos`, `gastos`, `movimientos_socios`, vistas, funciones de registro y anulación, `resumen_gastos`, bucket de facturas.
 8. `08_fracciones.sql`: **venta por partes** (ver abajo); reemplaza `v_catalogo`, `registrar_movimiento`, `registrar_venta` y `registrar_venta_caja`.
 9. `09_mezclas.sql`: **venta completa** (ver abajo): tabla maestra `mezclas`. No reemplaza funciones.
+10. `10_fotos_productos.sql`: `productos.imagen` (ruta en el bucket **público** `productos`, 1 MB, webp/jpeg/png) y políticas de Storage para usuarios activos. No reemplaza funciones ni vistas.
 
 **Cambios de base de datos:** siempre en un **script nuevo numerado** (`09_…sql`), sin tocar los anteriores, con un encabezado que diga qué hace y después de cuál se ejecuta. Si un script reemplaza una función, copia la versión **más reciente** (hoy `registrar_venta*` y `registrar_movimiento` viven en `08`). Al reemplazar una vista, conserva las columnas en el mismo orden y agrega las nuevas al final.
 
@@ -93,13 +95,17 @@ Define `window.APP_CONFIG` con `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `NOMBRE_TIEN
 - La regla de la completa aplica a sus partes. La caja calcula lo necesario (medida × proporción × cantidad) y elige la presentación del catalizador (completa o parte) que lo da exacto con menos envases (tolerancia 2 %). La agrega como otro ítem de la venta (precio y stock propios); sin parte exacta, no deja cobrar el completo.
 - Por defecto el producto entra completo; en la línea se puede vender sin catalizador. Las reglas se guardan en IndexedDB para vender sin conexión. `elegirCatalizador` está igual en `index.html` e `inventario.html`.
 
+### Fotos de productos (10)
+
+Una foto por producto; todas sus presentaciones y partes la muestran. Se elige en el diálogo del producto, se reduce en el navegador y se sube al guardar, con nombre nuevo (`producto_id/fecha.webp`) para que nunca quede vieja en caché; la anterior se borra. Se ve en el catálogo de Inventario, en la caja (resultados y líneas; el mapa se guarda en IndexedDB como `fotos` y `sw.js` guarda las imágenes) y en cotizaciones (pantalla e impresión carta, no el ticket). Las `<img>` de fotos llevan `crossorigin="anonymous"`. Sin el script 10, las pantallas siguen funcionando sin fotos.
+
 ### % de ganancia (inventario.html)
 
 No se guarda en la base de datos: se deduce de precio y costo. Precio = costo × (1 + %/100), **redondeado hacia arriba a $100**. Aplica a presentaciones y partes; en Entradas, una compra puede actualizar el precio con el % (y las partes con el suyo). El último % usado se recuerda en `localStorage` (`rebas-ganancia`).
 
 ## Convenciones de código
 
-- Antes de cambiar una pantalla, léela: todas comparten estilos, el patrón de login, la barra de navegación y el encabezado con logo. La barra la dibuja `nav.js` (`<nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=3"></script>`); una pantalla nueva se agrega en `SECCIONES` de `nav.js` y cada pantalla llama `navPendientes(db)` al iniciar sesión.
+- Antes de cambiar una pantalla, léela: todas comparten estilos, el patrón de login, la barra de navegación y el encabezado con logo. La barra la dibuja `nav.js` (`<nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=4"></script>`); una pantalla nueva se agrega en `SECCIONES` de `nav.js` y cada pantalla llama `navPendientes(db)` al iniciar sesión.
 - Estados con un solo código: `.estado` + `.estado-pendiente` (`--aviso`), `.estado-confirmado` (`--acento`), `.estado-ok` (`--ok`), `.estado-mal` (`--alerta`), `.estado-neutro` (`--suave`); siempre con la palabra, y en alertas con ícono. Un solo botón primario por panel, alto mínimo 2.75rem.
 - Barras de desplazamiento: todas (diálogos, listas, tablas) con el mismo estilo que la de la ventana, según el tema. Cada página declara `color-scheme: light dark` en `:root`; no poner barras con colores propios.
 - `esc()` para todo lo que se inserte en HTML. Nada de `innerHTML` con datos sin escapar.

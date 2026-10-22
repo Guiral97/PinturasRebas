@@ -1,10 +1,14 @@
 // Service worker de Pinturas Rebas: guarda la app en el equipo para que la
 // caja abra y venda sin internet. Las consultas a Supabase NO se guardan aquí
-// (la caja maneja su propio catálogo y su cola de ventas en IndexedDB).
+// (la caja maneja su propio catálogo y su cola de ventas en IndexedDB); solo
+// las fotos de productos, que no cambian.
 // Al cambiar archivos de la app, sube este número para forzar la actualización.
-const VERSION = 'rebas-v12';
+const VERSION = 'rebas-v13';
 
-const APP = ['./', 'index.html', 'config.js', 'recibo.js', 'nav.js?v=3', 'logo.svg', 'favicon-32.png', 'favicon-48.png'];
+const APP = ['./', 'index.html', 'config.js', 'recibo.js', 'fotos.js?v=1', 'nav.js?v=4', 'logo.svg', 'favicon-32.png', 'favicon-48.png'];
+// Fotos de productos (bucket público): cada foto nueva tiene otro nombre, así que la guardada nunca queda vieja.
+// Las páginas las piden con crossorigin="anonymous": así la copia guardada sirve en todas.
+const FOTOS = '/storage/v1/object/public/productos/';
 const LIBRERIAS = [
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
   'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js'
@@ -72,7 +76,9 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.hostname.endsWith('.supabase.co') || url.hostname.endsWith('.supabase.in')) return;   // datos: siempre en vivo
+  const esSupabase = url.hostname.endsWith('.supabase.co') || url.hostname.endsWith('.supabase.in');
+  if (esSupabase && url.pathname.startsWith(FOTOS)) { e.respondWith(guardadoPrimero(req)); return; }
+  if (esSupabase) return;   // datos: siempre en vivo
   if (url.origin === self.location.origin) { e.respondWith(redPrimero(req)); return; }
   if (HOSTS_LIBRERIAS.includes(url.hostname)) { e.respondWith(guardadoPrimero(req)); return; }
 });

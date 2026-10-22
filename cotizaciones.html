@@ -14,7 +14,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="config.js"></script>
-<script src="cotizacion.js"></script>
+<script src="cotizacion.js?v=2"></script>
+<script src="fotos.js?v=1"></script>
 <style>
   :root {
     color-scheme: light dark;   /* barras de desplazamiento y controles según el tema */
@@ -138,6 +139,10 @@
   th { font-weight: 600; color: var(--suave); font-size: .9rem; }
   td.der, th.der { text-align: right; }
   td small { display: block; color: var(--suave); }
+  /* Foto del producto (fotos.js); sin foto no ocupa lugar */
+  .prod { display: flex; align-items: center; gap: .7rem; min-width: 0; }
+  .prod > :last-child { min-width: 0; }
+  .miniatura { width: 2.75rem; height: 2.75rem; object-fit: cover; border-radius: 4px; border: 1px solid var(--linea); background: var(--fondo); flex: none; }
   .cifras { display: grid; grid-template-columns: 1fr auto; gap: .3rem 1rem; margin: 0; }
   .cifras dt { color: var(--suave); }
   .cifras dd { margin: 0; text-align: right; }
@@ -262,7 +267,7 @@
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=3"></script>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=4"></script>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -488,6 +493,8 @@
   let actual = null;        // { ...fila de v_cotizaciones, detalle: [...] }
   let clientes = [];
   let editando = null;      // { id|null, tipo, items: [...] }
+  let fotos = {};           // { presentacion_id: url } (fotos.js)
+  const miniatura = (id) => (fotos[id] ? `<img class="miniatura" src="${esc(fotos[id])}" alt="" loading="lazy" crossorigin="anonymous">` : '');
   let procesando = false;
   let lectorCamara = null;
   let cargaLista = 0;
@@ -553,7 +560,8 @@
     if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
     $('#usuario').textContent = perfil?.nombre ?? session.user.email;
 
-    await Promise.all([cargarClientes(), cargarTodo()]);
+    const [, , f] = await Promise.all([cargarClientes(), cargarTodo(), window.fotosProductos?.porPresentacion(db)]);
+    fotos = f || {};
 
     const q = new URLSearchParams(location.search);
     if (q.has('id')) abrirCotizacion(+q.get('id'));
@@ -727,7 +735,7 @@
         : `Solo hay ${cant.format(d.stock)}: faltarían ${cant.format(faltan)}`;
       return `
       <tr>
-        <td>${esc(d.etiqueta)}<small>${esc(d.codigo ?? 'Sin código')}</small>${avisoStock ? `<span class="stock-aviso">${esc(avisoStock)}</span>` : ''}</td>
+        <td><div class="prod">${miniatura(d.presentacion_id)}<div>${esc(d.etiqueta)}<small>${esc(d.codigo ?? 'Sin código')}</small>${avisoStock ? `<span class="stock-aviso">${esc(avisoStock)}</span>` : ''}</div></div></td>
         <td class="der num">${cant.format(d.cantidad)}</td>
         <td class="der num">${cop.format(d.precio_unitario)}</td>
         <td class="der num">${cop.format(d.subtotal)}</td>
@@ -776,7 +784,7 @@
       id: q.id, fecha: q.creado_en, valida_hasta: q.valida_hasta,
       cliente: q.cliente, documento: q.documento, telefono: q.telefono,
       vendedor: q.creado_por, notas: q.notas,
-      items: q.detalle.map((d) => ({ etiqueta: d.etiqueta, codigo: d.codigo, cantidad: Number(d.cantidad), precio: Number(d.precio_unitario) })),
+      items: q.detalle.map((d) => ({ etiqueta: d.etiqueta, codigo: d.codigo, cantidad: Number(d.cantidad), precio: Number(d.precio_unitario), foto: fotos[d.presentacion_id] })),
       subtotal: Number(q.subtotal), descuento: Number(q.descuento), total: Number(q.total)
     };
   }
@@ -988,7 +996,7 @@
     const r = $('#resultados');
     r.innerHTML = lista.map((p, i) => `
       <li><button type="button" data-i="${i}">
-        <span>${esc(p.etiqueta)}<small>${esc(p.codigo_barras || p.sku || 'Sin código')} · Stock: ${cant.format(p.stock)}</small></span>
+        <span class="prod">${miniatura(p.id)}<span>${esc(p.etiqueta)}<small>${esc(p.codigo_barras || p.sku || 'Sin código')} · Stock: ${cant.format(p.stock)}</small></span></span>
         <span class="num">${cop.format(p.precio_venta)}</span>
       </button></li>`).join('');
     r.hidden = false;
@@ -1035,9 +1043,12 @@
     $('#eVacio').hidden = items.length > 0;
     $('#lineas').innerHTML = items.map((i) => `
       <li class="linea" data-id="${i.id}">
-        <div class="info">
-          <div class="nombre">${esc(i.etiqueta)}</div>
-          <div class="meta num">${i.codigo ? esc(i.codigo) + ' · ' : ''}${cop.format(i.precio)} c/u · Disponible hoy: ${cant.format(i.stock)}</div>
+        <div class="info prod">
+          ${miniatura(i.id)}
+          <div>
+            <div class="nombre">${esc(i.etiqueta)}</div>
+            <div class="meta num">${i.codigo ? esc(i.codigo) + ' · ' : ''}${cop.format(i.precio)} c/u · Disponible hoy: ${cant.format(i.stock)}</div>
+          </div>
         </div>
         <div class="paso">
           <button type="button" data-accion="menos" aria-label="Quitar una unidad">−</button>

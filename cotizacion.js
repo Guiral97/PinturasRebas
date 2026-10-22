@@ -1,7 +1,7 @@
 // Cotización imprimible: hoja carta (o guardar como PDF desde el diálogo
 // de impresión) o ticket térmico de 58/80 mm.
 // Uso: imprimirCotizacion({ id, fecha, valida_hasta, cliente, documento, telefono,
-//        vendedor, notas, items: [{ etiqueta, codigo, cantidad, precio }],
+//        vendedor, notas, items: [{ etiqueta, codigo, cantidad, precio, foto? }],
 //        subtotal, descuento, total }, 'carta' | 'ticket')
 (function () {
   const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
@@ -22,7 +22,7 @@
     const filas = c.items.map((i, k) => `
       <tr>
         <td class="n">${k + 1}</td>
-        <td>${esc(i.etiqueta)}${i.codigo ? `<div class="cod">${esc(i.codigo)}</div>` : ''}</td>
+        <td><div class="prod">${i.foto ? `<img src="${esc(i.foto)}" alt="" crossorigin="anonymous">` : ''}<div>${esc(i.etiqueta)}${i.codigo ? `<div class="cod">${esc(i.codigo)}</div>` : ''}</div></div></td>
         <td class="der">${cant.format(i.cantidad)}</td>
         <td class="der">${cop.format(i.precio)}</td>
         <td class="der">${cop.format(i.cantidad * i.precio)}</td>
@@ -52,6 +52,8 @@
         .n { width: 8mm; color: #2E3438; }
         .der { text-align: right; white-space: nowrap; }
         .cod { color: #2E3438; font-size: 8.5pt; }
+        .prod { display: flex; align-items: center; gap: 3mm; }
+        .prod img { width: 13mm; height: 13mm; object-fit: cover; border: .75pt solid #C6CAC8; flex: none; }
         .totales { margin: 4mm 0 0 auto; width: 70mm; }
         .totales td { border: 0; padding: 1mm 2mm; }
         .totales .total td { border-top: 1.5pt solid #1A2127; font-size: 13pt; font-weight: 700; padding-top: 2mm; }
@@ -174,7 +176,13 @@
 
     const quitar = () => setTimeout(() => marco.remove(), 500);
     marco.contentWindow.addEventListener('afterprint', quitar);
-    setTimeout(() => {
+    // Espera las fotos de los productos (máx. 5 s); si alguna no carga, se imprime sin ella
+    const fotos = [...doc.images].map((img) => (img.complete ? null : new Promise((ok) => {
+      img.addEventListener('load', ok, { once: true });
+      img.addEventListener('error', () => { img.remove(); ok(); }, { once: true });
+    }))).filter(Boolean);
+    const listas = Promise.race([Promise.all(fotos), new Promise((ok) => setTimeout(ok, 5000))]);
+    listas.then(() => setTimeout(() => {
       // Papel continuo: la hoja mide exactamente lo que mide el contenido.
       // Sin esto, el navegador usa la hoja del driver (a veces A4 o 3 metros)
       // y la impresora bota papel en blanco o deja el texto al final.
@@ -186,7 +194,7 @@
       marco.contentWindow.focus();
       marco.contentWindow.print();
       setTimeout(() => marco.isConnected && marco.remove(), 60000);   // respaldo si no llega afterprint
-    }, 250);
+    }, 250));
   };
 
   // Para pruebas y vista previa: devuelve el HTML sin imprimir

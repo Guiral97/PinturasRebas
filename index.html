@@ -15,6 +15,7 @@
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="config.js"></script>
 <script src="recibo.js"></script>
+<script src="fotos.js?v=1"></script>
 <style>
   :root {
     color-scheme: light dark;   /* barras de desplazamiento y controles según el tema */
@@ -132,6 +133,11 @@
   }
   #resultados li:last-child button { border-bottom: 0; }
   #resultados small { color: var(--suave); display: block; }
+  #resultados .prod { display: flex; align-items: center; gap: .7rem; min-width: 0; }
+  /* Foto del producto (fotos.js); sin foto no ocupa lugar */
+  .miniatura { width: 2.75rem; height: 2.75rem; object-fit: cover; border-radius: 4px; border: 1px solid var(--linea); background: var(--fondo); flex: none; }
+  .linea .info { display: flex; align-items: flex-start; gap: .75rem; }
+  .linea .texto { min-width: 0; flex: 1; }
 
   /* Carrito */
   .carrito { margin-top: 1.25rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
@@ -330,7 +336,7 @@
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=3"></script>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=4"></script>
   <button type="button" class="red ok" id="estadoRed" hidden aria-label="Estado de la conexión y ventas pendientes">En línea</button>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
@@ -487,6 +493,7 @@
   let catalogo = [];         // copia local de v_catalogo
   let catalogoEn = null;
   let mezclas = [];          // venta completa: { presentacion_id, catalizador_id, proporcion }
+  let fotos = {};            // { presentacion_id: url } (fotos.js)
   const CAMPOS = 'id, etiqueta, codigo_barras, sku, precio_venta, stock, madre_id, fraccion';
 
   document.title = `Caja de ventas | ${NOMBRE_TIENDA}`;
@@ -648,12 +655,16 @@
     // Si 09_mezclas.sql aún no se ejecutó, la caja sigue sin venta completa
     const mz = await conLimite(db.from('mezclas').select('presentacion_id, catalizador_id, proporcion'), 8000);
     if (!mz.error) { mezclas = mz.data; await almacen.set('mezclas', mezclas); }
+    // Si 10_fotos_productos.sql aún no se ejecutó, la caja sigue sin fotos
+    const f = await window.fotosProductos?.porPresentacion(db);
+    if (f) { fotos = f; await almacen.set('fotos', fotos); }
   }
 
   async function cargarCatalogoLocal() {
     const c = await almacen.get('catalogo');
     if (c) { catalogo = c.filas; catalogoEn = c.en; }
     mezclas = (await almacen.get('mezclas')) || [];
+    fotos = (await almacen.get('fotos')) || {};
   }
 
   function descontarLocal(items) {
@@ -833,10 +844,13 @@
     mostrarResultados(lista);
   }
 
+  // crossorigin: así sw.js guarda la foto en el equipo sin ocupar espacio de más
+  const miniatura = (id) => (fotos[id] ? `<img class="miniatura" src="${esc(fotos[id])}" alt="" loading="lazy" crossorigin="anonymous">` : '');
+
   function mostrarResultados(lista) {
     el.resultados.innerHTML = lista.map((p, i) => `
       <li><button type="button" data-i="${i}">
-        <span>${esc(p.etiqueta)}<small>${esc(p.codigo_barras || p.sku || 'Sin código')} · Stock: ${p.stock}</small></span>
+        <span class="prod">${miniatura(p.id)}<span>${esc(p.etiqueta)}<small>${esc(p.codigo_barras || p.sku || 'Sin código')} · Stock: ${p.stock}</small></span></span>
         <span class="num">${cop.format(p.precio_venta)}</span>
       </button></li>`).join('');
     el.resultados.hidden = false;
@@ -989,10 +1003,13 @@
     el.lineas.innerHTML = carrito.map((i) => `
       <li class="linea" data-id="${i.id}">
         <div class="info">
-          <div class="nombre">${esc(i.etiqueta)}</div>
-          <div class="meta num">${esc(i.codigo)} · ${cop.format(i.precio)} c/u</div>
-          ${i.cantidad > i.stock ? `<div class="falta">Stock disponible: ${i.stock}</div>` : ''}
-          ${lineaCatalizador(i)}
+          ${miniatura(i.id)}
+          <div class="texto">
+            <div class="nombre">${esc(i.etiqueta)}</div>
+            <div class="meta num">${esc(i.codigo)} · ${cop.format(i.precio)} c/u</div>
+            ${i.cantidad > i.stock ? `<div class="falta">Stock disponible: ${i.stock}</div>` : ''}
+            ${lineaCatalizador(i)}
+          </div>
         </div>
         <div class="paso">
           <button type="button" data-accion="menos" aria-label="Quitar una unidad">−</button>

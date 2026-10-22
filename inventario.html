@@ -16,6 +16,7 @@
 <script src="config.js"></script>
 <script src="etiquetas.js?v=20261010c"></script>
 <script src="impresora-directa.js?v=20261022a"></script>
+<script src="fotos.js?v=1"></script>
 <style>
   :root {
     color-scheme: light dark;   /* barras de desplazamiento y controles según el tema */
@@ -148,6 +149,13 @@
   .cat-producto strong { font-size: 1.05rem; }
   .cat-producto .info { color: var(--suave); font-size: .875rem; }
   .cat-producto .btn-texto { margin-left: auto; min-height: 2.5rem; }
+  .cat-producto .miniatura { width: 2.5rem; height: 2.5rem; object-fit: cover; border-radius: 4px; border: 1px solid var(--linea); background: var(--panel); flex: none; }
+  /* Foto del producto en el diálogo */
+  .foto-prod { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem; margin: .25rem 0 .9rem; }
+  .foto-prod img, .foto-vacia { width: 6rem; height: 6rem; object-fit: cover; border-radius: var(--radio); border: 1px solid var(--linea); background: var(--fondo); flex: none; }
+  .foto-vacia { display: flex; align-items: center; justify-content: center; color: var(--suave); font-size: .875rem; }
+  .foto-acciones { flex: 1 1 14rem; display: grid; gap: .4rem; }
+  .foto-acciones .fila-botones { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
   .cat-tabla .pres-nombre { padding-left: 1.75rem; }
   .cat-tabla .rama { color: var(--suave); margin-right: .3rem; }
   .cat-tabla .codigo { color: var(--suave); }
@@ -526,7 +534,7 @@
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=3"></script>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=4"></script>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -903,6 +911,18 @@
         <div class="campo"><label for="prodColor">Código de color</label><input id="prodColor" placeholder="Opcional"></div>
       </div>
       <div class="campo"><label for="prodDesc">Descripción</label><input id="prodDesc" placeholder="Opcional"></div>
+      <div class="foto-prod">
+        <img id="prodFoto" alt="Foto del producto" crossorigin="anonymous" hidden>
+        <div class="foto-vacia" id="prodFotoVacia">Sin foto</div>
+        <div class="foto-acciones">
+          <div class="fila-botones">
+            <button type="button" class="btn" id="prodFotoElegir">Elegir foto</button>
+            <button type="button" class="btn-texto" id="prodFotoQuitar" hidden>Quitar foto</button>
+          </div>
+          <input type="file" id="prodFotoArchivo" accept="image/*" hidden>
+          <p class="et-nota" id="prodFotoNota">Una foto para todas las presentaciones. Se ve en la caja y en las cotizaciones.</p>
+        </div>
+      </div>
       <label class="check"><input type="checkbox" id="prodActivo" checked> Producto activo</label>
 
       <div class="pres-cab">
@@ -987,6 +1007,9 @@
   // ---------- Estado ----------
   let catalogo = [], marcas = [], categorias = [], proveedores = [], clientes = [], mezclas = [];
   let productoEditando = null;     // id del producto abierto en el diálogo
+  let fotos = {};                  // { producto_id: url } (fotos.js)
+  // Foto en el diálogo: la guardada, la nueva elegida (ya reducida) y si se quitó
+  const foto = { ruta: null, nueva: null, quitar: false };
   let seleccionEntrada = null;     // presentación elegida en Entradas
   let tipoMov = 'compra';
   let codigoPendiente = '';        // código escaneado que no existe
@@ -1081,9 +1104,13 @@
 
   // ---------- Carga de datos ----------
   async function cargarCatalogo() {
-    const { data, error } = await db.from('v_catalogo').select('*').order('etiqueta').limit(2000);
+    const [{ data, error }, f] = await Promise.all([
+      db.from('v_catalogo').select('*').order('etiqueta').limit(2000),
+      window.fotosProductos?.porProducto(db)
+    ]);
     if (error) return aviso('No se pudo cargar el catálogo: ' + error.message, 'error');
     catalogo = data;
+    fotos = f || {};
     pintarCatalogo();
     pintarCarga();
     pintarMezclas();
@@ -1282,6 +1309,7 @@
       return `
       <tr class="cat-producto">
         <td colspan="6"><div class="cab">
+          ${fotos[ref.producto_id] ? `<img class="miniatura" src="${esc(fotos[ref.producto_id])}" alt="" loading="lazy" crossorigin="anonymous">` : ''}
           <strong>${esc(nombreProducto(ref))}</strong>
           <span class="info">${esc(info)}</span>
           <button type="button" class="btn-texto" data-producto="${ref.producto_id}">Editar producto</button>
@@ -1617,6 +1645,8 @@
     $('#prodColor').value = prod.codigo_color ?? '';
     $('#prodDesc').value = prod.descripcion ?? '';
     $('#prodActivo').checked = prod.activo !== false;
+    Object.assign(foto, { ruta: prod.imagen ?? null, nueva: null, quitar: false });
+    pintarFoto();
 
     if (!pres.length) pres = [{ codigo_barras: codigoInicial }];
     const porId = Object.fromEntries(catalogo.map((c) => [c.id, c]));
@@ -1660,6 +1690,69 @@
     if (!fila.classList.contains('fraccion')) fila.closest('.grupo-pres')?.refrescar?.();
   });
   $('#cerrarProducto').addEventListener('click', () => dlg.close());
+
+  // ---------- Foto del producto (fotos.js) ----------
+  // Se sube al guardar el producto, no al elegirla: si se cancela, no queda nada en el Storage
+  let urlVistaFoto = '';
+  function pintarFoto(nota = '') {
+    if (urlVistaFoto) URL.revokeObjectURL(urlVistaFoto);
+    urlVistaFoto = foto.nueva ? URL.createObjectURL(foto.nueva) : '';
+    const src = urlVistaFoto || (foto.ruta && !foto.quitar ? window.fotosProductos?.url(foto.ruta) : '');
+    $('#prodFoto').hidden = !src;
+    if (src) $('#prodFoto').src = src; else $('#prodFoto').removeAttribute('src');
+    $('#prodFotoVacia').hidden = !!src;
+    $('#prodFotoElegir').textContent = src ? 'Cambiar foto' : 'Elegir foto';
+    $('#prodFotoQuitar').hidden = !src;
+    $('#prodFotoNota').textContent = nota || 'Una foto para todas las presentaciones. Se ve en la caja y en las cotizaciones.';
+    $('#prodFotoNota').className = 'et-nota';
+  }
+  $('#prodFotoElegir').addEventListener('click', () => {
+    if (!window.fotosProductos) return aviso('Falta el archivo fotos.js en la app.', 'error');
+    $('#prodFotoArchivo').click();
+  });
+  $('#prodFotoArchivo').addEventListener('change', async (e) => {
+    const archivo = e.target.files[0];
+    e.target.value = '';
+    if (!archivo) return;
+    try {
+      foto.nueva = await window.fotosProductos.reducir(archivo);
+      foto.quitar = false;
+      pintarFoto(`Foto lista (${Math.max(1, Math.round(foto.nueva.size / 1024))} KB). Se sube al guardar el producto.`);
+    } catch (err) {
+      pintarFoto();
+      $('#prodFotoNota').textContent = err.message;
+      $('#prodFotoNota').className = 'et-nota error';
+    }
+  });
+  $('#prodFotoQuitar').addEventListener('click', () => {
+    foto.nueva = null;
+    foto.quitar = true;
+    pintarFoto('La foto se quita al guardar el producto.');
+  });
+
+  // Sube la foto nueva o quita la anterior; el archivo viejo se borra al final
+  async function guardarFoto() {
+    if (!foto.nueva && !foto.quitar) return true;
+    const anterior = foto.ruta;
+    let ruta = null;
+    try {
+      if (foto.nueva) ruta = await window.fotosProductos.subir(db, productoEditando, foto.nueva);
+    } catch (err) {
+      aviso(`El producto se guardó, pero no la foto. ${err.message}`, 'error');
+      return false;
+    }
+    const { error } = await db.from('productos').update({ imagen: ruta }).eq('id', productoEditando);
+    if (error) {
+      await window.fotosProductos.borrar(db, ruta);
+      aviso(/imagen/.test(error.message)
+        ? 'Falta ejecutar 10_fotos_productos.sql en Supabase para guardar fotos.'
+        : `El producto se guardó, pero no la foto: ${mensajeError(error)}`, 'error');
+      return false;
+    }
+    Object.assign(foto, { ruta, nueva: null, quitar: false });
+    if (anterior) window.fotosProductos.borrar(db, anterior).catch(() => {});
+    return true;
+  }
 
   // El lector termina con Enter: dentro del formulario no debe guardar.
   $('#frmProducto').addEventListener('keydown', (e) => {
@@ -1768,6 +1861,7 @@
       }
     }
 
+    if (!(await guardarFoto())) return;   // el diálogo sigue abierto para reintentar
     dlg.close();
     aviso('Producto guardado.');
     await Promise.all([cargarCatalogo(), cargarMovimientos()]);
