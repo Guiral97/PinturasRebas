@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catálogo</title>
+<meta name="description" content="Catálogo de pintura automotriz y accesorios en Medellín.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Catálogo · Todo Pinturas RB">
+<meta property="og:description" content="Pintura automotriz y accesorios en Medellín.">
+<meta property="og:image" content="https://guiral97.github.io/PinturasRebas/apple-touch-icon.png">
+<link rel="icon" href="favicon-48.png" type="image/png" sizes="48x48">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="fotos.js?v=1"></script>
+<style>
+  :root {
+    color-scheme: light dark;   /* barras de desplazamiento y controles según el tema */
+    --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
+    --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
+    --alerta: #A1281F; --ok: #2F6B3A; --aviso: #8A6410; --radio: 6px;
+    font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
+      --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
+      --alerta: #E57B72; --ok: #7FC08A; --aviso: #E3B94F;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font-size: 16px; line-height: 1.45; background: var(--fondo); display: flex; flex-direction: column; }
+  [hidden] { display: none !important; }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  input, select { font: inherit; color: var(--tinta); background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: .5rem .65rem; width: 100%; min-height: 2.75rem; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.75rem;
+    border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .45rem .9rem;
+    border-radius: 8px; white-space: nowrap; text-decoration: none; font-weight: 600;
+  }
+  .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
+  h1, h2 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; margin: 0; }
+
+  .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
+  .marca { display: flex; align-items: center; gap: .55rem; color: inherit; text-decoration: none; min-width: 0; }
+  .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; }
+  .logo { height: 3.3rem; width: auto; display: block; flex: none; margin: -.45rem 0; }
+  .seccion { color: var(--suave); font-weight: 600; margin-left: auto; }
+
+  main { width: 100%; max-width: 75rem; margin: 0 auto; padding: 1.25rem; flex: 1; }
+  .intro { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .3rem 1rem; margin-bottom: 1rem; }
+  .intro h1 { font-size: 2rem; }
+  .intro p { margin: 0; color: var(--suave); }
+
+  .filtros { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: .6rem; align-items: center; margin-bottom: .75rem; }
+  .filtros input[type="search"] { background: var(--panel); }
+  .check { display: inline-flex; align-items: center; gap: .4rem; font-weight: 500; white-space: nowrap; }
+  .check input { width: auto; min-height: 0; }
+  .cuenta { color: var(--suave); margin: 0 0 1rem; min-height: 1.4em; }
+
+  .grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 1rem; }
+  .tarjeta {
+    display: flex; flex-direction: column; text-align: left; padding: 0; overflow: hidden;
+    background: var(--panel); color: var(--tinta); border: 1px solid var(--linea); border-radius: 8px;
+  }
+  .tarjeta:hover { border-color: var(--acento); }
+  .foto { aspect-ratio: 1; width: 100%; object-fit: contain; background: #fff; display: block; border-bottom: 1px solid var(--linea); }
+  .foto-vacia { aspect-ratio: 1; display: grid; place-items: center; color: var(--suave); background: color-mix(in srgb, var(--suave) 10%, transparent); border-bottom: 1px solid var(--linea); }
+  .foto-vacia img { width: 3rem; opacity: .45; }
+  .tarjeta-cuerpo { padding: .75rem .85rem .9rem; display: grid; gap: .35rem; }
+  .nombre { font-weight: 700; font-size: 1.05rem; line-height: 1.25; }
+  .detalle { color: var(--suave); font-size: .9rem; }
+  .medidas { color: var(--suave); font-size: .9rem; }
+  .etiquetas { display: flex; flex-wrap: wrap; gap: .3rem; }
+
+  .estado {
+    display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; font-weight: 700; line-height: 1.5;
+    padding: 0 .55rem; border-radius: 999px; border: 1px solid; white-space: nowrap;
+  }
+  .estado-pendiente { color: var(--aviso); border-color: color-mix(in srgb, var(--aviso) 40%, transparent); background: color-mix(in srgb, var(--aviso) 14%, transparent); }
+  .estado-confirmado { color: var(--acento); border-color: color-mix(in srgb, var(--acento) 40%, transparent); background: color-mix(in srgb, var(--acento) 14%, transparent); }
+  .estado-ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+  .estado-mal { color: var(--alerta); border-color: color-mix(in srgb, var(--alerta) 40%, transparent); background: color-mix(in srgb, var(--alerta) 14%, transparent); }
+  .estado-neutro { color: var(--suave); border-color: var(--linea); background: color-mix(in srgb, var(--suave) 12%, transparent); }
+
+  .mas { display: flex; justify-content: center; margin-top: 1.25rem; }
+  .vacio { text-align: center; color: var(--suave); padding: 3rem 1rem; }
+
+  dialog { border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); color: var(--tinta); padding: 0; width: min(46rem, calc(100% - 1.5rem)); max-height: calc(100vh - 2rem); }
+  dialog::backdrop { background: rgba(10, 14, 18, .45); }
+  .dlg-cuerpo { padding: 1.25rem 1.5rem; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.25rem; }
+  .dlg-cuerpo .foto, .dlg-cuerpo .foto-vacia { border: 1px solid var(--linea); border-radius: var(--radio); }
+  .dlg-info { display: grid; gap: .6rem; align-content: start; }
+  .dlg-info h2 { font-size: 1.6rem; line-height: 1.15; }
+  .dlg-info p { margin: 0; }
+  .pres { list-style: none; margin: 0; padding: 0; display: grid; border-top: 1px solid var(--linea); }
+  .pres li { display: flex; justify-content: space-between; align-items: center; gap: .75rem; padding: .45rem 0; border-bottom: 1px solid var(--linea); }
+  .pres h3 { margin: .4rem 0 0; font-size: .85rem; color: var(--suave); text-transform: uppercase; letter-spacing: .04em; }
+  .dlg-pie { display: flex; justify-content: flex-end; gap: .5rem; padding: 1rem 1.5rem; border-top: 1px solid var(--linea); position: sticky; bottom: 0; background: var(--panel); }
+  .nota { color: var(--suave); font-size: .9rem; }
+
+  footer { padding: 1.25rem; text-align: center; color: var(--suave); border-top: 1px solid var(--linea); background: var(--panel); font-size: .93rem; }
+  footer p { margin: .15rem 0; }
+
+  @media (max-width: 700px) {
+    .barra { padding: .6rem 1rem; }
+    .tienda { font-size: 1.25rem; }
+    .logo { height: 2.9rem; margin: -.3rem 0; }
+    main { padding: 1rem; }
+    .intro h1 { font-size: 1.7rem; }
+    .filtros { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .filtros input[type="search"] { grid-column: 1 / -1; }
+    .grilla { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+    .tarjeta-cuerpo { padding: .6rem .65rem .75rem; }
+    .nombre { font-size: .98rem; }
+    dialog { width: calc(100% - 1.25rem); }
+    .dlg-cuerpo { grid-template-columns: minmax(0, 1fr); padding: 1rem; }
+    .dlg-pie { padding: .75rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <a class="marca" href="catalogo.html"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
+  <span class="seccion">Catálogo</span>
+</header>
+
+<main>
+  <div class="intro">
+    <h1>Nuestros productos</h1>
+    <p>Pintura automotriz y accesorios. Consulta precios en la tienda.</p>
+  </div>
+
+  <div class="filtros" role="search">
+    <input type="search" id="buscar" placeholder="Buscar por nombre, marca o código de color" aria-label="Buscar" autocomplete="off">
+    <select id="fCategoria" aria-label="Categoría"><option value="">Todas las categorías</option></select>
+    <select id="fMarca" aria-label="Marca"><option value="">Todas las marcas</option></select>
+    <label class="check"><input type="checkbox" id="fDisponible"> Solo disponibles</label>
+  </div>
+  <p class="cuenta" id="cuenta" role="status">Cargando el catálogo…</p>
+
+  <div class="grilla" id="grilla"></div>
+  <div class="mas"><button type="button" class="btn" id="verMas" hidden>Ver más productos</button></div>
+</main>
+
+<footer id="pie">
+  <p><strong id="pieTienda"></strong></p>
+</footer>
+
+<dialog id="dlgProducto" aria-labelledby="dlgNombre">
+  <div class="dlg-cuerpo">
+    <div id="dlgFoto"></div>
+    <div class="dlg-info">
+      <h2 id="dlgNombre"></h2>
+      <p class="detalle" id="dlgDetalle"></p>
+      <div class="etiquetas" id="dlgEtiquetas"></div>
+      <p id="dlgDesc"></p>
+      <div id="dlgPres"></div>
+      <p class="nota">Precios y disponibilidad sujetos a confirmación en la tienda.</p>
+    </div>
+  </div>
+  <div class="dlg-pie">
+    <button type="button" class="btn" id="dlgCompartir">Copiar enlace</button>
+    <button type="button" class="btn btn-primario" id="dlgCerrar">Cerrar</button>
+  </div>
+</dialog>
+
+<script>
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, NOMBRE_TIENDA, NEGOCIO = {} } = window.APP_CONFIG;
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Sin tildes ni mayúsculas, para buscar "poliuretano" o "Poliúretano" igual
+  const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const POR_PAGINA = 24;   // pocas fotos por vez: cuida la transferencia del plan gratuito
+
+  document.title = `Catálogo | ${NOMBRE_TIENDA}`;
+  $('#nombreTienda').textContent = NOMBRE_TIENDA;
+  $('#pieTienda').textContent = NOMBRE_TIENDA;
+  [NEGOCIO.DIRECCION, NEGOCIO.TELEFONO && `Tel. ${NEGOCIO.TELEFONO}`, 'Medellín']
+    .filter(Boolean).forEach((t) => { const p = document.createElement('p'); p.textContent = t; $('#pie').appendChild(p); });
+
+  const DISPONIBLE = {
+    si: ['estado-ok', 'Disponible'],
+    pocas: ['estado-pendiente', 'Pocas unidades'],
+    no: ['estado-mal', 'Agotado']
+  };
+  const estado = (d) => `<span class="estado ${DISPONIBLE[d][0]}">${DISPONIBLE[d][1]}</span>`;
+
+  let productos = [];
+  let filtrados = [];
+  let mostrados = 0;
+
+  // Disponibilidad del producto: la mejor de sus presentaciones
+  const disponibilidad = (p) => ['si', 'pocas', 'no'].find((d) => p.presentaciones.some((x) => x.disponible === d)) || 'no';
+  const completas = (p) => p.presentaciones.filter((x) => !x.parte);
+  const partes = (p) => p.presentaciones.filter((x) => x.parte);
+  const detalle = (p) => [p.marca, p.categoria].filter(Boolean).join(' · ');
+
+  function foto(p, grande = false) {
+    const url = window.fotosProductos.url(p.imagen);
+    return url
+      ? `<img class="foto" src="${esc(url)}" alt="${esc(p.nombre)}" crossorigin="anonymous"${grande ? '' : ' loading="lazy"'}>`
+      : '<div class="foto-vacia"><img src="logo.svg" alt=""></div>';
+  }
+
+  function tarjeta(p) {
+    const medidas = completas(p).map((x) => x.nombre).join(', ');
+    return `
+      <button type="button" class="tarjeta" data-id="${p.id}">
+        ${foto(p)}
+        <div class="tarjeta-cuerpo">
+          <span class="nombre">${esc(p.nombre)}</span>
+          ${detalle(p) ? `<span class="detalle">${esc(detalle(p))}</span>` : ''}
+          ${medidas ? `<span class="medidas">${esc(medidas)}</span>` : ''}
+          <span class="etiquetas">
+            ${estado(disponibilidad(p))}
+            ${p.codigo_color ? `<span class="estado estado-neutro">Color ${esc(p.codigo_color)}</span>` : ''}
+            ${partes(p).length ? '<span class="estado estado-confirmado">Por partes</span>' : ''}
+          </span>
+        </div>
+      </button>`;
+  }
+
+  function filtrar() {
+    const q = norm($('#buscar').value.trim()).split(/\s+/).filter(Boolean);
+    const cat = $('#fCategoria').value, marca = $('#fMarca').value, solo = $('#fDisponible').checked;
+    filtrados = productos.filter((p) =>
+      (!cat || p.categoria === cat) &&
+      (!marca || p.marca === marca) &&
+      (!solo || disponibilidad(p) !== 'no') &&
+      q.every((t) => p.texto.includes(t)));
+    mostrados = 0;
+    $('#grilla').innerHTML = '';
+    pintarMas();
+    $('#cuenta').textContent = filtrados.length === 1 ? '1 producto' : `${filtrados.length} productos`;
+    if (!filtrados.length) $('#grilla').innerHTML = '<p class="vacio">No encontramos productos con esa búsqueda.</p>';
+  }
+
+  function pintarMas() {
+    const lote = filtrados.slice(mostrados, mostrados + POR_PAGINA);
+    $('#grilla').insertAdjacentHTML('beforeend', lote.map(tarjeta).join(''));
+    mostrados += lote.length;
+    $('#verMas').hidden = mostrados >= filtrados.length;
+  }
+
+  function listaPres(titulo, lista) {
+    return lista.length ? `
+      <h3>${esc(titulo)}</h3>
+      <ul class="pres">${lista.map((x) => `<li><span>${esc(x.nombre)}</span>${estado(x.disponible)}</li>`).join('')}</ul>` : '';
+  }
+
+  function abrir(id) {
+    const p = productos.find((x) => x.id === id);
+    if (!p) return;
+    $('#dlgFoto').innerHTML = foto(p, true);
+    $('#dlgNombre').textContent = p.nombre;
+    $('#dlgDetalle').textContent = detalle(p);
+    $('#dlgDetalle').hidden = !detalle(p);
+    $('#dlgEtiquetas').innerHTML = [
+      p.codigo_color ? `<span class="estado estado-neutro">Color ${esc(p.codigo_color)}</span>` : '',
+      p.con_catalizador ? '<span class="estado estado-confirmado">Se vende con su catalizador</span>' : ''
+    ].join('');
+    $('#dlgDesc').textContent = p.descripcion ?? '';
+    $('#dlgDesc').hidden = !p.descripcion;
+    $('#dlgPres').innerHTML = listaPres('Presentaciones', completas(p)) + listaPres('También por partes', partes(p));
+    history.replaceState(null, '', `?p=${p.id}`);
+    $('#dlgProducto').showModal();
+  }
+
+  $('#grilla').addEventListener('click', (e) => {
+    const t = e.target.closest('.tarjeta');
+    if (t) abrir(Number(t.dataset.id));
+  });
+  $('#dlgCerrar').addEventListener('click', () => $('#dlgProducto').close());
+  $('#dlgProducto').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+  $('#dlgProducto').addEventListener('close', () => history.replaceState(null, '', location.pathname));
+  $('#dlgCompartir').addEventListener('click', async () => {
+    const enlace = location.href;
+    const b = $('#dlgCompartir');
+    try {
+      if (navigator.share) await navigator.share({ title: $('#dlgNombre').textContent, url: enlace });
+      else { await navigator.clipboard.writeText(enlace); b.textContent = 'Enlace copiado'; setTimeout(() => { b.textContent = 'Copiar enlace'; }, 2000); }
+    } catch (_) { /* se canceló el compartir */ }
+  });
+  if (navigator.share) $('#dlgCompartir').textContent = 'Compartir';
+
+  let espera;
+  $('#buscar').addEventListener('input', () => { clearTimeout(espera); espera = setTimeout(filtrar, 150); });
+  ['#fCategoria', '#fMarca', '#fDisponible'].forEach((s) => $(s).addEventListener('change', filtrar));
+  $('#verMas').addEventListener('click', pintarMas);
+
+  const opciones = (valores) => [...new Set(valores.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
+    .map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+
+  async function iniciar() {
+    const { data, error } = await db.rpc('catalogo_publico');
+    if (error) {
+      $('#cuenta').textContent = /fetch|network/i.test(error.message)
+        ? 'Sin conexión. Revisa el internet y recarga la página.'
+        : 'El catálogo no está disponible en este momento. Intenta más tarde.';
+      return;
+    }
+    productos = data.map((p) => ({
+      ...p,
+      texto: norm([p.nombre, p.marca, p.categoria, p.codigo_color, p.descripcion, ...p.presentaciones.map((x) => x.nombre)].join(' '))
+    }));
+    $('#fCategoria').insertAdjacentHTML('beforeend', opciones(productos.map((p) => p.categoria)));
+    $('#fMarca').insertAdjacentHTML('beforeend', opciones(productos.map((p) => p.marca)));
+    filtrar();
+    const id = Number(new URLSearchParams(location.search).get('p'));
+    if (id) abrir(id);
+  }
+  iniciar();
+</script>
+</body>
+</html>

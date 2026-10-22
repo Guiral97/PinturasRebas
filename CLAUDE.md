@@ -29,6 +29,7 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 | `cartera.html` | Saldos por cliente, facturas con mora, abonos, recordatorio por WhatsApp (`wa.me`, antepone 57 a números de 10 dígitos). |
 | `gastos.html` | Gastos (caja/cuenta/socio), gastos fijos del mes, foto de factura, retiros y reembolsos de socios. |
 | `tablero.html` | Indicadores por período, ventas, margen, gastos y utilidad, top productos, reimpresión y anulación. |
+| `catalogo.html` | **Público, sin sesión.** Productos publicados (`productos.publicado`) con foto, marca, categoría, código de color, presentaciones y partes, disponibilidad en palabras. **Sin precios.** Búsqueda, filtros, enlace por producto (`?p=id`). Lee solo `catalogo_publico()`. No va en `nav.js`. |
 | `usuarios.html` | Solo socios: lista de usuarios, invitar (Edge Function `invitar-usuario`), reenviar invitación, editar nombre/rol/activo. |
 | `clave.html` | Recuperar contraseña (pide el enlace por correo), crearla desde la invitación o el enlace, y cambiarla con sesión. Sin barra de secciones. |
 | `supabase/functions/invitar-usuario/index.ts` | Edge Function: comprueba `es_socio()` con la sesión de quien llama e invita con la llave de servicio (que vive en Supabase, nunca en la app). Se pega a mano en el editor de Edge Functions. |
@@ -76,6 +77,7 @@ Define `window.APP_CONFIG` con `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `NOMBRE_TIEN
 9. `09_mezclas.sql`: **venta completa** (ver abajo): tabla maestra `mezclas`. No reemplaza funciones.
 10. `10_fotos_productos.sql`: `productos.imagen` (ruta en el bucket **público** `productos`, 1 MB, webp/jpeg/png) y políticas de Storage para usuarios activos. No reemplaza funciones ni vistas.
 11. `11_usuarios.sql`: `es_socio()`, `listar_usuarios()` (con correo de `auth.users` y si la invitación está pendiente) y `actualizar_usuario()` (nadie se desactiva ni se quita el rol de socio a sí mismo). Las invitaciones van por la Edge Function.
+12. `12_catalogo_publico.sql`: `productos.publicado` (por defecto no) y `catalogo_publico()` (`security definer`, ejecutable por `anon`): solo datos de vitrina, nunca precios, costos ni stock exacto. Se marca en el diálogo del producto en Inventario.
 
 **Cambios de base de datos:** siempre en un **script nuevo numerado** (`09_…sql`), sin tocar los anteriores, con un encabezado que diga qué hace y después de cuál se ejecuta. Si un script reemplaza una función, copia la versión **más reciente** (hoy `registrar_venta*` y `registrar_movimiento` viven en `08`). Al reemplazar una vista, conserva las columnas en el mismo orden y agrega las nuevas al final.
 

@@ -925,6 +925,7 @@
         </div>
       </div>
       <label class="check"><input type="checkbox" id="prodActivo" checked> Producto activo</label>
+      <label class="check" id="prodPublicadoFila" hidden><input type="checkbox" id="prodPublicado"> Publicar en el <a href="catalogo.html" target="_blank" rel="noopener">catálogo público</a> (sin precios)</label>
 
       <div class="pres-cab">
         <h3>Presentaciones</h3>
@@ -1008,6 +1009,7 @@
   // ---------- Estado ----------
   let catalogo = [], marcas = [], categorias = [], proveedores = [], clientes = [], mezclas = [];
   let productoEditando = null;     // id del producto abierto en el diálogo
+  let conPublicado = null;         // ¿ya se ejecutó 12_catalogo_publico.sql? (existe productos.publicado)
   let fotos = {};                  // { producto_id: url } (fotos.js)
   // Foto en el diálogo: la guardada, la nueva elegida (ya reducida) y si se quitó
   const foto = { ruta: null, nueva: null, quitar: false };
@@ -1646,6 +1648,9 @@
     $('#prodColor').value = prod.codigo_color ?? '';
     $('#prodDesc').value = prod.descripcion ?? '';
     $('#prodActivo').checked = prod.activo !== false;
+    if (conPublicado === null) conPublicado = !(await db.from('productos').select('publicado').limit(1)).error;
+    $('#prodPublicadoFila').hidden = !conPublicado;
+    $('#prodPublicado').checked = prod.publicado === true;
     Object.assign(foto, { ruta: prod.imagen ?? null, nueva: null, quitar: false });
     pintarFoto();
 
@@ -1812,6 +1817,7 @@
       descripcion: textoOrNull($('#prodDesc').value),
       activo: $('#prodActivo').checked
     };
+    if (conPublicado) prod.publicado = $('#prodPublicado').checked;
 
     if (productoEditando) {
       const { error } = await db.from('productos').update(prod).eq('id', productoEditando);
