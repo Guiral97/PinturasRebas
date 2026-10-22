@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#ffffff">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script src="config.js"></script>
 <style>
@@ -49,51 +49,84 @@
   .logo { height: 3.3rem; width: auto; display: block; flex: none; margin: -.45rem 0; }
 
   main { max-width: 75rem; margin: 0 auto; padding: 1.25rem; display: grid; gap: 1.25rem; }
-  .controles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: .75rem; align-items: end; padding: 1rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
+  .controles { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: .75rem; align-items: end; padding: 1rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
   .ayuda { color: var(--suave); margin: 0; }
   .ayuda a { color: var(--acento); font-weight: 600; }
   .error { color: var(--alerta); font-weight: 600; margin: 0; }
   .vista { overflow-x: auto; padding-bottom: .5rem; }
 
-  /* ===== Lo que se imprime: medidas reales y colores fijos, como el papel ===== */
-  .hoja { width: 21.59cm; min-height: 27.94cm; padding: 1cm 1.2cm; margin: 0 auto; background: #fff; color: #1A2127; box-shadow: 0 1px 4px rgba(0, 0, 0, .2); }
-  .hoja svg.qr { display: block; width: 100%; height: auto; }
-  .hoja .logo-svg svg { display: block; height: 100%; width: auto; }
-  .hoja .logo-svg path { fill: #1A2127; }
+  /* ===== Lo que se imprime: medidas reales (96 px = 1 pulgada; la tarjeta mide 340 × 189 px = 9 × 5 cm)
+     y colores fijos, como el papel ===== */
+  .hoja { width: 21.59cm; min-height: 27.94cm; padding: 1.47cm 1.79cm; margin: 0 auto; background: #fff; color: #111; box-shadow: 0 1px 4px rgba(0, 0, 0, .2); }
+  .hoja.sin-margen { padding: 0; }
+  .hoja svg.qr { display: block; width: 100%; height: 100%; }
+  .hoja .titulo, .hoja .l-nombre, .hoja .l-sub, .hoja .ceja { font-family: "Bebas Neue", "Barlow Condensed", sans-serif; font-weight: 400; }
+  /* La foto del logo trae fondo negro alrededor: se recorta a la pistola */
+  .hoja .pistola { flex: none; overflow: hidden; }
+  .hoja .pistola img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 48%; }
 
   .tarjetas { display: grid; grid-template-columns: repeat(2, 9cm); grid-auto-rows: 5cm; justify-content: center; }
-  .tarjeta {
-    display: grid; grid-template-columns: 1fr 3.5cm; gap: .35cm; align-items: center; overflow: hidden;
-    padding: .35cm .4cm; border: .2mm dashed #B5B9B7;   /* línea de corte */
-    border-top: 1.6mm solid #0E5266;
-  }
-  .tarjeta .texto { display: grid; gap: .12cm; min-width: 0; }
-  .tarjeta .cab { display: flex; align-items: center; gap: .18cm; }
-  .tarjeta .logo-svg { height: .95cm; }
-  .tarjeta .nombre { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 13pt; line-height: 1; }
-  .tarjeta .titulo { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 15pt; line-height: 1.05; color: #0E5266; }
-  .tarjeta .mensaje { font-size: 8pt; line-height: 1.25; }
-  .tarjeta .datos { font-size: 7pt; line-height: 1.25; color: #5B646B; }
+  .tarjeta { position: relative; overflow: hidden; outline: .2mm dashed #B5B9B7; outline-offset: -.1mm; }   /* línea de corte */
+  .tarjeta.negra { background: #000; color: #fff; }
 
-  .aviso { display: grid; justify-items: center; align-content: center; gap: .6cm; text-align: center; min-height: 25.9cm; border-top: 4mm solid #0E5266; padding: 1cm 1.5cm; }
-  .aviso .cab { display: flex; align-items: center; gap: .4cm; }
-  .aviso .logo-svg { height: 2.6cm; }
-  .aviso .nombre { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 34pt; line-height: 1; }
-  .aviso .titulo { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 44pt; line-height: 1.05; color: #0E5266; }
-  .aviso .mensaje { font-size: 17pt; line-height: 1.3; max-width: 15cm; }
-  .aviso .qr-caja { width: 11cm; }
-  .aviso .enlace { font-size: 12pt; color: #5B646B; overflow-wrap: anywhere; }
-  .aviso .datos { font-size: 13pt; color: #5B646B; }
+  /* Frente */
+  .frente { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 16px 20px; }
+  .frente .pistola { width: 72px; height: 132px; }
+  .lockup { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .frente .l-nombre { font-size: 34px; line-height: .95; letter-spacing: .01em; white-space: nowrap; }
+  .frente .l-linea { height: 1.5px; background: #fff; }
+  .frente .l-sub { font-size: 16px; line-height: 1; letter-spacing: .06em; white-space: nowrap; }
+
+  /* Reversos */
+  .reverso { display: grid; grid-template-columns: minmax(0, 1fr) 118px; gap: 14px; align-items: center; padding: 16px 16px 16px 20px; }
+  .reverso .texto { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+  .reverso .ceja-fila { display: flex; align-items: center; gap: 6px; }
+  .reverso .ceja { font-size: 13px; letter-spacing: .12em; line-height: 1; }
+  .reverso .titulo { font-size: 34px; line-height: .9; letter-spacing: .005em; text-wrap: balance; overflow-wrap: anywhere; }
+  .reverso .mensaje { font-size: 12px; line-height: 1.25; }
+  .reverso .datos { font-size: 11px; line-height: 1.25; font-weight: 500; }
+  .reverso .qr-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .reverso .qr-caja { width: 118px; height: 118px; }
+
+  .claro .raya { width: 18px; height: 3px; background: #0E5266; }
+  .claro .ceja { color: #0E5266; }
+  .claro .mensaje { color: #333; }
+  .claro .datos, .claro .pie-qr { color: #5B646B; }
+  .claro .pie-qr { font-family: "Bebas Neue", sans-serif; font-size: 12px; letter-spacing: .1em; line-height: 1; }
+
+  .oscuro { grid-template-columns: minmax(0, 1fr) 126px; }
+  .oscuro .pistola { width: 24px; height: 44px; }
+  .oscuro .ceja { font-size: 14px; letter-spacing: .1em; }
+  .oscuro .ceja-fila { gap: 8px; }
+  .oscuro .raya { width: 40px; height: 1.5px; background: #fff; }
+  .oscuro .mensaje, .oscuro .datos { color: #D9DCDB; }
+  .oscuro .qr-caja { width: 126px; height: 126px; padding: 4px; background: #fff; border-radius: 6px; }
+
+  /* Aviso de mostrador: hoja carta completa */
+  .aviso { width: 816px; height: 1056px; display: flex; flex-direction: column; background: #fff; color: #111; }
+  .aviso .banda { height: 312px; flex: none; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; gap: 36px; padding: 40px 72px; }
+  .aviso .pistola { width: 128px; height: 232px; }
+  .aviso .lockup { gap: 14px; }
+  .aviso .l-nombre { font-size: 76px; line-height: .92; letter-spacing: .01em; white-space: nowrap; }
+  .aviso .l-linea { height: 3px; background: #fff; }
+  .aviso .l-sub { font-size: 34px; line-height: 1; letter-spacing: .06em; white-space: nowrap; }
+  .aviso .cuerpo { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 40px 72px 48px; text-align: center; }
+  .aviso .ceja-fila { display: flex; align-items: center; gap: 12px; }
+  .aviso .raya { width: 40px; height: 4px; background: #0E5266; }
+  .aviso .ceja { font-size: 26px; letter-spacing: .14em; line-height: 1; color: #0E5266; }
+  .aviso .titulo { font-size: 92px; line-height: .9; letter-spacing: .005em; text-wrap: balance; }
+  .aviso .qr-caja { width: 310px; height: 310px; padding: 12px; border: 3px solid #111; border-radius: 12px; }
+  .aviso .mensaje { font-size: 26px; line-height: 1.3; font-weight: 500; max-width: 600px; }
+  .aviso .datos { font-size: 17px; line-height: 1.3; color: #5B646B; overflow-wrap: anywhere; }
 
   @page { size: letter; margin: 0; }
   @media print {
     body { background: #fff; }
-    .barra, .controles, .ayuda { display: none !important; }
+    .barra, .controles, .ayuda, h1 { display: none !important; }
     main { padding: 0; display: block; max-width: none; }
     .vista { overflow: visible; padding: 0; }
     .hoja { box-shadow: none; margin: 0; height: 27.9cm; min-height: 0; overflow: hidden; }   /* una sola hoja, sin página en blanco al final */
-    .tarjeta { border-top-color: #0E5266; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .aviso { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .hoja * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }   /* que salgan los fondos negros */
   }
 
   @media (max-width: 700px) {
@@ -114,17 +147,19 @@
 
 <main>
   <h1>Tarjeta del catálogo</h1>
-  <p class="ayuda">Invitación con código QR al <a href="catalogo.html" target="_blank" rel="noopener">catálogo público</a>. Se imprime en hoja carta; las tarjetas salen 10 por hoja para recortar por la línea punteada.</p>
+  <p class="ayuda">Invitación con código QR al <a href="catalogo.html" target="_blank" rel="noopener">catálogo público</a>, en hoja carta. Las tarjetas salen 10 por hoja para recortar por la línea punteada. Para tarjetas de dos caras, imprime una hoja de frentes y, en el respaldo de esa misma hoja, una de reversos.</p>
 
   <div class="controles">
-    <div class="campo"><label for="formato">Formato</label>
+    <div class="campo"><label for="formato">Qué imprimir</label>
       <select id="formato">
-        <option value="tarjetas">Tarjetas 9 × 5 cm (10 por hoja)</option>
-        <option value="aviso">Aviso para el mostrador (hoja completa)</option>
+        <option value="frente">Tarjetas · frente</option>
+        <option value="claro">Tarjetas · reverso claro</option>
+        <option value="oscuro">Tarjetas · reverso oscuro</option>
+        <option value="aviso">Aviso para el mostrador</option>
       </select>
     </div>
-    <div class="campo"><label for="titulo">Título</label><input id="titulo" value="Conoce nuestro catálogo" maxlength="40"></div>
-    <div class="campo"><label for="mensaje">Mensaje</label><input id="mensaje" value="Escanea el código con la cámara de tu celular y mira todos nuestros productos." maxlength="110"></div>
+    <div class="campo" data-texto><label for="titulo">Título</label><input id="titulo" value="Mira nuestro catálogo" maxlength="32"></div>
+    <div class="campo" data-texto><label for="mensaje">Mensaje</label><input id="mensaje" value="Escanea el código con la cámara de tu celular." maxlength="70"></div>
     <button type="button" class="btn btn-primario" id="imprimir" disabled>Imprimir</button>
   </div>
   <p class="error" id="error" role="alert" hidden></p>
@@ -154,59 +189,79 @@
     return `<svg class="qr" viewBox="0 0 ${n + 2 * m} ${n + 2 * m}" shape-rendering="crispEdges" role="img" aria-label="Código QR del catálogo">`
       + `<rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
   }
-
-  let logo = '';   // el SVG del logo, sin su estilo de tema oscuro: en papel siempre va oscuro
   let qr = '';
 
-  function datos() {
-    return [NEGOCIO.DIRECCION, NEGOCIO.TELEFONO && `Tel. ${NEGOCIO.TELEFONO}`].filter(Boolean).map(esc).join(' · ');
-  }
+  const pistola = '<div class="pistola"><img src="marca-rb.png" alt=""></div>';
+  const lockup = `
+    <div class="lockup">
+      <div class="l-nombre">${esc(NOMBRE_TIENDA)}</div>
+      <div class="l-linea"></div>
+      <div class="l-sub">Herramientas y materiales</div>
+    </div>`;
+  const datos = () => [NEGOCIO.DIRECCION, NEGOCIO.TELEFONO && `Tel. ${NEGOCIO.TELEFONO}`].filter(Boolean).map(esc).join(' · ');
 
-  function pintar() {
-    const titulo = esc($('#titulo').value.trim()), mensaje = esc($('#mensaje').value.trim());
-    const cab = `<div class="cab"><span class="logo-svg">${logo}</span><span class="nombre">${esc(NOMBRE_TIENDA)}</span></div>`;
-    if ($('#formato').value === 'aviso') {
-      $('#hoja').innerHTML = `
-        <div class="aviso">
-          ${cab}
+  const DISENOS = {
+    frente: () => `<div class="tarjeta negra frente">${pistola}${lockup}</div>`,
+    claro: (titulo, mensaje) => `
+      <div class="tarjeta reverso claro">
+        <div class="texto">
+          <div class="ceja-fila"><div class="raya"></div><div class="ceja">${esc(NOMBRE_TIENDA)}</div></div>
           <div class="titulo">${titulo}</div>
           <div class="mensaje">${mensaje}</div>
-          <div class="qr-caja">${qr}</div>
-          <div class="enlace">${esc(URL_CORTA)}</div>
           ${datos() ? `<div class="datos">${datos()}</div>` : ''}
+        </div>
+        <div class="qr-col"><div class="qr-caja">${qr}</div><div class="pie-qr">Pintura automotriz</div></div>
+      </div>`,
+    oscuro: (titulo, mensaje) => `
+      <div class="tarjeta negra reverso oscuro">
+        <div class="texto">
+          <div class="ceja-fila">${pistola}<div class="ceja">${esc(NOMBRE_TIENDA)}</div></div>
+          <div class="titulo">${titulo}</div>
+          <div class="raya"></div>
+          <div class="mensaje">${mensaje}</div>
+          ${datos() ? `<div class="datos">${datos()}</div>` : ''}
+        </div>
+        <div class="qr-caja">${qr}</div>
+      </div>`
+  };
+
+  function pintar() {
+    const formato = $('#formato').value;
+    const titulo = esc($('#titulo').value.trim()), mensaje = esc($('#mensaje').value.trim());
+    document.querySelectorAll('[data-texto]').forEach((c) => { c.hidden = formato === 'frente'; });
+    $('#hoja').classList.toggle('sin-margen', formato === 'aviso');
+    if (formato === 'aviso') {
+      $('#hoja').innerHTML = `
+        <div class="aviso">
+          <div class="banda">${pistola}${lockup}</div>
+          <div class="cuerpo">
+            <div class="ceja-fila"><div class="raya"></div><div class="ceja">Pintura automotriz y accesorios</div><div class="raya"></div></div>
+            <div class="titulo">${titulo}</div>
+            <div class="qr-caja">${qr}</div>
+            <div class="mensaje">${mensaje}</div>
+            <div class="datos">${[esc(URL_CORTA), datos()].filter(Boolean).join(' · ')}</div>
+          </div>
         </div>`;
     } else {
-      const una = `
-        <div class="tarjeta">
-          <div class="texto">
-            ${cab}
-            <div class="titulo">${titulo}</div>
-            <div class="mensaje">${mensaje}</div>
-            ${datos() ? `<div class="datos">${datos()}</div>` : ''}
-          </div>
-          <div>${qr}</div>
-        </div>`;
-      $('#hoja').innerHTML = `<div class="tarjetas">${una.repeat(10)}</div>`;
+      // Las 10 iguales y la grilla centrada: al imprimir el respaldo, frente y reverso coinciden
+      $('#hoja').innerHTML = `<div class="tarjetas">${DISENOS[formato](titulo, mensaje).repeat(10)}</div>`;
     }
   }
 
-  async function iniciar() {
+  function iniciar() {
     if (!window.qrcode) {
       $('#error').textContent = 'No se pudo cargar el generador de códigos QR. Revisa el internet y recarga la página.';
       $('#error').hidden = false;
       return;
     }
     qr = qrSvg(URL_CATALOGO);
-    try {
-      logo = (await (await fetch('logo.svg')).text()).replace(/<style>[\s\S]*?<\/style>/, '');
-    } catch (_) { logo = ''; }
     pintar();
     $('#imprimir').disabled = false;
   }
 
   ['#formato', '#titulo', '#mensaje'].forEach((s) => $(s).addEventListener('input', pintar));
   $('#imprimir').addEventListener('click', async () => {
-    await document.fonts.ready;   // que salga con Barlow y no con la letra del sistema
+    await document.fonts.ready;   // que salga con Bebas Neue y Barlow, no con la letra del sistema
     window.print();
   });
   iniciar();

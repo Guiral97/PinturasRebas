@@ -30,7 +30,7 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 | `gastos.html` | Gastos (caja/cuenta/socio), gastos fijos del mes, foto de factura, retiros y reembolsos de socios. |
 | `tablero.html` | Indicadores por período, ventas, margen, gastos y utilidad, top productos, reimpresión y anulación. |
 | `catalogo.html` | **Público, sin sesión.** Productos publicados (`productos.publicado`) con foto, marca, categoría, código de color, presentaciones y partes, disponibilidad en palabras. **Sin precios.** Búsqueda, filtros, enlace por producto (`?p=id`). Lee solo `catalogo_publico()`. No va en `nav.js`. |
-| `tarjeta-catalogo.html` | Tarjetas 9×5 cm (10 por hoja carta) o aviso de mostrador con QR al catálogo público. Título y mensaje editables. Sin sesión ni datos; se abre desde Inventario. |
+| `tarjeta-catalogo.html` | Tarjetas 9×5 cm (10 por hoja carta: frente negro con logo, reverso claro u oscuro con QR al catálogo público; mismas posiciones para imprimir a doble cara) o aviso de mostrador. Título y mensaje editables. Fuente Bebas Neue (como el logo). Sin sesión ni datos; se abre desde Inventario. |
 | `usuarios.html` | Solo socios: lista de usuarios, invitar (Edge Function `invitar-usuario`), reenviar invitación, editar nombre/rol/activo. |
 | `clave.html` | Recuperar contraseña (pide el enlace por correo), crearla desde la invitación o el enlace, y cambiarla con sesión. Sin barra de secciones. |
 | `supabase/functions/invitar-usuario/index.ts` | Edge Function: comprueba `es_socio()` con la sesión de quien llama e invita con la llave de servicio (que vive en Supabase, nunca en la app). Se pega a mano en el editor de Edge Functions. |
@@ -42,7 +42,7 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 | `fotos.js` | Fotos de productos (10): URL pública, mapas `porProducto` / `porPresentacion`, `reducir` (800 px, WebP o JPEG), `subir`, `borrar`. Lo usan inventario, caja y cotizaciones. |
 | `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v14`). Guarda también las fotos de productos (guardado primero). El nombre debe ser `sw.js` en minúscula. |
 | `config.js` | Configuración compartida (ver abajo). |
-| `logo.svg`, `favicon-32.png`, `favicon-48.png`, `apple-touch-icon.png` | Marca. El logo cambia de color con el tema (estilo dentro del SVG). |
+| `logo.svg`, `marca-rb.png`, `favicon-32.png`, `favicon-48.png`, `apple-touch-icon.png` | Marca. `marca-rb.png`: pistola blanca sobre negro, para piezas impresas. El logo cambia de color con el tema (estilo dentro del SVG). |
 | `01_…sql` a `09_…sql` | Scripts de base de datos, en orden (ver abajo). |
 | `98_borrar_datos_prueba.sql`, `99_datos_prueba.sql`, `99_borrar_productos_por_codigo.sql` | Datos de prueba y limpieza. |
 | `CONTEXTO_PROYECTO_Pinturas_Rebas.md` | Contexto antiguo (antes de 04). **Este `CLAUDE.md` lo reemplaza.** |
