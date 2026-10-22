@@ -16,8 +16,8 @@
 
   // Servicios BLE que usan las impresoras térmicas chinas más comunes
   const SERVICIOS = [
+    '0000ff00-0000-1000-8000-00805f9b34fb',   // Phomemo / DIG-M220
     '000018f0-0000-1000-8000-00805f9b34fb',
-    '0000ff00-0000-1000-8000-00805f9b34fb',
     '0000ae30-0000-1000-8000-00805f9b34fb',
     '0000fee7-0000-1000-8000-00805f9b34fb',
     '0000ffe0-0000-1000-8000-00805f9b34fb',
@@ -137,7 +137,10 @@
       let servicio;
       try { servicio = await gatt.getPrimaryService(uuid); } catch (_) { continue; }
       const cars = await servicio.getCharacteristics();
-      car = cars.find((c) => c.properties.writeWithoutResponse) || cars.find((c) => c.properties.write);
+      // ff02 es el canal de impresión de las Phomemo; si no, el primero que acepte escritura
+      const escribe = (c) => c.properties.writeWithoutResponse || c.properties.write;
+      car = cars.find((c) => c.uuid.startsWith('0000ff02') && escribe(c))
+        || cars.find((c) => c.properties.writeWithoutResponse) || cars.find((c) => c.properties.write);
       if (car) break;
     }
     if (!car) {
@@ -145,7 +148,9 @@
       throw new Error(`"${dispositivo.name || 'El equipo'}" se conectó, pero no tiene un canal de impresión conocido. Prueba con "Puerto COM".`);
     }
 
-    let tam = 180;   // bytes por envío; si la impresora no lo acepta se baja a 20
+    // Bytes por envío; si la impresora no lo acepta se baja a 20. Android corta en
+    // silencio los envíos sin respuesta a 20 bytes y la imagen llega incompleta.
+    let tam = esAndroid() ? 20 : 180;
     const sinRespuesta = car.properties.writeWithoutResponse;
     async function escribir(trozo) {
       if (sinRespuesta) await car.writeValueWithoutResponse(trozo);
@@ -153,7 +158,7 @@
     }
     return {
       tipo: 'ble',
-      nombre: dispositivo.name || 'Impresora Bluetooth',
+      nombre: `${dispositivo.name || 'Impresora Bluetooth'} (canal ${car.uuid.slice(4, 8)})`,
       async enviar(bytes, progreso) {
         if (!dispositivo.gatt.connected) await dispositivo.gatt.connect();
         for (let i = 0; i < bytes.length; ) {
