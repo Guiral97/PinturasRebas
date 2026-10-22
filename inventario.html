@@ -74,6 +74,7 @@
   .cab-pagina h1 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 2.1rem; margin: 0; line-height: 1.1; }
   .cab-acciones { margin-left: auto; display: flex; flex-wrap: wrap; gap: .5rem; }
   .cab-acciones .btn { min-height: 2.75rem; }
+  .cab-acciones a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 
   /* Pestañas: control segmentado */
   .pestanas {
@@ -559,6 +560,7 @@
       <button role="tab" id="t-clientes" aria-controls="p-clientes" aria-selected="false">Clientes</button>
     </div>
     <div class="cab-acciones" id="accionesCatalogo">
+      <a class="btn" href="catalogo.html" target="_blank" rel="noopener">Ver catálogo público</a>
       <button class="btn" id="irEntrada" type="button">Registrar entrada</button>
       <button class="btn btn-primario" id="nuevoProducto" type="button">+ Nuevo producto</button>
     </div>
