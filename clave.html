@@ -159,7 +159,9 @@
     btn.disabled = true;
     mensaje($('#pedirMsg'), 'Enviando…');
     const { error } = await db.auth.resetPasswordForEmail($('#pedirEmail').value.trim(), {
-      redirectTo: new URL('clave.html', location.href).href
+      // Abierta desde un archivo del disco, el enlace va a la app publicada
+      redirectTo: new URL('clave.html', location.protocol.startsWith('http') ? location.href
+        : window.APP_CONFIG.URL_APP || 'https://guiral97.github.io/PinturasRebas/').href
     });
     btn.disabled = false;
     // No se dice si el correo existe o no: así nadie puede averiguar quién tiene cuenta

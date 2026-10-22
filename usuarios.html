@@ -218,7 +218,10 @@
   let yo = null;            // id de quien tiene la sesión
   let editando = null;      // usuario abierto en el diálogo
   let rolInvitar = 'vendedor';
-  const urlClave = () => new URL('clave.html', location.href).href;
+  // Enlace del correo: la app publicada. Abierta desde un archivo del disco (file://), el
+  // enlace no le serviría a quien lo recibe; se usa la dirección de GitHub Pages.
+  const URL_APP = window.APP_CONFIG.URL_APP || 'https://guiral97.github.io/PinturasRebas/';
+  const urlClave = () => new URL('clave.html', location.protocol.startsWith('http') ? location.href : URL_APP).href;
 
   const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -314,6 +317,10 @@
   async function errorFuncion(error) {
     try {
       const cuerpo = await error.context.json();
+      // Supabase no pudo enviar el correo: casi siempre es el correo propio (SMTP) mal configurado
+      if (/error sending/i.test(cuerpo.error || '')) {
+        return { mensaje: 'Supabase no pudo enviar el correo. Revisa en Supabase › Authentication › Emails › SMTP Settings el Gmail y la contraseña de aplicación (16 letras, sin espacios). El motivo exacto sale en Logs › Auth.' };
+      }
       return { mensaje: cuerpo.error || error.message, codigo: cuerpo.codigo };
     } catch (_) {
       return { mensaje: /Failed to send|fetch|not found|404/i.test(error.message)
