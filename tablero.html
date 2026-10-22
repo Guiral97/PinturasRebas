@@ -117,6 +117,9 @@
   table { border-collapse: collapse; width: 100%; min-width: 36rem; }
   th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--linea); }
   th { font-weight: 600; color: var(--suave); font-size: .9rem; }
+  /* Va arriba: con muchas ventas se desplaza adentro y no empuja el resto del tablero */
+  #ventasPeriodo .tabla-caja { max-height: 26rem; overflow-y: auto; }
+  #ventasPeriodo thead th { position: sticky; top: 0; z-index: 1; background: var(--panel); }
   tr:last-child td { border-bottom: 0; }
   td.der, th.der { text-align: right; }
   .anulada td { color: var(--suave); text-decoration: line-through; }
@@ -267,6 +270,16 @@
     <div><span>Vendido a crédito</span><strong id="kCredito">$ 0</strong><small id="kAnuladas"></small></div>
   </section>
 
+  <section class="bloque" id="ventasPeriodo">
+    <h2>Ventas del período</h2>
+    <div class="tabla-caja">
+      <table>
+        <thead><tr><th>Venta</th><th>Fecha</th><th>Cliente</th><th>Socio</th><th>Forma de pago</th><th class="der">Total</th><th></th></tr></thead>
+        <tbody id="tbVentas"></tbody>
+      </table>
+    </div>
+  </section>
+
   <div class="dos">
     <section class="bloque">
       <div class="bloque-cab"><h2>Ventas por día</h2><small class="num" id="mejorDia"></small></div>
@@ -311,7 +324,7 @@
   </div>
 
   <section class="bloque">
-    <div class="bloque-cab"><h2>Productos más vendidos</h2><a href="#ventasPeriodo" id="verVentas" hidden></a></div>
+    <h2>Productos más vendidos</h2>
     <div class="tabla-caja">
       <table>
         <thead><tr><th>Producto</th><th class="der">Unidades</th><th class="der">Ventas</th><th class="der">Margen</th><th class="der">Margen %</th></tr></thead>
@@ -344,16 +357,6 @@
       </table>
     </div>
     <small class="nota-res" id="costosNota"></small>
-  </section>
-
-  <section class="bloque" id="ventasPeriodo" tabindex="-1">
-    <h2>Ventas del período</h2>
-    <div class="tabla-caja">
-      <table>
-        <thead><tr><th>Venta</th><th>Fecha</th><th>Cliente</th><th>Socio</th><th>Forma de pago</th><th class="der">Total</th><th></th></tr></thead>
-        <tbody id="tbVentas"></tbody>
-      </table>
-    </div>
   </section>
 </main>
 
@@ -545,9 +548,6 @@
 
     pintarKpis(rr.data);
     pintarComparacion(rr.data, ra.error ? null : ra.data, textoRango(antDesde, antHasta));
-    const n = rr.data.kpis.num_ventas;
-    $('#verVentas').hidden = !rv.data.length;
-    $('#verVentas').textContent = `Ver ${n === 1 ? 'la venta' : `las ${n} ventas`} del período`;
     pintarGrafico(rr.data.por_dia);
     pintarBarras('#porCategoria', rr.data.por_categoria, (x) => x.categoria,
       (x) => `Margen ${cop.format(x.margen)} (${pct(x.margen, x.total) || '0 %'})`);
