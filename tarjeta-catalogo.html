@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tarjeta del catálogo</title>
+<link rel="icon" href="favicon-48.png" type="image/png" sizes="48x48">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="config.js"></script>
+<style>
+  :root {
+    color-scheme: light dark;   /* barras de desplazamiento y controles según el tema */
+    --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
+    --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF; --alerta: #A1281F; --radio: 6px;
+    font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
+      --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530; --alerta: #E57B72;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font-size: 16px; line-height: 1.45; background: var(--fondo); }
+  [hidden] { display: none !important; }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  input, select { font: inherit; color: var(--tinta); background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: .5rem .65rem; width: 100%; min-height: 2.75rem; }
+  label { font-weight: 600; }
+  .campo { display: grid; gap: .3rem; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.75rem;
+    border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .45rem .9rem;
+    border-radius: 8px; white-space: nowrap; text-decoration: none; font-weight: 600;
+  }
+  .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
+  .btn-primario:disabled { opacity: .45; cursor: not-allowed; }
+  h1 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; margin: 0; font-size: 2.1rem; line-height: 1.1; }
+
+  .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
+  .marca { display: flex; align-items: center; gap: .55rem; color: inherit; text-decoration: none; min-width: 0; }
+  .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; }
+  .logo { height: 3.3rem; width: auto; display: block; flex: none; margin: -.45rem 0; }
+
+  main { max-width: 75rem; margin: 0 auto; padding: 1.25rem; display: grid; gap: 1.25rem; }
+  .controles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: .75rem; align-items: end; padding: 1rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
+  .ayuda { color: var(--suave); margin: 0; }
+  .ayuda a { color: var(--acento); font-weight: 600; }
+  .error { color: var(--alerta); font-weight: 600; margin: 0; }
+  .vista { overflow-x: auto; padding-bottom: .5rem; }
+
+  /* ===== Lo que se imprime: medidas reales y colores fijos, como el papel ===== */
+  .hoja { width: 21.59cm; min-height: 27.94cm; padding: 1cm 1.2cm; margin: 0 auto; background: #fff; color: #1A2127; box-shadow: 0 1px 4px rgba(0, 0, 0, .2); }
+  .hoja svg.qr { display: block; width: 100%; height: auto; }
+  .hoja .logo-svg svg { display: block; height: 100%; width: auto; }
+  .hoja .logo-svg path { fill: #1A2127; }
+
+  .tarjetas { display: grid; grid-template-columns: repeat(2, 9cm); grid-auto-rows: 5cm; justify-content: center; }
+  .tarjeta {
+    display: grid; grid-template-columns: 1fr 3.5cm; gap: .35cm; align-items: center; overflow: hidden;
+    padding: .35cm .4cm; border: .2mm dashed #B5B9B7;   /* línea de corte */
+    border-top: 1.6mm solid #0E5266;
+  }
+  .tarjeta .texto { display: grid; gap: .12cm; min-width: 0; }
+  .tarjeta .cab { display: flex; align-items: center; gap: .18cm; }
+  .tarjeta .logo-svg { height: .95cm; }
+  .tarjeta .nombre { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 13pt; line-height: 1; }
+  .tarjeta .titulo { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 15pt; line-height: 1.05; color: #0E5266; }
+  .tarjeta .mensaje { font-size: 8pt; line-height: 1.25; }
+  .tarjeta .datos { font-size: 7pt; line-height: 1.25; color: #5B646B; }
+
+  .aviso { display: grid; justify-items: center; align-content: center; gap: .6cm; text-align: center; min-height: 25.9cm; border-top: 4mm solid #0E5266; padding: 1cm 1.5cm; }
+  .aviso .cab { display: flex; align-items: center; gap: .4cm; }
+  .aviso .logo-svg { height: 2.6cm; }
+  .aviso .nombre { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 34pt; line-height: 1; }
+  .aviso .titulo { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 44pt; line-height: 1.05; color: #0E5266; }
+  .aviso .mensaje { font-size: 17pt; line-height: 1.3; max-width: 15cm; }
+  .aviso .qr-caja { width: 11cm; }
+  .aviso .enlace { font-size: 12pt; color: #5B646B; overflow-wrap: anywhere; }
+  .aviso .datos { font-size: 13pt; color: #5B646B; }
+
+  @page { size: letter; margin: 0; }
+  @media print {
+    body { background: #fff; }
+    .barra, .controles, .ayuda { display: none !important; }
+    main { padding: 0; display: block; max-width: none; }
+    .vista { overflow: visible; padding: 0; }
+    .hoja { box-shadow: none; margin: 0; height: 27.9cm; min-height: 0; overflow: hidden; }   /* una sola hoja, sin página en blanco al final */
+    .tarjeta { border-top-color: #0E5266; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .aviso { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  @media (max-width: 700px) {
+    .barra { padding: .6rem 1rem; }
+    .tienda { font-size: 1.25rem; }
+    .logo { height: 2.9rem; margin: -.3rem 0; }
+    main { padding: 1rem; }
+    h1 { font-size: 1.8rem; }
+    .controles { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <a class="marca" href="inventario.html" aria-label="Ir a inventario"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
+</header>
+
+<main>
+  <h1>Tarjeta del catálogo</h1>
+  <p class="ayuda">Invitación con código QR al <a href="catalogo.html" target="_blank" rel="noopener">catálogo público</a>. Se imprime en hoja carta; las tarjetas salen 10 por hoja para recortar por la línea punteada.</p>
+
+  <div class="controles">
+    <div class="campo"><label for="formato">Formato</label>
+      <select id="formato">
+        <option value="tarjetas">Tarjetas 9 × 5 cm (10 por hoja)</option>
+        <option value="aviso">Aviso para el mostrador (hoja completa)</option>
+      </select>
+    </div>
+    <div class="campo"><label for="titulo">Título</label><input id="titulo" value="Conoce nuestro catálogo" maxlength="40"></div>
+    <div class="campo"><label for="mensaje">Mensaje</label><input id="mensaje" value="Escanea el código con la cámara de tu celular y mira todos nuestros productos." maxlength="110"></div>
+    <button type="button" class="btn btn-primario" id="imprimir" disabled>Imprimir</button>
+  </div>
+  <p class="error" id="error" role="alert" hidden></p>
+
+  <div class="vista"><div class="hoja" id="hoja"></div></div>
+</main>
+
+<script>
+  const { NOMBRE_TIENDA, NEGOCIO = {} } = window.APP_CONFIG;
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Dirección del catálogo junto a esta página: sirve igual en GitHub Pages que en pruebas
+  const URL_CATALOGO = new URL('catalogo.html', location.href).href;
+  const URL_CORTA = URL_CATALOGO.replace(/^https?:\/\//, '');
+
+  document.title = `Tarjeta del catálogo | ${NOMBRE_TIENDA}`;
+  $('#nombreTienda').textContent = NOMBRE_TIENDA;
+
+  // QR como SVG: nítido a cualquier tamaño de impresión. Corrección M (aguanta algo de suciedad o arrugas)
+  function qrSvg(texto) {
+    const q = qrcode(0, 'M');
+    q.addData(texto);
+    q.make();
+    const n = q.getModuleCount(), m = 2;   // m: margen blanco en módulos
+    let d = '';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c + m} ${r + m}h1v1h-1z`;
+    return `<svg class="qr" viewBox="0 0 ${n + 2 * m} ${n + 2 * m}" shape-rendering="crispEdges" role="img" aria-label="Código QR del catálogo">`
+      + `<rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+  }
+
+  let logo = '';   // el SVG del logo, sin su estilo de tema oscuro: en papel siempre va oscuro
+  let qr = '';
+
+  function datos() {
+    return [NEGOCIO.DIRECCION, NEGOCIO.TELEFONO && `Tel. ${NEGOCIO.TELEFONO}`].filter(Boolean).map(esc).join(' · ');
+  }
+
+  function pintar() {
+    const titulo = esc($('#titulo').value.trim()), mensaje = esc($('#mensaje').value.trim());
+    const cab = `<div class="cab"><span class="logo-svg">${logo}</span><span class="nombre">${esc(NOMBRE_TIENDA)}</span></div>`;
+    if ($('#formato').value === 'aviso') {
+      $('#hoja').innerHTML = `
+        <div class="aviso">
+          ${cab}
+          <div class="titulo">${titulo}</div>
+          <div class="mensaje">${mensaje}</div>
+          <div class="qr-caja">${qr}</div>
+          <div class="enlace">${esc(URL_CORTA)}</div>
+          ${datos() ? `<div class="datos">${datos()}</div>` : ''}
+        </div>`;
+    } else {
+      const una = `
+        <div class="tarjeta">
+          <div class="texto">
+            ${cab}
+            <div class="titulo">${titulo}</div>
+            <div class="mensaje">${mensaje}</div>
+            ${datos() ? `<div class="datos">${datos()}</div>` : ''}
+          </div>
+          <div>${qr}</div>
+        </div>`;
+      $('#hoja').innerHTML = `<div class="tarjetas">${una.repeat(10)}</div>`;
+    }
+  }
+
+  async function iniciar() {
+    if (!window.qrcode) {
+      $('#error').textContent = 'No se pudo cargar el generador de códigos QR. Revisa el internet y recarga la página.';
+      $('#error').hidden = false;
+      return;
+    }
+    qr = qrSvg(URL_CATALOGO);
+    try {
+      logo = (await (await fetch('logo.svg')).text()).replace(/<style>[\s\S]*?<\/style>/, '');
+    } catch (_) { logo = ''; }
+    pintar();
+    $('#imprimir').disabled = false;
+  }
+
+  ['#formato', '#titulo', '#mensaje'].forEach((s) => $(s).addEventListener('input', pintar));
+  $('#imprimir').addEventListener('click', async () => {
+    await document.fonts.ready;   // que salga con Barlow y no con la letra del sistema
+    window.print();
+  });
+  iniciar();
+</script>
+</body>
+</html>

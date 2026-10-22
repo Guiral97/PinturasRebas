@@ -13,7 +13,7 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 ## Arquitectura
 
 - **Frontend:** HTML, CSS y JavaScript puros, **sin build ni npm**. Un archivo por pantalla. Publicado en GitHub Pages desde el repo público `Guiral97/PinturasRebas` (rama `main`) → `https://guiral97.github.io/PinturasRebas/`.
-- **Librerías por CDN** (no agregar otras sin necesidad): `@supabase/supabase-js@2` (jsDelivr), `html5-qrcode@2.3.8` (cámara), `chart.js@4.4.1` (tablero).
+- **Librerías por CDN** (no agregar otras sin necesidad): `@supabase/supabase-js@2` (jsDelivr), `html5-qrcode@2.3.8` (cámara), `chart.js@4.4.1` (tablero), `qrcode-generator@1.4.4` (tarjeta del catálogo).
 - **Backend:** Supabase plan gratuito (Postgres + Auth + Storage). Límites: 500 MB de base de datos, 1 GB de Storage, 5 GB de transferencia al mes, el proyecto se pausa tras 7 días sin uso, sin respaldos automáticos.
 - **Respaldo:** GitHub Action diaria (`respaldo-diario.yml`) en un repo **privado aparte**: consulta la API (evita la pausa) y guarda un volcado 60 días.
 - **Modo sin conexión:** `sw.js` guarda la app en el equipo (red primero para archivos propios); la caja guarda catálogo y una cola de ventas en IndexedDB y las envía con `registrar_venta_caja` al volver internet.
@@ -30,6 +30,7 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 | `gastos.html` | Gastos (caja/cuenta/socio), gastos fijos del mes, foto de factura, retiros y reembolsos de socios. |
 | `tablero.html` | Indicadores por período, ventas, margen, gastos y utilidad, top productos, reimpresión y anulación. |
 | `catalogo.html` | **Público, sin sesión.** Productos publicados (`productos.publicado`) con foto, marca, categoría, código de color, presentaciones y partes, disponibilidad en palabras. **Sin precios.** Búsqueda, filtros, enlace por producto (`?p=id`). Lee solo `catalogo_publico()`. No va en `nav.js`. |
+| `tarjeta-catalogo.html` | Tarjetas 9×5 cm (10 por hoja carta) o aviso de mostrador con QR al catálogo público. Título y mensaje editables. Sin sesión ni datos; se abre desde Inventario. |
 | `usuarios.html` | Solo socios: lista de usuarios, invitar (Edge Function `invitar-usuario`), reenviar invitación, editar nombre/rol/activo. |
 | `clave.html` | Recuperar contraseña (pide el enlace por correo), crearla desde la invitación o el enlace, y cambiarla con sesión. Sin barra de secciones. |
 | `supabase/functions/invitar-usuario/index.ts` | Edge Function: comprueba `es_socio()` con la sesión de quien llama e invita con la llave de servicio (que vive en Supabase, nunca en la app). Se pega a mano en el editor de Edge Functions. |
