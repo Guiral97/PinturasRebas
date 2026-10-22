@@ -8,7 +8,7 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 
 - Moneda: pesos colombianos (COP), sin decimales en pantalla (`Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })`).
 - Zona horaria: `America/Bogota`. Los cortes de día y los vencimientos se calculan en esa zona, no en UTC.
-- Usuarios: solo los tres socios, cada uno con fila en `perfiles`.
+- Usuarios: los socios y los vendedores que ellos inviten, cada uno con fila en `perfiles` (`rol` = `socio` o `vendedor`). Solo los socios administran usuarios.
 
 ## Arquitectura
 
@@ -29,12 +29,16 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 | `cartera.html` | Saldos por cliente, facturas con mora, abonos, recordatorio por WhatsApp (`wa.me`, antepone 57 a números de 10 dígitos). |
 | `gastos.html` | Gastos (caja/cuenta/socio), gastos fijos del mes, foto de factura, retiros y reembolsos de socios. |
 | `tablero.html` | Indicadores por período, ventas, margen, gastos y utilidad, top productos, reimpresión y anulación. |
-| `nav.js` | Barra de secciones común (íconos, sección actual, contador de pedidos con `navPendientes(db)`). En celular (≤ 700 px) pasa abajo: Caja, Pedidos, Inventario, Cartera y "Más". Trae sus propios estilos (con `#nav`). |
+| `usuarios.html` | Solo socios: lista de usuarios, invitar (Edge Function `invitar-usuario`), reenviar invitación, editar nombre/rol/activo. |
+| `clave.html` | Recuperar contraseña (pide el enlace por correo), crearla desde la invitación o el enlace, y cambiarla con sesión. Sin barra de secciones. |
+| `supabase/functions/invitar-usuario/index.ts` | Edge Function: comprueba `es_socio()` con la sesión de quien llama e invita con la llave de servicio (que vive en Supabase, nunca en la app). Se pega a mano en el editor de Edge Functions. |
+| `supabase/README.md` | Pasos de configuración en Supabase: URL permitidas, función, SMTP propio (Gmail) y plantillas de correo en español. |
+| `nav.js` | Barra de secciones común (íconos, sección actual, contador de pedidos con `navPendientes(db)`, que además muestra "Usuarios" solo a socios). Se oculta sin sesión. En celular (≤ 700 px) pasa abajo: Caja, Pedidos, Inventario, Cartera y "Más". Trae sus propios estilos (con `#nav`). |
 | `recibo.js` | `imprimirRecibo(v)`: recibo térmico 58/80 mm en un iframe oculto. Comprobante interno, **no es factura electrónica**. |
 | `etiquetas.js` | Códigos internos EAN-13 (`20` + id a 10 dígitos + dígito de control), SVG de etiquetas, impresión por driver. |
 | `impresora-directa.js` | Impresión de etiquetas sin driver: Web Serial (puerto COM) o Web Bluetooth, ESC/POS raster. |
 | `fotos.js` | Fotos de productos (10): URL pública, mapas `porProducto` / `porPresentacion`, `reducir` (800 px, WebP o JPEG), `subir`, `borrar`. Lo usan inventario, caja y cotizaciones. |
-| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v13`). Guarda también las fotos de productos (guardado primero). El nombre debe ser `sw.js` en minúscula. |
+| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v14`). Guarda también las fotos de productos (guardado primero). El nombre debe ser `sw.js` en minúscula. |
 | `config.js` | Configuración compartida (ver abajo). |
 | `logo.svg`, `favicon-32.png`, `favicon-48.png`, `apple-touch-icon.png` | Marca. El logo cambia de color con el tema (estilo dentro del SVG). |
 | `01_…sql` a `09_…sql` | Scripts de base de datos, en orden (ver abajo). |
@@ -52,7 +56,8 @@ Define `window.APP_CONFIG` con `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `NOMBRE_TIEN
 
 ### Reglas de seguridad (no romper)
 
-- La protección real es **RLS** con `es_usuario_activo()` (usuario con fila activa en `perfiles`). El registro público de usuarios debe estar desactivado.
+- La protección real es **RLS** con `es_usuario_activo()` (usuario con fila activa en `perfiles`). El registro público de usuarios debe estar desactivado: los usuarios nuevos entran solo por invitación de un socio.
+- Los formularios de ingreso llevan el enlace `<a class="olvide" href="clave.html">¿Olvidaste tu contraseña?</a>` (estilo en `nav.js`).
 - Maestros (`categorias`, `marcas`, `proveedores`, `productos`, `presentaciones`, `clientes`): los usuarios activos leen y escriben directo.
 - Transaccionales (`ventas`, `venta_detalle`, `movimientos_inventario`, `abonos`, `perfiles`, `pedidos`, `cotizaciones`, `gastos`, `movimientos_socios`…): **solo SELECT directo**. Toda escritura pasa por funciones `security definer`, con `revoke … from public, anon` y `grant … to authenticated`.
 - Vistas con `security_invoker = true` para que respeten RLS.
@@ -70,6 +75,7 @@ Define `window.APP_CONFIG` con `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `NOMBRE_TIEN
 8. `08_fracciones.sql`: **venta por partes** (ver abajo); reemplaza `v_catalogo`, `registrar_movimiento`, `registrar_venta` y `registrar_venta_caja`.
 9. `09_mezclas.sql`: **venta completa** (ver abajo): tabla maestra `mezclas`. No reemplaza funciones.
 10. `10_fotos_productos.sql`: `productos.imagen` (ruta en el bucket **público** `productos`, 1 MB, webp/jpeg/png) y políticas de Storage para usuarios activos. No reemplaza funciones ni vistas.
+11. `11_usuarios.sql`: `es_socio()`, `listar_usuarios()` (con correo de `auth.users` y si la invitación está pendiente) y `actualizar_usuario()` (nadie se desactiva ni se quita el rol de socio a sí mismo). Las invitaciones van por la Edge Function.
 
 **Cambios de base de datos:** siempre en un **script nuevo numerado** (`09_…sql`), sin tocar los anteriores, con un encabezado que diga qué hace y después de cuál se ejecuta. Si un script reemplaza una función, copia la versión **más reciente** (hoy `registrar_venta*` y `registrar_movimiento` viven en `08`). Al reemplazar una vista, conserva las columnas en el mismo orden y agrega las nuevas al final.
 
@@ -105,7 +111,7 @@ No se guarda en la base de datos: se deduce de precio y costo. Precio = costo ×
 
 ## Convenciones de código
 
-- Antes de cambiar una pantalla, léela: todas comparten estilos, el patrón de login, la barra de navegación y el encabezado con logo. La barra la dibuja `nav.js` (`<nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=4"></script>`); una pantalla nueva se agrega en `SECCIONES` de `nav.js` y cada pantalla llama `navPendientes(db)` al iniciar sesión.
+- Antes de cambiar una pantalla, léela: todas comparten estilos, el patrón de login, la barra de navegación y el encabezado con logo. La barra la dibuja `nav.js` (`<nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=5"></script>`); una pantalla nueva se agrega en `SECCIONES` de `nav.js` y cada pantalla llama `navPendientes(db)` al iniciar sesión.
 - Estados con un solo código: `.estado` + `.estado-pendiente` (`--aviso`), `.estado-confirmado` (`--acento`), `.estado-ok` (`--ok`), `.estado-mal` (`--alerta`), `.estado-neutro` (`--suave`); siempre con la palabra, y en alertas con ícono. Un solo botón primario por panel, alto mínimo 2.75rem.
 - Barras de desplazamiento: todas (diálogos, listas, tablas) con el mismo estilo que la de la ventana, según el tema. Cada página declara `color-scheme: light dark` en `:root`; no poner barras con colores propios.
 - `esc()` para todo lo que se inserte en HTML. Nada de `innerHTML` con datos sin escapar.

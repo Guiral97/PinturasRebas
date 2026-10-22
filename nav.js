@@ -1,8 +1,9 @@
 // Barra de navegación común a todas las pantallas.
-// Uso: <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=2"></script>
+// Uso: <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=5"></script>
 // justo en la cabecera (se ejecuta en el momento y llena la barra).
 // En el celular (≤ 700 px) la barra pasa abajo: Caja, Pedidos, Inventario, Cartera y "Más".
-// Después de iniciar sesión, cada pantalla llama navPendientes(db) para el contador de pedidos.
+// Después de iniciar sesión, cada pantalla llama navPendientes(db) para el contador de pedidos
+// y para mostrar "Usuarios" si quien entró es socio.
 (() => {
   const ICONOS = {
     caja: '<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V5h10v4M7 14h4"/>',
@@ -12,9 +13,10 @@
     cartera: '<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/>',
     gastos: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
     tablero: '<path d="M4 20V10M10 20V4M16 20v-7M2 20h20"/>',
+    usuarios: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.8a3.5 3.5 0 0 1 0 6.4M18.5 14.8c1.6.8 2.7 2.5 3 5.2"/>',
     mas: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'
   };
-  // [archivo, nombre, ícono, ¿va en la barra del celular?]
+  // [archivo, nombre, ícono, ¿va en la barra del celular?, ¿solo socios?]
   const SECCIONES = [
     ['index.html', 'Caja', 'caja', true],
     ['cotizaciones.html', 'Cotizaciones', 'cotizaciones', false],
@@ -22,23 +24,25 @@
     ['inventario.html', 'Inventario', 'inventario', true],
     ['cartera.html', 'Cartera', 'cartera', true],
     ['gastos.html', 'Gastos', 'gastos', false],
-    ['tablero.html', 'Tablero', 'tablero', false]
+    ['tablero.html', 'Tablero', 'tablero', false],
+    ['usuarios.html', 'Usuarios', 'usuarios', false, true]
   ];
   const icono = (k) => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONOS[k]}</svg>`;
   const pagina = decodeURIComponent(location.pathname.split('/').pop()) || 'index.html';
   const nav = document.getElementById('nav');
   if (!nav) return;
 
-  const enlace = ([href, nombre, ic, principal]) => `
-    <a href="${href}" class="${principal ? '' : 'nav-secundaria'}"${href === pagina ? ' aria-current="page"' : ''}>
+  const soloSocios = (socio) => (socio ? ' data-socio hidden' : '');
+  const enlace = ([href, nombre, ic, principal, socio]) => `
+    <a href="${href}" class="${principal ? '' : 'nav-secundaria'}"${href === pagina ? ' aria-current="page"' : ''}${soloSocios(socio)}>
       ${icono(ic)}<span data-t="${nombre}">${nombre}</span>${ic === 'pedidos' ? '<b class="nav-cuenta" data-pedidos hidden></b>' : ''}
     </a>`;
   const secundariaActual = SECCIONES.some(([h, , , p]) => h === pagina && !p);
   nav.innerHTML = SECCIONES.map(enlace).join('') + `
     <button type="button" class="nav-mas"${secundariaActual ? ' aria-current="page"' : ''} aria-expanded="false" aria-controls="navMenu">${icono('mas')}<span data-t="Más">Más</span></button>
     <div class="nav-menu" id="navMenu" hidden>
-      ${SECCIONES.filter((s) => !s[3]).map(([href, nombre, ic]) =>
-        `<a href="${href}"${href === pagina ? ' aria-current="page"' : ''}>${icono(ic)}<span data-t="${nombre}">${nombre}</span></a>`).join('')}
+      ${SECCIONES.filter((s) => !s[3]).map(([href, nombre, ic, , socio]) =>
+        `<a href="${href}"${href === pagina ? ' aria-current="page"' : ''}${soloSocios(socio)}>${icono(ic)}<span data-t="${nombre}">${nombre}</span></a>`).join('')}
     </div>`;
 
   const mas = nav.querySelector('.nav-mas'), menu = nav.querySelector('.nav-menu');
@@ -73,6 +77,7 @@
       color: #1A2127; background: #E3B94F;
     }
     #nav .nav-mas, #nav .nav-menu { display: none; }
+    #nav [hidden] { display: none !important; }
     @media (max-width: 1180px) and (min-width: 701px) {
       #nav { order: 3; flex-basis: 100%; justify-content: center; }
     }
@@ -105,11 +110,15 @@
        La pantalla de trabajo es main#app, o main#pos en la caja. */
     body:not(:has(main#app:not([hidden]), main#pos:not([hidden]))) #nav { display: none !important; }
     body:not(:has(main#app:not([hidden]), main#pos:not([hidden]))) { padding-bottom: 0; }
+    /* Formulario de ingreso, igual en todas las pantallas */
+    #login .olvide { justify-self: center; color: var(--acento); font-weight: 600; text-decoration: none; padding: .5rem; margin-top: -.4rem; }
+    #login .olvide:hover { text-decoration: underline; }
   `;
   document.head.appendChild(estilo);
 
   // Pedidos por atender (pendientes y confirmados). Sin conexión, simplemente no se muestra.
   window.navPendientes = async (db) => {
+    navSocio(db);
     const cuenta = nav.querySelector('[data-pedidos]');
     try {
       const { count, error } = await db.from('v_pedidos').select('id', { count: 'exact', head: true })
@@ -120,4 +129,12 @@
       cuenta.setAttribute('aria-label', `${count} por atender`);
     } catch (_) { /* sin conexión */ }
   };
+
+  // "Usuarios" solo para socios (11_usuarios.sql). La página igual lo vuelve a revisar.
+  async function navSocio(db) {
+    try {
+      const { data, error } = await db.rpc('es_socio');
+      nav.querySelectorAll('[data-socio]').forEach((a) => (a.hidden = !!error || !data));
+    } catch (_) { /* sin conexión */ }
+  }
 })();

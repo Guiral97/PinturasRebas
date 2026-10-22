@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usuarios</title>
+<link rel="icon" href="favicon-48.png" type="image/png" sizes="48x48">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  :root {
+    color-scheme: light dark;   /* barras de desplazamiento y controles según el tema */
+    --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
+    --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
+    --alerta: #A1281F; --ok: #2F6B3A; --aviso: #8A6410; --radio: 6px;
+    font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
+      --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
+      --alerta: #E57B72; --ok: #7FC08A; --aviso: #E3B94F;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font-size: 16px; line-height: 1.45; }
+  [hidden] { display: none !important; }
+  .num { font-variant-numeric: tabular-nums; }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  input, select { font: inherit; color: var(--tinta); background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: .5rem .65rem; width: 100%; min-height: 2.75rem; }
+  label, legend { font-weight: 600; }
+  .campo { display: grid; gap: .3rem; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.75rem;
+    border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .45rem .9rem;
+    border-radius: 8px; white-space: nowrap; text-decoration: none; font-weight: 600;
+  }
+  .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
+  .btn-primario:disabled, .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-texto { border: 0; background: none; color: var(--acento); padding: .2rem .3rem; font-weight: 600; min-height: 2.75rem; }
+  h1, h2 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; margin: 0; }
+  h2 { font-size: 1.5rem; }
+  .ayuda { color: var(--suave); font-size: .9rem; margin: 0; }
+
+  /* Estados (iguales en toda la app) */
+  .estado { display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; font-weight: 700; line-height: 1.4; padding: .05rem .55rem; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+  .estado-pendiente { color: var(--aviso); border-color: color-mix(in srgb, var(--aviso) 40%, transparent); background: color-mix(in srgb, var(--aviso) 14%, transparent); }
+  .estado-ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+  .estado-neutro { color: var(--suave); border-color: var(--linea); background: color-mix(in srgb, var(--suave) 12%, transparent); }
+
+  .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
+  .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; margin-right: auto; }
+  #usuario { color: var(--suave); }
+
+  #login { max-width: 22rem; margin: 12vh auto 0; padding: 1.5rem; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: 1rem; }
+  #login h1 { font-size: 1.8rem; }
+  #loginError { color: var(--alerta); margin: 0; min-height: 1.4em; }
+
+  main { max-width: 72rem; margin: 0 auto; padding: 1.4rem 1.5rem 3rem; display: grid; gap: 1.15rem; }
+  .cab-pagina { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; }
+  .cab-pagina h1 { font-size: 2.1rem; margin-right: auto; }
+  .nota-caja { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; padding: 1rem 1.15rem; margin: 0; }
+
+  .cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) 22rem; gap: 1.25rem; align-items: start; }
+  .panel { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
+  .panel-cab { padding: .85rem 1rem; border-bottom: 1px solid var(--linea); }
+
+  /* Lista de usuarios */
+  #lista { list-style: none; margin: 0; padding: 0; }
+  #lista li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .35rem 1rem; align-items: center; padding: .75rem 1rem; border-bottom: 1px solid var(--linea); }
+  #lista li:last-child { border-bottom: 0; }
+  #lista .nom { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .55rem; }
+  #lista .det { color: var(--suave); font-size: .875rem; overflow-wrap: anywhere; }
+  #lista .acciones { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .25rem .5rem; }
+  #lista li.inactivo .nom { color: var(--suave); }
+  .vacio { color: var(--suave); padding: 1.25rem 1rem; margin: 0; }
+
+  /* Invitar */
+  #frmInvitar { display: grid; gap: .9rem; padding: 1rem; }
+  .segmentos { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; }
+  .segmentos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
+  fieldset { border: 0; margin: 0; padding: 0; }
+  legend { padding: 0; margin-bottom: .35rem; }
+
+  /* Diálogo */
+  dialog { border: 1px solid var(--linea); border-radius: 10px; background: var(--panel); color: var(--tinta); padding: 0; width: min(26rem, calc(100% - 2rem)); }
+  dialog::backdrop { background: rgba(10, 14, 18, .45); }
+  dialog form { display: grid; gap: 1rem; padding: 1.25rem; }
+  .check { display: flex; align-items: center; gap: .5rem; font-weight: 600; min-height: 2.75rem; }
+  .check input { width: 1.15rem; height: 1.15rem; min-height: 0; }
+  .dlg-pie { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
+  .error-dlg { color: var(--alerta); font-weight: 600; margin: 0; min-height: 1.4em; }
+
+  #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: 8px; z-index: 50; }
+  #aviso.error { background: var(--alerta); color: #fff; }
+
+  /* ===================== Responsivo (común a todas las pantallas) ===================== */
+  html { -webkit-text-size-adjust: 100%; }
+  main > *, .cuerpo > *, dialog form > * { min-width: 0; }
+  @media (max-width: 1180px) {
+    .barra { flex-wrap: wrap; row-gap: .55rem; }
+  }
+  @media (max-width: 900px) {
+    .cuerpo { grid-template-columns: 1fr; }
+    .cuerpo > .panel:last-child { order: -1; }   /* invitar primero */
+  }
+  /* Celular */
+  @media (max-width: 700px) {
+    .barra { padding: .6rem 1rem; gap: .5rem .6rem; }
+    .tienda { font-size: 1.25rem; }
+    #usuario { display: none; }
+    #salir { padding: .4rem .7rem; font-size: .9rem; }
+    main { padding: 1rem; gap: .9rem; }
+    .cab-pagina h1 { font-size: 1.8rem; }
+    #aviso { left: .75rem; right: .75rem; transform: none; max-width: none; bottom: .75rem; }
+    #login { margin: 6vh 1rem 0; }
+    #lista li { grid-template-columns: 1fr; }
+    #lista .acciones { justify-content: flex-start; }
+  }
+
+  /* Logo junto al nombre */
+  .marca { display: flex; align-items: center; gap: .55rem; margin-right: auto; color: inherit; text-decoration: none; min-width: 0; }
+  .marca .tienda { margin-right: 0; }
+  .logo { height: 3.3rem; width: auto; display: block; flex: none; margin: -.45rem 0; }
+  @media (max-width: 700px) { .logo { height: 2.9rem; margin: -.3rem 0; } }
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=5"></script>
+  <span id="usuario"></span>
+  <button class="btn" id="salir" hidden>Cerrar sesión</button>
+</header>
+
+<form id="login" hidden>
+  <h1>Iniciar sesión</h1>
+  <div class="campo"><label for="email">Correo</label><input id="email" type="email" autocomplete="username" required></div>
+  <div class="campo"><label for="clave">Contraseña</label><input id="clave" type="password" autocomplete="current-password" required></div>
+  <p id="loginError" role="alert"></p>
+  <button class="btn btn-primario" type="submit">Entrar</button>
+  <a class="olvide" href="clave.html">¿Olvidaste tu contraseña?</a>
+</form>
+
+<main id="app" hidden>
+  <div class="cab-pagina">
+    <h1>Usuarios</h1>
+    <a class="btn" href="clave.html">Cambiar mi contraseña</a>
+  </div>
+
+  <p class="nota-caja" id="noSocio" hidden>Solo los socios pueden invitar y administrar usuarios. Si necesitas acceso para alguien, pídeselo a un socio.</p>
+
+  <div class="cuerpo" id="contenido" hidden>
+    <section class="panel" aria-labelledby="tituloLista">
+      <div class="panel-cab"><h2 id="tituloLista">Quiénes entran a la app</h2></div>
+      <ul id="lista"></ul>
+    </section>
+
+    <section class="panel" aria-labelledby="tituloInvitar">
+      <div class="panel-cab">
+        <h2 id="tituloInvitar">Invitar usuario</h2>
+        <p class="ayuda">Le llega un correo para crear su contraseña.</p>
+      </div>
+      <form id="frmInvitar">
+        <div class="campo"><label for="invNombre">Nombre</label><input id="invNombre" autocomplete="off" required></div>
+        <div class="campo"><label for="invEmail">Correo</label><input id="invEmail" type="email" autocomplete="off" required></div>
+        <fieldset>
+          <legend>Rol</legend>
+          <div class="segmentos" id="invRol">
+            <button type="button" class="btn" data-rol="vendedor" aria-pressed="true">Vendedor</button>
+            <button type="button" class="btn" data-rol="socio" aria-pressed="false">Socio</button>
+          </div>
+          <p class="ayuda" style="margin-top:.4rem">Los socios además pueden administrar usuarios.</p>
+        </fieldset>
+        <button class="btn btn-primario" type="submit" id="invBtn">Enviar invitación</button>
+      </form>
+    </section>
+  </div>
+</main>
+
+<dialog id="dlgEditar" aria-labelledby="edTitulo">
+  <form id="frmEditar" method="dialog">
+    <h2 id="edTitulo">Editar usuario</h2>
+    <p class="ayuda" id="edEmail"></p>
+    <div class="campo"><label for="edNombre">Nombre</label><input id="edNombre" required></div>
+    <div class="campo"><label for="edRol">Rol</label>
+      <select id="edRol"><option value="vendedor">Vendedor</option><option value="socio">Socio</option></select>
+    </div>
+    <label class="check"><input type="checkbox" id="edActivo"> Puede entrar a la app (activo)</label>
+    <p class="error-dlg" id="edError" role="alert"></p>
+    <div class="dlg-pie">
+      <button type="button" class="btn" id="edCancelar">Cancelar</button>
+      <button type="submit" class="btn btn-primario" id="edGuardar">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="aviso" role="status" hidden></div>
+
+<script>
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, NOMBRE_TIENDA } = window.APP_CONFIG;
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const $ = (s) => document.querySelector(s);
+  const fCorta = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' });
+
+  document.title = `Usuarios | ${NOMBRE_TIENDA}`;
+  $('#nombreTienda').textContent = NOMBRE_TIENDA;
+
+  let usuarios = [];        // listar_usuarios()
+  let yo = null;            // id de quien tiene la sesión
+  let editando = null;      // usuario abierto en el diálogo
+  let rolInvitar = 'vendedor';
+  const urlClave = () => new URL('clave.html', location.href).href;
+
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  let tAviso;
+  function aviso(texto, tipo = 'info') {
+    const a = $('#aviso');
+    a.textContent = texto;
+    a.className = tipo === 'error' ? 'error' : '';
+    a.hidden = false;
+    clearTimeout(tAviso);
+    tAviso = setTimeout(() => (a.hidden = true), tipo === 'error' ? 7000 : 4000);
+  }
+
+  // ---------- Sesión ----------
+  async function mostrarSesion(session) {
+    const con = !!session;
+    $('#login').hidden = con;
+    $('#app').hidden = !con;
+    $('#salir').hidden = !con;
+    if (!con) return;
+    yo = session.user.id;
+    const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
+    if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
+    $('#usuario').textContent = perfil?.nombre ?? session.user.email;
+    navPendientes(db);
+
+    const { data: socio, error } = await db.rpc('es_socio');
+    if (error) return aviso(/es_socio/.test(error.message)
+      ? 'Falta ejecutar 11_usuarios.sql en Supabase.' : 'No se pudo revisar tu rol: ' + error.message, 'error');
+    $('#noSocio').hidden = !!socio;
+    $('#contenido').hidden = !socio;
+    if (socio) cargarUsuarios();
+  }
+
+  $('#login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('#loginError').textContent = '';
+    const { error } = await db.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#clave').value });
+    if (error) $('#loginError').textContent = 'Correo o contraseña incorrectos.';
+  });
+  $('#salir').addEventListener('click', () => db.auth.signOut());
+
+  // ---------- Lista ----------
+  async function cargarUsuarios() {
+    const { data, error } = await db.rpc('listar_usuarios');
+    if (error) return aviso(error.message, 'error');
+    usuarios = data;
+    pintarUsuarios();
+  }
+
+  function estadoDe(u) {
+    if (!u.activo) return '<span class="estado estado-neutro">Inactivo</span>';
+    if (u.pendiente) return '<span class="estado estado-pendiente">Invitación pendiente</span>';
+    return '<span class="estado estado-ok">Activo</span>';
+  }
+
+  function pintarUsuarios() {
+    if (!usuarios.length) {
+      $('#lista').innerHTML = '<li class="vacio">Todavía no hay usuarios.</li>';
+      return;
+    }
+    $('#lista').innerHTML = usuarios.map((u) => `
+      <li class="${u.activo ? '' : 'inactivo'}">
+        <div>
+          <div class="nom">${esc(u.nombre)}${u.id === yo ? ' <span class="ayuda">(tú)</span>' : ''} ${estadoDe(u)}</div>
+          <div class="det">${esc(u.email)} · ${u.rol === 'socio' ? 'Socio' : 'Vendedor'} · ${
+            u.ultimo_ingreso ? `Último ingreso: ${fCorta.format(new Date(u.ultimo_ingreso))}` : 'Nunca ha entrado'}</div>
+        </div>
+        <div class="acciones">
+          ${u.activo && u.pendiente ? `<button type="button" class="btn-texto" data-reenviar="${u.id}">Reenviar invitación</button>` : ''}
+          <button type="button" class="btn-texto" data-editar="${u.id}">Editar</button>
+        </div>
+      </li>`).join('');
+  }
+
+  $('#lista').addEventListener('click', (e) => {
+    const ed = e.target.closest('[data-editar]');
+    if (ed) return abrirEditar(usuarios.find((u) => u.id === ed.dataset.editar));
+    const re = e.target.closest('[data-reenviar]');
+    if (re) reenviar(usuarios.find((u) => u.id === re.dataset.reenviar), re);
+  });
+
+  // ---------- Invitar (Edge Function invitar-usuario) ----------
+  $('#invRol').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-rol]');
+    if (!b) return;
+    rolInvitar = b.dataset.rol;
+    $('#invRol').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  });
+
+  // Mensaje de error de la función (viene en el cuerpo de la respuesta)
+  async function errorFuncion(error) {
+    try {
+      const cuerpo = await error.context.json();
+      return { mensaje: cuerpo.error || error.message, codigo: cuerpo.codigo };
+    } catch (_) {
+      return { mensaje: /Failed to send|fetch|not found|404/i.test(error.message)
+        ? 'No se encontró la función "invitar-usuario" en Supabase. Revisa supabase/README.md.' : error.message };
+    }
+  }
+
+  async function invitar(nombre, email, rol) {
+    const { error } = await db.functions.invoke('invitar-usuario', { body: { nombre, email, rol, redirectTo: urlClave() } });
+    return error ? errorFuncion(error) : null;
+  }
+
+  $('#frmInvitar').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nombre = $('#invNombre').value.trim(), email = $('#invEmail').value.trim();
+    const btn = $('#invBtn');
+    btn.disabled = true;
+    btn.textContent = 'Enviando…';
+    const fallo = await invitar(nombre, email, rolInvitar);
+    btn.disabled = false;
+    btn.textContent = 'Enviar invitación';
+    if (fallo) {
+      return aviso(fallo.codigo === 'ya_registrado'
+        ? 'Ese correo ya tiene una cuenta. Si está en la lista como inactivo, edítalo y actívalo.' : fallo.mensaje, 'error');
+    }
+    aviso(`Invitación enviada a ${email}. Debe abrir el correo y crear su contraseña.`);
+    $('#frmInvitar').reset();
+    cargarUsuarios();
+  });
+
+  // Invitado que no ha creado su contraseña: se reenvía la invitación; si ya
+  // abrió el enlace (la cuenta quedó confirmada), le llega el de recuperar contraseña.
+  async function reenviar(u, btn) {
+    btn.disabled = true;
+    let fallo = await invitar(u.nombre, u.email, u.rol);
+    if (fallo?.codigo === 'ya_registrado') {
+      const { error } = await db.auth.resetPasswordForEmail(u.email, { redirectTo: urlClave() });
+      fallo = error ? { mensaje: error.message } : null;
+    }
+    btn.disabled = false;
+    if (fallo) return aviso(fallo.mensaje, 'error');
+    aviso(`Correo reenviado a ${u.email}.`);
+  }
+
+  // ---------- Editar ----------
+  const dlg = $('#dlgEditar');
+  function abrirEditar(u) {
+    editando = u;
+    $('#edTitulo').textContent = `Editar a ${u.nombre}`;
+    $('#edEmail').textContent = u.email;
+    $('#edNombre').value = u.nombre;
+    $('#edRol').value = u.rol;
+    $('#edActivo').checked = u.activo;
+    // Nadie se desactiva ni se quita el rol de socio a sí mismo
+    $('#edRol').disabled = $('#edActivo').disabled = u.id === yo;
+    $('#edError').textContent = u.id === yo ? 'Tu rol y tu acceso solo los puede cambiar otro socio.' : '';
+    dlg.showModal();
+    $('#edNombre').focus();
+  }
+  $('#edCancelar').addEventListener('click', () => dlg.close());
+
+  $('#frmEditar').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const activo = $('#edActivo').checked;
+    if (editando.activo && !activo && !confirm(`${editando.nombre} ya no podrá entrar a la app. ¿Continuar?`)) return;
+    const btn = $('#edGuardar');
+    btn.disabled = true;
+    const { error } = await db.rpc('actualizar_usuario', {
+      p_id: editando.id, p_nombre: $('#edNombre').value.trim(), p_rol: $('#edRol').value, p_activo: activo
+    });
+    btn.disabled = false;
+    if (error) { $('#edError').textContent = error.message; return; }
+    dlg.close();
+    aviso('Usuario actualizado.');
+    if (editando.id === yo) $('#usuario').textContent = $('#edNombre').value.trim();
+    cargarUsuarios();
+  });
+
+  // ---------- Inicio ----------
+  db.auth.onAuthStateChange((evento, s) => {
+    if (evento === 'TOKEN_REFRESHED') return;
+    setTimeout(() => mostrarSesion(s), 0);
+  });
+</script>
+</body>
+</html>
