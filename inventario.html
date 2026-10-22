@@ -75,6 +75,9 @@
   .cab-acciones { margin-left: auto; display: flex; flex-wrap: wrap; gap: .5rem; }
   .cab-acciones .btn { min-height: 2.75rem; }
   .cab-acciones a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+  /* Menú ⋯ de la cabecera: solo existe en celular */
+  .cab-mas { display: contents; }
+  .cab-mas-btn, .txt-corto { display: none; }
 
   /* Pestañas: control segmentado */
   .pestanas {
@@ -151,6 +154,7 @@
   .cat-producto .info { color: var(--suave); font-size: .875rem; }
   .cat-producto .btn-texto { margin-left: auto; min-height: 2.5rem; }
   .cat-producto .miniatura { width: 2.5rem; height: 2.5rem; object-fit: cover; border-radius: 4px; border: 1px solid var(--linea); background: var(--panel); flex: none; }
+  .cat-producto .sin-foto { display: none; }   /* ícono en lugar de foto: solo en celular */
   /* Foto del producto en el diálogo */
   .foto-prod { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem; margin: .25rem 0 .9rem; }
   .foto-prod img, .foto-vacia { width: 6rem; height: 6rem; object-fit: cover; border-radius: var(--radio); border: 1px solid var(--linea); background: var(--fondo); flex: none; }
@@ -463,7 +467,8 @@
     #usuario { display: none; }
     #salir { padding: .4rem .7rem; font-size: .9rem; }
     main { padding: 1rem; }
-    dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
+    /* Ancho, borde y relleno de la hoja los pone nav.js (dialog[open], .dlg-cuerpo, .dlg-pie) */
+    dialog { max-height: 92dvh; }
     .dlg-acciones > *, .acciones > .btn { flex: 1 1 auto; text-align: center; }
     #aviso { left: .75rem; right: .75rem; transform: none; max-width: none; bottom: .75rem; }
     #login { margin: 6vh 1rem 0; }
@@ -477,51 +482,197 @@
   /* Inventario */
   .tabla-caja th:first-child, .tabla-caja td:first-child { min-width: 12rem; white-space: normal; }
   .visually-hidden { left: 0; top: 0; }
+  /* ===================== Celular (≤ 700 px): versión compacta del inventario ===================== */
   @media (max-width: 700px) {
-    .cab-pagina h1 { font-size: 1.8rem; }
-    .pestanas { width: 100%; }
-    .pestanas button { flex: 1 0 auto; }
-    .cab-acciones { margin-left: 0; width: 100%; }
-    .cab-acciones .btn { flex: 1 1 auto; }
-    .herramientas .buscar { max-width: none; }
-    /* Filtros: categoría, marca y orden se abren con el botón "Filtros" */
-    .panel-filtros { padding: .85rem; }
-    .pf-buscar { flex-basis: 10rem; }
-    .pf-abrir { display: inline-flex; }
+    /* Cabecera en una fila: título, "+ Producto" y ⋯; las pestañas debajo */
+    .cab-pagina { gap: .5rem; margin-bottom: .75rem; }
+    .cab-pagina h1 { margin-right: auto; }
+    .cab-acciones { order: 1; margin-left: auto; flex-wrap: nowrap; gap: .4rem; position: relative; }
+    .cab-acciones #nuevoProducto { min-height: 2.25rem; padding: .2rem .8rem; }
+    .txt-largo { display: none; }
+    .txt-corto { display: inline; }
+    .cab-acciones .cab-mas-btn { display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; min-height: 2.25rem; height: 2.25rem; padding: 0; }
+    .cab-mas-btn[aria-expanded="true"] { border-color: var(--acento); color: var(--acento); }
+    .cab-mas {
+      display: none; position: absolute; right: 0; top: calc(100% + .35rem); z-index: 30; min-width: 14rem;
+      background: var(--panel); border: 1px solid var(--linea); border-radius: 10px; padding: .3rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
+    }
+    .cab-mas.abierto { display: grid; }
+    .cab-acciones .cab-mas .btn { display: flex; justify-content: flex-start; width: 100%; min-height: 2.75rem; padding: .5rem .8rem; border: 0; background: none; text-align: left; }
+    .cab-acciones .cab-mas .btn:hover { background: var(--fondo); }
+
+    /* Pestañas compactas en una tira que se desplaza; la última queda cortada como pista */
+    .pestanas { order: 2; flex: 1 1 100%; width: 100%; flex-wrap: nowrap; gap: .15rem; padding: .2rem; border-radius: 9px; scroll-padding-inline: .5rem; }
+    .pestanas::after { content: ""; flex: 0 0 .75rem; }
+    .pestanas button { flex: 1 0 auto; min-height: 2.125rem; padding: .2rem .75rem; font-size: .9rem; border-radius: 6px; }
+
+    /* Catálogo: buscar + Filtros en una fila de 38 px */
+    .panel-filtros { padding: .65rem; gap: .6rem; margin-bottom: .75rem; }
+    .pf-fila { gap: .5rem; }
+    .pf-buscar { flex: 1 1 10rem; }
+    .pf-buscar-etq { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    #buscarCat, #pfAbrir { min-height: 2.375rem; }
+    #pfAbrir { display: inline-flex; padding: .25rem .75rem; }
     .pf-mas { display: none; }
-    .panel-filtros.abierto .pf-mas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; flex: 1 1 100%; }
+    .panel-filtros.abierto .pf-mas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; flex: 1 1 100%; }
     .panel-filtros.abierto .pf-mas .campo:last-child { grid-column: 1 / -1; }
-    .pf-segunda .filtros { flex-wrap: nowrap; overflow-x: auto; margin: 0 -.85rem; padding: 0 .85rem .2rem; }
-    .pf-segunda .filtro { flex: none; }
+    #panelFiltros .pf-mas select { min-height: 2.375rem; }
+    .pf-segunda { gap: .5rem; }
+    .pf-segunda .filtros { flex-wrap: nowrap; overflow-x: auto; margin: 0 -.65rem; padding: 0 .65rem .15rem; gap: .35rem; }
+    .pf-segunda .filtro { flex: none; min-height: 2rem; padding: 0 .7rem; font-size: .85rem; }
     .pf-segunda .pf-etq { display: none; }
     .pf-mostrar { flex: 1 1 100%; }
     .seg-estado { flex: 1; }
-    .seg-estado button { flex: 1; padding: 0 .4rem; }
-    /* El catálogo pasa a tarjetas: cada presentación en dos renglones */
+    .seg-estado button { flex: 1; min-height: 2.25rem; padding: 0 .4rem; font-size: .9rem; }
+    .pf-resumen { padding-top: .5rem; min-height: 0; font-size: .85rem; gap: .35rem; }
+    .pf-quitar { min-height: 2.25rem; }
+    .pf-resumen .btn-texto { min-height: 2.25rem; }
+
+    /* Lista del catálogo: cabecera del producto con foto (44 px) y una fila de dos renglones por presentación */
+    .tabla-caja th:first-child, .tabla-caja td:first-child { min-width: 0; }
     .cat-tabla { min-width: 0; }
     .cat-tabla thead { display: none; }
-    .cat-tabla tbody { display: block; }
-    .cat-tabla tr { display: block; }
-    .cat-tabla tr.cat-presentacion {
-      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .15rem .75rem;
-      padding: .6rem .8rem .6rem 1.4rem; border-bottom: 1px solid var(--linea);
-    }
-    .cat-tabla tr.cat-presentacion td { border: 0; padding: 0; text-align: left; }
-    .cat-tabla tr.cat-presentacion td.pres-nombre { grid-column: 1; font-weight: 600; }
-    .cat-tabla tr.cat-presentacion td.c-precio { grid-column: 2; grid-row: 1; text-align: right; }
-    .cat-tabla tr.cat-presentacion td.c-stock { grid-column: 1; }
-    .cat-tabla tr.cat-presentacion td.c-gan { grid-column: 2; grid-row: 2; text-align: right; }
-    .cat-tabla tr.cat-presentacion td.c-codigo { grid-column: 1; font-size: .875rem; }
-    .cat-tabla tr.cat-presentacion td.c-acciones { grid-column: 2; grid-row: 3; }
-    .cat-tabla tr.cat-producto td { display: block; border-bottom: 1px solid var(--linea); }
+    .cat-tabla tbody, .cat-tabla tr { display: block; }
     .cat-tabla td.vacio { display: block; }
-    .dos { grid-template-columns: 1fr; }
-    .cinta { padding: .85rem 1rem .95rem; }
+    .cat-tabla tr.cat-producto td { display: block; padding: .5rem .7rem; border-bottom: 1px solid var(--linea); }
+    .cat-producto .cab { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr) auto; gap: 0 .65rem; align-items: center; }
+    .cat-producto .miniatura { grid-column: 1; grid-row: 1 / span 2; width: 2.75rem; height: 2.75rem; }
+    .cat-producto .sin-foto { display: flex; align-items: center; justify-content: center; color: var(--suave); background: var(--fondo); }
+    .cat-producto strong { grid-column: 2; grid-row: 1; font-size: 1rem; line-height: 1.25; overflow-wrap: anywhere; }
+    .cat-producto .info { grid-column: 2; grid-row: 2; font-size: .8rem; line-height: 1.3; }
+    .cat-producto .btn-texto { grid-column: 3; grid-row: 1 / span 2; margin: 0; min-height: 2.5rem; padding: 0 .4rem; }
+    .cat-tabla tr.cat-presentacion {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: .1rem .6rem; align-items: center;
+      padding: .4rem .7rem .45rem 1.1rem; border-bottom: 1px solid var(--linea);
+    }
+    .cat-tabla tr.cat-presentacion td { border: 0; padding: 0; text-align: left; min-width: 0; }
+    .cat-tabla tr.cat-presentacion td.pres-nombre { grid-column: 1 / 4; grid-row: 1; font-weight: 600; }
+    .cat-tabla tr.cat-presentacion td.c-precio { grid-column: 4; grid-row: 1; text-align: right; font-weight: 600; }
+    .cat-tabla tr.cat-presentacion td.c-codigo { grid-column: 1; grid-row: 2; font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cat-tabla tr.cat-presentacion td.c-acciones { grid-column: 2; grid-row: 2; }
+    .cat-tabla tr.cat-presentacion td.c-gan { grid-column: 3; grid-row: 2; text-align: right; font-size: .8rem; }
+    .cat-tabla tr.cat-presentacion td.c-stock { grid-column: 4; grid-row: 2; text-align: right; font-size: .8rem; white-space: normal; }
+    .cat-tabla td.c-gan small { display: none; }
+    .cat-tabla .c-acciones .btn-texto { min-height: 2.25rem; padding: 0 .25rem; font-size: .85rem; }
+    .cat-tabla .btn-codigo { font-size: .8rem; padding: .15rem .45rem; min-height: 2rem; }
+    .cat-tabla .c-stock .stock-bajo {
+      gap: .2rem; padding: 0 .45rem; border-radius: 999px; line-height: 1.5; font-size: .78rem; white-space: nowrap;
+      border: 1px solid color-mix(in srgb, var(--aviso) 40%, transparent); background: color-mix(in srgb, var(--aviso) 14%, transparent);
+    }
+    .cat-tabla .c-stock .stock-bajo svg { width: 12px; height: 12px; }
+    .cat-tabla .c-stock .abierto { display: block; margin: .1rem 0 0; font-size: .72rem; }
+    .cat-tabla .c-stock .stock-nota { font-size: .75rem; }
+
+    /* Tablas anchas (movimientos y clientes): filas de dos renglones en vez de desplazar de lado */
+    .tabla-movs, .tabla-cli { min-width: 0; }
+    .tabla-movs thead, .tabla-cli thead { display: none; }
+    .tabla-movs tbody, .tabla-cli tbody { display: block; }
+    .tabla-movs tr, .tabla-cli tr {
+      display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: .05rem .6rem; align-items: baseline;
+      padding: .45rem .75rem; border-bottom: 1px solid var(--linea);
+    }
+    .tabla-movs tr:last-child, .tabla-cli tr:last-child { border-bottom: 0; }
+    .tabla-movs td, .tabla-cli td { border: 0; padding: 0; min-width: 0; }
+    .tabla-movs td:nth-child(2) { grid-column: 1 / 4; grid-row: 1; font-weight: 600; }
+    .tabla-movs td:nth-child(2) small { display: inline; font-weight: 400; }
+    .tabla-movs td:nth-child(4) { grid-column: 4; grid-row: 1; }
+    .tabla-movs td:nth-child(1), .tabla-movs td:nth-child(3), .tabla-movs td:nth-child(5) { grid-row: 2; font-size: .8rem; color: var(--suave); }
+    .tabla-movs td:nth-child(1) { grid-column: 1; }
+    .tabla-movs td:nth-child(3) { grid-column: 2; }
+    .tabla-movs td:nth-child(5) { grid-column: 3 / 5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tabla-cli td:nth-child(1) { grid-column: 1 / 4; grid-row: 1; font-weight: 600; }
+    .tabla-cli td:nth-child(1) small { font-weight: 400; font-size: .8rem; }
+    .tabla-cli td:nth-child(5) { grid-column: 4; grid-row: 1 / span 2; align-self: center; }
+    .tabla-cli td:nth-child(2), .tabla-cli td:nth-child(3), .tabla-cli td:nth-child(4) { grid-row: 2; font-size: .8rem; color: var(--suave); }
+    .tabla-cli td:nth-child(2) { grid-column: 1; }
+    .tabla-cli td:nth-child(3) { grid-column: 2; }
+    .tabla-cli td:nth-child(4) { grid-column: 3; }
+    .tabla-cli .btn-texto { min-height: 2.5rem; }
+    .tabla-movs td.vacio, .tabla-cli td.vacio { grid-column: 1 / -1; grid-row: auto; padding: .75rem 0; font-size: inherit; font-weight: 400; }
+
+    /* Formularios (Entradas, Carga rápida, Clientes) */
+    .entradas, .clientes { gap: .85rem; }
+    .tarjeta { padding: .85rem; gap: .75rem; }
+    .tarjeta h2 { font-size: 1.3rem; }
+    .campo { gap: .2rem; }
+    .dos { grid-template-columns: 1fr; gap: .6rem; }
+    .dos:not(:has(.con-boton)) { grid-template-columns: 1fr 1fr; }
+    .tres { gap: .5rem; }
+    .campo small { font-size: .82rem; }
+    .movs { margin-top: 1rem; }
+    .carga-ayuda { font-size: .85rem; margin-top: .5rem; }
+    .herramientas { margin-bottom: .6rem; }
+    .herramientas .buscar { max-width: none; }
+    .cinta { padding: .75rem .85rem .85rem; }
+    .cinta label { margin-bottom: .35rem; }
     .cinta .fila { flex-wrap: wrap; }
     .cinta input { flex: 1 1 12rem; }
+    .lista-opciones button { padding: .55rem .75rem; }
+
+    /* Diálogo de producto como hoja: foto junto al nombre, marca y categoría en dos columnas */
+    dialog .dlg-cuerpo > h2 { font-size: 1.3rem; }
+    #frmProducto > .dlg-cuerpo { grid-template-columns: 3.5rem minmax(0, 1fr) 3.5rem minmax(0, 1fr); gap: .65rem .6rem; }
+    #frmProducto > .dlg-cuerpo > * { grid-column: 1 / -1; }
+    #frmProducto > .dlg-cuerpo > h2 { grid-row: 1; }
+    #frmProducto .grilla-prod, #frmProducto .foto-prod { display: contents; }
+    #frmProducto #prodFoto, #frmProducto #prodFotoVacia { grid-column: 1; grid-row: 2; align-self: end; width: 3.5rem; height: 3.5rem; font-size: .72rem; text-align: center; line-height: 1.1; }
+    #frmProducto .grilla-prod > .campo:nth-child(1) { grid-column: 2 / -1; grid-row: 2; }
+    #frmProducto .grilla-prod > .campo:nth-child(2) { grid-column: 1 / 3; grid-row: 3; }
+    #frmProducto .grilla-prod > .campo:nth-child(3) { grid-column: 3 / -1; grid-row: 3; }
+    #frmProducto .grilla-prod > .campo:nth-child(4) { grid-column: 1 / 3; grid-row: 4; }
+    #frmProducto > .dlg-cuerpo > .campo { grid-column: 3 / -1; grid-row: 4; }
+    #frmProducto .foto-acciones { grid-column: 1 / -1; grid-row: 5; gap: .25rem; }
+    #frmProducto .foto-acciones .et-nota { font-size: .8rem; }
+    #frmProducto .campo label { font-size: .85rem; }
+    #frmProducto .con-boton .btn { padding: .3rem .55rem; }
+    .pres-cab h3 { font-size: 1.15rem; }
+
+    /* Presentaciones: costo, % y precio en tres columnas */
+    .pres-lista { gap: .75rem; }
+    .grupo-pres { border-radius: 8px; }
+    .pres-completa { padding: .7rem .65rem .75rem; gap: .6rem; }
+    .pres-titulo h4 { font-size: 1.1rem; }
+    .pres-id { grid-template-columns: 1fr 1fr; gap: .5rem; }
+    .pres-id > .campo:last-child { grid-column: 1 / -1; }
+    .pres .campo label { font-size: .8rem; }
+    .calculo { padding: .55rem .6rem; gap: .45rem; }
+    .pres-precio > .ganancia { padding: .5rem .6rem; }
+    .g-valor { font-size: 1.35rem; }
+    .pres-stock { gap: .5rem; }
+
+    /* Partes como filas compactas: se vende como · % · precio arriba; fracción, código y mínimo; costo, ganancia y activa */
+    .partes { padding: .65rem; gap: .6rem; }
+    .partes h4 { font-size: 1.05rem; }
+    .partes-cab p { font-size: .82rem; }
+    .chip { min-height: 2.25rem; padding: .2rem .7rem; }
+    .pres.fraccion { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .35rem .45rem; padding: .6rem; align-items: start; }
+    .pres.fraccion input { padding: .3rem .45rem; }
+    .pres.fraccion .con-sufijo input { padding-right: 1.4rem; }
+    .pres.fraccion .con-sufijo span { right: .45rem; }
+    .pres.fraccion .etq { font-size: .72rem; margin-bottom: .1rem; }
+    .pres.fraccion .c-nombre { grid-column: 1 / 3; grid-row: 1; }
+    .pres.fraccion .c-pct { grid-column: 3; grid-row: 1; }
+    .pres.fraccion .c-precio { grid-column: 4; grid-row: 1; }
+    .pres.fraccion .c-frac { grid-column: 1; grid-row: 2; }
+    .pres.fraccion .c-codigo { grid-column: 2 / 4; grid-row: 2; }
+    .pres.fraccion .c-min { grid-column: 4; grid-row: 2; }
+    .pres.fraccion .c-costo { grid-column: 1; grid-row: 3; }
+    .pres.fraccion .c-costo .dato { padding: .1rem 0; }
+    .pres.fraccion .c-gana { grid-column: 2 / 4; grid-row: 3; }
+    .pres.fraccion .c-activa { grid-column: 4; grid-row: 3; align-self: end; min-height: 2.25rem; }
+    .pres.fraccion .c-quitar { grid-column: 1 / -1; grid-row: 4; justify-self: end; }
+    .pres.fraccion .c-quitar:empty { display: none; }
+    .partes-pie { padding: .5rem .6rem; font-size: .8rem; }
+
+    /* Pie de los diálogos pegado abajo: Cancelar y la acción principal a lo ancho */
+    dialog .dlg-pie .btn { flex: 1 1 0; min-height: 2.75rem; }
+
+    /* Etiquetas */
+    .et-campos { grid-template-columns: 1fr; gap: .6rem; }
+    .et-vista { padding: .6rem; min-height: 5rem; }
   }
   @media (max-width: 420px) {
-    .pres-id { grid-template-columns: 1fr; }
     .grilla-prod { grid-template-columns: 1fr; }
   }
   /* Logo junto al nombre */
@@ -535,7 +686,7 @@
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=5"></script>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=6"></script>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -560,10 +711,16 @@
       <button role="tab" id="t-clientes" aria-controls="p-clientes" aria-selected="false">Clientes</button>
     </div>
     <div class="cab-acciones" id="accionesCatalogo">
-      <a class="btn" href="catalogo.html" target="_blank" rel="noopener">Ver catálogo público</a>
-      <a class="btn" href="tarjeta-catalogo.html" target="_blank" rel="noopener">Tarjeta con QR</a>
-      <button class="btn" id="irEntrada" type="button">Registrar entrada</button>
-      <button class="btn btn-primario" id="nuevoProducto" type="button">+ Nuevo producto</button>
+      <!-- En escritorio .cab-mas no existe como caja (display: contents); en celular es el menú del botón ⋯ -->
+      <div class="cab-mas" id="cabMas">
+        <a class="btn" href="catalogo.html" target="_blank" rel="noopener">Ver catálogo público</a>
+        <a class="btn" href="tarjeta-catalogo.html" target="_blank" rel="noopener">Tarjeta con QR</a>
+        <button class="btn" id="irEntrada" type="button">Registrar entrada</button>
+      </div>
+      <button class="btn btn-primario" id="nuevoProducto" type="button"><span class="txt-largo">+ Nuevo producto</span><span class="txt-corto">+ Producto</span></button>
+      <button class="btn cab-mas-btn" id="cabMasBtn" type="button" aria-label="Más acciones" aria-expanded="false" aria-controls="cabMas">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      </button>
     </div>
   </div>
 
@@ -571,7 +728,7 @@
   <section id="p-catalogo" role="tabpanel" aria-labelledby="t-catalogo">
     <div class="panel-filtros" id="panelFiltros" aria-label="Filtros del catálogo" role="search">
       <div class="pf-fila">
-        <label class="campo pf-buscar">Buscar
+        <label class="campo pf-buscar"><span class="pf-buscar-etq">Buscar</span>
           <input type="search" id="buscarCat" placeholder="Nombre, marca, color o código" autocomplete="off" spellcheck="false">
         </label>
         <button type="button" class="btn pf-abrir" id="pfAbrir" aria-expanded="false" aria-controls="pfMas">Filtros <span class="pf-num" id="pfNum" hidden></span></button>
@@ -642,7 +799,7 @@
         <div class="movs">
           <h3>Últimos movimientos</h3>
           <div class="tabla-caja">
-            <table>
+            <table class="tabla-movs">
               <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th class="der">Cantidad</th><th>Nota</th></tr></thead>
               <tbody id="tbMovs"></tbody>
             </table>
@@ -889,7 +1046,7 @@
           <input type="search" id="buscarCli" placeholder="Buscar cliente por nombre, documento o teléfono" aria-label="Buscar cliente">
         </div>
         <div class="tabla-caja">
-          <table>
+          <table class="tabla-cli">
             <thead><tr><th>Cliente</th><th>Documento</th><th>Tipo</th><th>Teléfono</th><th></th></tr></thead>
             <tbody id="tbClientes"></tbody>
           </table>
@@ -1101,12 +1258,32 @@
       $(`#p-${t}`).hidden = t !== nombre;
     });
     $('#accionesCatalogo').hidden = nombre !== 'catalogo';
+    cerrarCabMas();
+    // En celular las pestañas se desplazan de lado: la elegida queda a la vista
+    $(`#t-${nombre}`).scrollIntoView({ inline: 'nearest', block: 'nearest' });
     detenerCamara();
     if (nombre !== 'carga') enCola(guardarActual);   // lo que se estaba contando no se pierde
     if (nombre === 'entradas') $('#scanEntrada').focus();
     if (nombre === 'carga') $('#scanCarga').focus();
   }
   tabs.forEach((t) => $(`#t-${t}`).addEventListener('click', () => abrirPestana(t)));
+
+  // Menú ⋯ de la cabecera (solo se ve en celular): las acciones que no caben junto a "+ Producto"
+  function cerrarCabMas() {
+    $('#cabMas').classList.remove('abierto');
+    $('#cabMasBtn').setAttribute('aria-expanded', 'false');
+  }
+  $('#cabMasBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const abierto = $('#cabMas').classList.toggle('abierto');
+    $('#cabMasBtn').setAttribute('aria-expanded', String(abierto));
+    if (abierto) $('#cabMas').querySelector('a, button').focus();
+  });
+  $('#cabMas').addEventListener('click', (e) => { if (e.target.closest('a, button')) cerrarCabMas(); });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#cabMas, #cabMasBtn')) cerrarCabMas(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $('#cabMas').classList.contains('abierto')) { cerrarCabMas(); $('#cabMasBtn').focus(); }
+  });
 
   // ---------- Carga de datos ----------
   async function cargarCatalogo() {
@@ -1167,6 +1344,8 @@
   }
 
   const ALERTA_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>';
+  // Tarro de pintura: en celular reemplaza la foto del producto que no tiene
+  const TARRO_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6"/><path d="M5 11c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></svg>';
   const esBajo = (p) => p.activo && Number(p.stock) <= Number(p.stock_minimo);
 
   function stockCelda(p) {
@@ -1315,10 +1494,10 @@
       return `
       <tr class="cat-producto">
         <td colspan="6"><div class="cab">
-          ${fotos[ref.producto_id] ? `<img class="miniatura" src="${esc(fotos[ref.producto_id])}" alt="" loading="lazy" crossorigin="anonymous">` : ''}
+          ${fotos[ref.producto_id] ? `<img class="miniatura" src="${esc(fotos[ref.producto_id])}" alt="" loading="lazy" crossorigin="anonymous">` : `<span class="miniatura sin-foto" aria-hidden="true">${TARRO_SVG}</span>`}
           <strong>${esc(nombreProducto(ref))}</strong>
           <span class="info">${esc(info)}</span>
-          <button type="button" class="btn-texto" data-producto="${ref.producto_id}">Editar producto</button>
+          <button type="button" class="btn-texto" data-producto="${ref.producto_id}" aria-label="Editar producto ${esc(nombreProducto(ref))}">Editar<span class="txt-largo"> producto</span></button>
         </div></td>
       </tr>${filasHtml}`;
     }).join('');

@@ -232,13 +232,110 @@
   .marca .tienda { margin-right: 0; }
   .logo { height: 3.3rem; width: auto; display: block; flex: none; margin: -.45rem 0; }
   @media (max-width: 700px) { .logo { height: 2.9rem; margin: -.3rem 0; } }
+
+  .par { display: contents; }   /* en escritorio, como si no existiera */
+
+  /* ===================== Celular: gastos compacto ===================== */
+  @media (max-width: 700px) {
+    /* Título y total del mes en un renglón; pestañas debajo */
+    .cab-pagina { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "titulo total" "pestanas pestanas"; gap: .4rem .75rem; align-items: baseline; margin-bottom: .5rem; }
+    .cab-pagina > * { min-width: 0; }
+    .cab-pagina h1 { grid-area: titulo; }
+    .total-mes { grid-area: total; justify-self: end; gap: .4rem; }
+    .total-mes span { font-size: .8rem; }
+    .total-mes strong { font-size: 1.35rem; }
+    .pestanas { grid-area: pestanas; width: auto; padding: .2rem; gap: .2rem; flex-wrap: nowrap; overscroll-behavior-x: contain; }
+    .pestanas button { flex: 1 0 auto; min-height: 2.125rem; padding: 0 .75rem; font-size: .9rem; }
+    .pestanas .cuenta { font-size: .72rem; min-width: 1.2rem; }
+
+    /* Resumen: las 3 cifras en una fila */
+    .resumen { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin-bottom: .75rem; padding: .45rem .6rem; }
+    .resumen div { display: grid; gap: 0; align-content: start; }
+    .resumen span { font-size: .72rem; line-height: 1.25; }
+    .resumen strong { font-size: .95rem; }
+
+    .cuerpo { gap: .9rem; }
+    h2 { font-size: 1.25rem; } h3 { font-size: 1.15rem; }
+
+    /* Formularios compactos: campos de 40 px y pares en 2 columnas */
+    .tarjeta { padding: .75rem; gap: .6rem; }
+    .cab-form { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
+    .ir-lista { color: var(--acento); font-weight: 600; font-size: .85rem; text-decoration: none; padding: .35rem 0; }
+    .campo { gap: .2rem; }
+    .campo label, legend { font-size: .9rem; }
+    legend { margin-bottom: .2rem; }
+    .tarjeta input:not([type="checkbox"], [type="radio"], [type="file"]), .tarjeta select { min-height: 2.5rem; }
+    .tarjeta .valor-grande { font-size: 1.5rem; min-height: 2.5rem; padding-top: .15rem; padding-bottom: .15rem; }
+    .par, .dos { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .5rem; }
+    .par > *, .dos > * { min-width: 0; }
+    .segmentos { gap: .35rem; }
+    .segmentos button { min-height: 2.5rem; padding: .25rem .4rem; }
+    .pildoras { gap: .3rem; }
+    .pildoras button { min-height: 2.125rem; padding: .15rem .75rem; font-size: .9rem; }
+    .foto .btn-foto { min-height: 2.5rem; flex: 1 1 10rem; }
+    #btnGasto { min-height: 2.75rem; font-size: 1rem; }
+    .ayuda { font-size: .85rem; }
+    .fijo-chip { padding: .35rem .6rem; font-size: .9rem; }
+    .btn-texto { min-height: 2rem; }
+    textarea { min-height: 3.5rem; }
+
+    /* Gastos fijos del mes: ícono | nombre y vencimiento | valor | Pagar (32 px) */
+    .fijos-mes { margin-bottom: .9rem; }
+    .fijos-mes .cab { padding: .5rem .75rem; }
+    .fijos-mes h2 { font-size: 1.15rem; }
+    .fijos-mes li { grid-template-columns: 1.4rem minmax(0, 1fr) auto auto; gap: .5rem; padding: .45rem .75rem; }
+    .fijos-mes li svg { width: 20px; height: 20px; }
+    .fijos-mes .accion { grid-column: auto; }
+    .fijos-mes .accion .btn { width: auto; min-height: 2rem; padding: 0 .75rem; font-size: .9rem; }
+    .fijos-mes .cuando { font-size: .8rem; }
+    .fijos-mes .num { font-size: .9rem; }
+
+    /* Filtros de la lista: mes y categoría lado a lado */
+    .herramientas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .4rem .5rem; margin-bottom: .6rem; }
+    .herramientas .campo { min-width: 0; }
+    .check { grid-column: 1 / -1; padding-bottom: 0; min-height: 2rem; }
+    .check input { width: 1.1rem; height: 1.1rem; }
+
+    /* Tablas como filas de 2 renglones: texto a la izquierda; valor y acciones a la derecha */
+    .tabla-caja table, .tabla-caja tbody, .tabla-caja tfoot { display: block; }
+    .tabla-caja thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    #tbGastos tr, #tbFijos tr, #tbMovs tr {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .15rem .6rem; align-items: start;
+      padding: .5rem .6rem; border-bottom: 1px solid var(--linea);
+    }
+    #tbGastos tr:last-child, #tbFijos tr:last-child, #tbMovs tr:last-child { border-bottom: 0; }
+    .tabla-caja tbody td { display: block; padding: 0; border: 0; }
+    .tabla-caja tbody td.ocultar-movil { display: none; }
+    .tabla-caja tbody td:not(.der, .acc) { grid-column: 1; grid-row: 1 / span 2; }
+    .tabla-caja tbody td.der { grid-column: 2; grid-row: 1; }
+    .tabla-caja tbody td.acc { grid-column: 2; grid-row: 2; align-self: end; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0 .35rem; }
+    .tabla-caja tbody td.vacio { grid-column: 1 / -1; padding: .75rem 0; }
+    .tabla-caja tbody td small { font-size: .8rem; line-height: 1.35; }
+    td.acc .btn-texto { display: inline-flex; align-items: center; min-height: 2rem; margin: 0; padding: 0 .35rem; }
+    td.acc .sin-factura { font-size: .8rem; }
+    #tbFijos .estado { margin-top: .2rem; }
+    .tabla-caja tfoot tr { display: flex; justify-content: space-between; padding: .5rem .6rem; border-top: 2px solid var(--tinta); }
+    .tabla-caja tfoot td { display: block; padding: 0; border: 0; }
+    .tabla-caja tfoot td.ocultar-movil, .tabla-caja tfoot td:empty { display: none; }
+    #listaInactivos .btn-texto { min-height: 2rem; }
+    details summary { padding: .35rem 0; }
+
+    /* Socios */
+    .socios { gap: .6rem; margin-bottom: .9rem; }
+    .socio { padding: .65rem .8rem; gap: .25rem; }
+    .socio h3 { font-size: 1.15rem; }
+    .socio dl { font-size: .9rem; gap: .1rem .75rem; }
+  }
+  @media (max-width: 340px) {
+    .par, .dos { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=5"></script>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=6"></script>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -273,13 +370,16 @@
   <section id="p-gastos" role="tabpanel" aria-labelledby="t-gastos">
     <div class="cuerpo">
       <form class="tarjeta" id="frmGasto">
-        <h2>Registrar gasto</h2>
+        <div class="cab-form"><h2>Registrar gasto</h2><a class="solo-movil ir-lista" href="#tituloUltimos">Ver últimos gastos ↓</a></div>
         <div class="fijo-chip" id="chipFijo" hidden>
           <span id="chipFijoTexto"></span>
           <button type="button" class="btn-texto" id="quitarFijo">Quitar</button>
         </div>
-        <div class="campo"><label for="gValor">Valor</label><input id="gValor" type="number" min="1" step="1" inputmode="numeric" class="num valor-grande" placeholder="$ 0" required></div>
-        <div class="campo"><label for="gFecha">Fecha</label><input id="gFecha" type="date" required></div>
+        <!-- .par: en escritorio no cambia nada (display: contents); en celular pone valor y fecha lado a lado -->
+        <div class="par">
+          <div class="campo"><label for="gValor">Valor</label><input id="gValor" type="number" min="1" step="1" inputmode="numeric" class="num valor-grande" placeholder="$ 0" required></div>
+          <div class="campo"><label for="gFecha">Fecha</label><input id="gFecha" type="date" required></div>
+        </div>
         <fieldset>
           <legend>Categoría</legend>
           <!-- El select guarda la categoría elegida; las píldoras solo lo manejan -->
@@ -325,7 +425,7 @@
           </div>
           <ul id="listaFijosMes"></ul>
         </section>
-        <h2 style="font-size:1.4rem;font-weight:700;margin-bottom:.6rem">Últimos gastos</h2>
+        <h2 id="tituloUltimos" style="font-size:1.4rem;font-weight:700;margin-bottom:.6rem">Últimos gastos</h2>
         <div class="herramientas">
           <div class="campo"><label for="fMes">Mes</label><input id="fMes" type="month"></div>
           <div class="campo"><label for="fCategoria">Categoría</label><select id="fCategoria"></select></div>

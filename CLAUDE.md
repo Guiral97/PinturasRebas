@@ -35,12 +35,12 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 | `clave.html` | Recuperar contraseña (pide el enlace por correo), crearla desde la invitación o el enlace, y cambiarla con sesión. Sin barra de secciones. |
 | `supabase/functions/invitar-usuario/index.ts` | Edge Function: comprueba `es_socio()` con la sesión de quien llama e invita con la llave de servicio (que vive en Supabase, nunca en la app). Se pega a mano en el editor de Edge Functions. |
 | `supabase/README.md` | Pasos de configuración en Supabase: URL permitidas, función, SMTP propio (Gmail) y plantillas de correo en español. |
-| `nav.js` | Barra de secciones común (íconos, sección actual, contador de pedidos con `navPendientes(db)`, que además muestra "Usuarios" solo a socios). Se oculta sin sesión. En celular (≤ 700 px) pasa abajo: Caja, Pedidos, Inventario, Cartera y "Más". Trae sus propios estilos (con `#nav`). |
+| `nav.js` | Barra de secciones común (íconos, sección actual, contador de pedidos con `navPendientes(db)`, que además muestra "Usuarios" solo a socios). Se oculta sin sesión. En celular (≤ 700 px) pasa abajo: Caja, Pedidos, Inventario, Cartera y "Más". Trae sus propios estilos (con `#nav`). También trae las **reglas comunes de celular** (≤ 700 px): tamaños compactos (campos y botones de 2.5rem, letra 15 px), diálogos como hoja inferior con el pie a la vista, y oculta la barra con el teclado abierto. La barra inferior mide unos 3.2rem: la barra de cobro de la caja y los pies fijos de cotizaciones y pedidos dependen de esa altura. |
 | `recibo.js` | `imprimirRecibo(v)`: recibo térmico 58/80 mm en un iframe oculto. Comprobante interno, **no es factura electrónica**. |
 | `etiquetas.js` | Códigos internos EAN-13 (`20` + id a 10 dígitos + dígito de control), SVG de etiquetas, impresión por driver. |
 | `impresora-directa.js` | Impresión de etiquetas sin driver: Web Serial (puerto COM) o Web Bluetooth, ESC/POS raster. |
 | `fotos.js` | Fotos de productos (10): URL pública, mapas `porProducto` / `porPresentacion`, `reducir` (800 px, WebP o JPEG), `subir`, `borrar`. Lo usan inventario, caja y cotizaciones. |
-| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v14`). Guarda también las fotos de productos (guardado primero). El nombre debe ser `sw.js` en minúscula. |
+| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v15`). Guarda también las fotos de productos (guardado primero). El nombre debe ser `sw.js` en minúscula. |
 | `config.js` | Configuración compartida (ver abajo). |
 | `logo.svg`, `marca-rb.png`, `favicon-32.png`, `favicon-48.png`, `apple-touch-icon.png` | Marca. `marca-rb.png`: pistola blanca sobre negro, para piezas impresas. El logo cambia de color con el tema (estilo dentro del SVG). |
 | `01_…sql` a `09_…sql` | Scripts de base de datos, en orden (ver abajo). |
@@ -114,7 +114,7 @@ No se guarda en la base de datos: se deduce de precio y costo. Precio = costo ×
 
 ## Convenciones de código
 
-- Antes de cambiar una pantalla, léela: todas comparten estilos, el patrón de login, la barra de navegación y el encabezado con logo. La barra la dibuja `nav.js` (`<nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=5"></script>`); una pantalla nueva se agrega en `SECCIONES` de `nav.js` y cada pantalla llama `navPendientes(db)` al iniciar sesión.
+- Antes de cambiar una pantalla, léela: todas comparten estilos, el patrón de login, la barra de navegación y el encabezado con logo. La barra la dibuja `nav.js` (`<nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=6"></script>`); una pantalla nueva se agrega en `SECCIONES` de `nav.js` y cada pantalla llama `navPendientes(db)` al iniciar sesión.
 - Estados con un solo código: `.estado` + `.estado-pendiente` (`--aviso`), `.estado-confirmado` (`--acento`), `.estado-ok` (`--ok`), `.estado-mal` (`--alerta`), `.estado-neutro` (`--suave`); siempre con la palabra, y en alertas con ícono. Un solo botón primario por panel, alto mínimo 2.75rem.
 - Barras de desplazamiento: todas (diálogos, listas, tablas) con el mismo estilo que la de la ventana, según el tema. Cada página declara `color-scheme: light dark` en `:root`; no poner barras con colores propios.
 - `esc()` para todo lo que se inserte en HTML. Nada de `innerHTML` con datos sin escapar.

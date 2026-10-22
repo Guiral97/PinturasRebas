@@ -217,13 +217,134 @@
   .marca .tienda { margin-right: 0; }
   .logo { height: 3.3rem; width: auto; display: block; flex: none; margin: -.45rem 0; }
   @media (max-width: 700px) { .logo { height: 2.9rem; margin: -.3rem 0; } }
+
+  /* Botón "Ver las N ventas": solo existe en celular */
+  .ver-todas { display: none; }
+
+  /* ===================== Celular: tablero compacto ===================== */
+  @media (max-width: 700px) {
+    main { gap: .9rem; }
+    .periodo { gap: .5rem; }
+    /* Título y rango de fechas en un renglón; los períodos debajo, en una sola fila */
+    .cabecera { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "titulo rango" "periodos periodos"; gap: .4rem .75rem; align-items: baseline; }
+    .cabecera h1 { grid-area: titulo; font-size: 1.45rem; }
+    .cabecera .rango-texto { grid-area: rango; justify-self: end; text-align: right; font-size: .8rem; }
+    .cabecera .segmentado { grid-area: periodos; }
+    /* Chips de 32 px con desplazamiento horizontal (períodos y filtros de costos) */
+    .segmentado { width: auto; flex-wrap: nowrap; overflow-x: auto; gap: .35rem; padding: 0 0 .15rem; background: none; border: 0; border-radius: 0; overscroll-behavior-x: contain; }
+    .segmentado button { flex: none; min-height: 2rem; padding: 0 .75rem; border: 1px solid var(--linea); border-radius: 999px; background: var(--panel); font-size: .875rem; white-space: nowrap; }
+    .segmentado button[aria-pressed="true"] { border-color: var(--acento); }
+    .rango { padding: .55rem .65rem; gap: .45rem .5rem; }
+    .rango .campo { gap: .15rem; }
+    .rango label { font-size: .8rem; }
+
+    /* Cifras principales 2 × 2 */
+    .kpis { gap: .4rem; }
+    .kpi { padding: .4rem .6rem; gap: 0; }
+    .kpi > span { font-size: .75rem; }
+    .kpi strong { font-size: 1.35rem; line-height: 1.15; }
+    .kpi small { font-size: .75rem; line-height: 1.3; }
+    /* Cifras de apoyo en 3 columnas pequeñas (las de costos, que son 4, en 2) */
+    .kpis-sec { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem .6rem; padding: .45rem .6rem; }
+    #costos .kpis-sec { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kpis-sec span { font-size: .72rem; line-height: 1.25; }
+    .kpis-sec strong { font-size: 1.1rem; }
+    .kpis-sec small { font-size: .7rem; line-height: 1.25; }
+
+    .bloque { padding: .7rem .75rem; gap: .55rem; }
+    h2 { font-size: 1.2rem; } h3 { font-size: 1.15rem; }
+    .grafico { height: 12rem; }
+
+    /* Tablas como filas de 2 renglones: sin ancho mínimo ni encabezados visibles */
+    table { min-width: 0; }
+    .cabecera > * { min-width: 0; }
+    .tabla-caja table, .tabla-caja tbody { display: block; }
+    .tabla-caja thead {
+      position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+    }
+    #tbVentas tr, #tbTop tr, #tbCostos tr, #dvDetalle tr {
+      display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .45rem; padding: .45rem 0; border-bottom: 1px solid var(--linea);
+    }
+    #tbVentas tr:last-child, #tbTop tr:last-child, #tbCostos tr:last-child, #dvDetalle tr:last-child { border-bottom: 0; }
+    #tbVentas td, #tbTop td, #tbCostos td, #dvDetalle td { display: block; padding: 0; border: 0; text-align: left; }
+
+    /* Ventas del período: sin desplazamiento interno; "N.º · cliente   total" y debajo fecha · socio · pago */
+    #ventasPeriodo .tabla-caja { max-height: none; overflow: visible; }
+    #tbVentas tr { position: relative; }
+    #tbVentas tr::after { content: ""; flex-basis: 100%; height: 0; order: 2; }   /* salto de renglón */
+    #tbVentas td:nth-child(1):not(.vacio) { order: 1; font-weight: 700; }
+    #tbVentas td:nth-child(1):not(.vacio)::before { content: "N.º "; }
+    #tbVentas td:nth-child(1):not(.vacio)::after { content: " ·"; }
+    #tbVentas td:nth-child(3) { order: 1; flex: 1 1 0; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #tbVentas td:nth-child(6) { order: 1; font-weight: 700; }
+    #tbVentas td:nth-child(2), #tbVentas td:nth-child(4) { order: 3; color: var(--suave); font-size: .8rem; }
+    #tbVentas td:nth-child(4):empty { display: none; }
+    #tbVentas td:nth-child(4)::before { content: "· "; }
+    #tbVentas td:nth-child(5) { order: 3; margin-left: auto; font-size: .8rem; display: flex; flex-wrap: wrap; gap: .25rem; justify-content: flex-end; }
+    #tbVentas .metodo { display: inline-block; font-size: .75rem; font-weight: 700; line-height: 1.4; padding: .05rem .5rem; border-radius: 999px; border: 1px solid var(--linea); color: var(--suave); background: color-mix(in srgb, var(--suave) 12%, transparent); }
+    #tbVentas .estado { font-size: .75rem; }
+    /* Toda la fila abre el detalle: el botón "Ver" la cubre */
+    #tbVentas td:nth-child(7) { position: static; }
+    #tbVentas td:nth-child(7) .btn-texto { position: absolute; inset: 0; width: 100%; padding: 0; color: transparent; overflow: hidden; border-radius: var(--radio); }
+    #tbVentas td:nth-child(7) .btn-texto:active { background: color-mix(in srgb, var(--acento) 8%, transparent); }
+    .anulada td:nth-child(5), .anulada td:nth-child(7) { text-decoration: none; }
+    /* Primeras 5; el resto con el botón */
+    #tbVentas:not(.todas) tr:nth-child(n+6) { display: none; }
+    .ver-todas { display: block; width: 100%; min-height: 2.5rem; }
+
+    /* Productos más vendidos: producto arriba; unidades, ventas y margen abajo */
+    #tbTop td:first-child { flex-basis: 100%; font-weight: 500; }
+    #tbTop td:not(:first-child) { font-size: .8rem; color: var(--suave); }
+    #tbTop td:nth-child(2)::before { content: "Unid. "; }
+    #tbTop td:nth-child(3) { color: var(--tinta); font-weight: 600; }
+    #tbTop td:nth-child(3)::before { content: "· Ventas "; color: var(--suave); font-weight: 400; }
+    #tbTop td:nth-child(4)::before { content: "· Margen "; }
+    #tbTop td:nth-child(5)::before { content: "("; }
+    #tbTop td:nth-child(5)::after { content: ")"; }
+    #tbTop td.vacio::before, #tbTop td.vacio::after { content: none; }
+
+    /* Costos: producto arriba; cifras abajo */
+    .costos-filtros { display: grid; gap: .45rem; }
+    .costos-filtros input { flex: none; width: 100%; }
+    #tbCostos td:first-child { flex-basis: 100%; }
+    #tbCostos td:first-child small { display: inline; margin-left: .35rem; font-size: .75rem; }
+    #tbCostos .parte { padding-left: 1rem; }
+    #tbCostos .parte td:first-child { padding-left: 0; }
+    #tbCostos td:not(:first-child) { font-size: .8rem; }
+    #tbCostos td:nth-child(2)::before { content: "Costo "; color: var(--suave); }
+    #tbCostos td:nth-child(3)::before { content: "· Precio "; color: var(--suave); }
+    #tbCostos td:nth-child(4)::before { content: "· "; color: var(--suave); }
+    #tbCostos td:nth-child(5)::before { content: "· Stock "; color: var(--suave); }
+    #tbCostos td:nth-child(6)::before { content: "· Valor "; color: var(--suave); }
+    #tbCostos td:nth-child(7)::before { content: "· Última compra "; color: var(--suave); }
+    #tbCostos td:nth-child(7) small { display: inline; margin-left: .25rem; }
+    #tbCostos .estado { font-size: .72rem; }
+    #tbCostos td.vacio::before { content: none; }
+
+    /* Detalle de la venta: producto arriba; cantidad × precio y subtotal abajo */
+    #dlgVenta .contenido { gap: .7rem; }
+    #dlgVenta h2 { font-size: 1.3rem; }
+    #dvMeta { font-size: .85rem; }
+    #dvDetalle td:first-child { flex-basis: 100%; }
+    #dvDetalle td:nth-child(2), #dvDetalle td:nth-child(3) { font-size: .85rem; color: var(--suave); }
+    #dvDetalle td:nth-child(3)::before { content: "× "; }
+    #dvDetalle td:nth-child(4) { margin-left: auto; font-weight: 600; }
+    .anular { padding: .7rem; gap: .45rem; }
+    /* Imprimir y Cerrar siempre a la vista al pie de la hoja */
+    #dlgVenta .contenido > .acciones:last-child {
+      position: sticky; bottom: calc(-.9rem - env(safe-area-inset-bottom)); z-index: 1;
+      margin: 0 -.75rem calc(-.9rem - env(safe-area-inset-bottom));
+      padding: .55rem .75rem calc(.55rem + env(safe-area-inset-bottom));
+      background: var(--panel); border-top: 1px solid var(--linea);
+    }
+  }
 </style>
 </head>
 <body>
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=5"></script>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=6"></script>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -278,6 +399,7 @@
         <tbody id="tbVentas"></tbody>
       </table>
     </div>
+    <button type="button" class="btn ver-todas" id="verTodas" aria-controls="tbVentas" aria-expanded="false" hidden></button>
   </section>
 
   <div class="dos">
@@ -705,11 +827,22 @@
         <td class="num">${fHora.format(new Date(v.creado_en))}</td>
         <td>${esc(v.clientes?.nombre ?? 'Consumidor final')}</td>
         <td>${esc(perfiles[v.usuario_id] ?? '')}</td>
-        <td>${METODOS[v.metodo_pago]}${v.estado === 'pendiente_pago' ? ' <span class="estado estado-pendiente">Pendiente de pago</span>' : ''}${v.estado === 'anulada' ? ' <span class="estado estado-neutro">Anulada</span>' : ''}</td>
+        <td><span class="metodo">${METODOS[v.metodo_pago]}</span>${v.estado === 'pendiente_pago' ? ' <span class="estado estado-pendiente">Pendiente de pago</span>' : ''}${v.estado === 'anulada' ? ' <span class="estado estado-neutro">Anulada</span>' : ''}</td>
         <td class="der num">${cop.format(v.total)}</td>
-        <td><button type="button" class="btn-texto" data-venta="${v.id}">Ver</button></td>
+        <td><button type="button" class="btn-texto" data-venta="${v.id}" aria-label="Ver venta ${v.id}">Ver</button></td>
       </tr>`).join('') : '<tr><td colspan="7" class="vacio">No hay ventas en el período.</td></tr>';
+    // En celular se ven las primeras 5; el botón (oculto en escritorio por CSS) despliega el resto
+    $('#tbVentas').classList.remove('todas');
+    const b = $('#verTodas');
+    b.hidden = lista.length <= 5;
+    b.textContent = `Ver las ${lista.length} ventas`;
+    b.setAttribute('aria-expanded', 'false');
   }
+  $('#verTodas').addEventListener('click', (e) => {
+    const abrir = $('#tbVentas').classList.toggle('todas');
+    e.currentTarget.textContent = abrir ? 'Ver menos' : `Ver las ${$('#tbVentas').rows.length} ventas`;
+    e.currentTarget.setAttribute('aria-expanded', String(abrir));
+  });
 
   // ---------- Costos de los productos ----------
   const GANANCIA_BAJA = 20;   // % sobre el costo por debajo del cual se marca en ámbar (igual que en Inventario)

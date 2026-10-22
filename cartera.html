@@ -163,6 +163,9 @@
   @media (max-width: 1180px) {
     .barra { flex-wrap: wrap; row-gap: .55rem; }
   }
+  /* Piezas que solo se ven en celular (van antes del bloque de celular para que este gane) */
+  .det-top, .det-cifras, .det-extra, .facturas small.f-corto { display: none; }
+  .l1 { display: contents; }
   /* Celular */
   @media (max-width: 700px) {
     .barra { padding: .6rem 1rem; gap: .5rem .6rem; }
@@ -174,28 +177,71 @@
     #aviso { left: .75rem; right: .75rem; transform: none; max-width: none; bottom: .75rem; }
     #login { margin: 6vh 1rem 0; }
 
-    /* Resumen compacto y tramos como píldoras desplazables */
-    .resumen { padding: .9rem; gap: .7rem; }
-    .res-total strong { font-size: 2.1rem; }
-    .res-tramos { flex-basis: 100%; }
-    .tramos { display: flex; overflow-x: auto; gap: .4rem; padding-bottom: .15rem; -webkit-overflow-scrolling: touch; }
-    .tramos button { flex: none; border-radius: 999px; display: flex; align-items: center; gap: .4rem; padding: .3rem .85rem; min-height: 2.5rem; }
-    .tramos button strong { font-size: .9rem; }
-
-    /* Clientes como tarjetas con dos botones */
-    .lista { background: none; border: 0; overflow: visible; }
-    .lista-cab { padding: 0 0 .6rem; border: 0; }
-    .lista-cab input { max-width: none; }
-    #listaClientes { display: grid; gap: .6rem; }
-    #listaClientes > li { grid-template-columns: 1fr; padding: .7rem .8rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
-    #listaClientes > li:last-child { border-bottom: 1px solid var(--linea); }
-    #listaClientes .acciones { display: grid; grid-template-columns: 1fr 1fr; }
-    #listaClientes .acciones > :only-child { grid-column: 1 / -1; }
+    main#app { gap: .6rem; }
     .solo-celular { display: inline; }
     .solo-escritorio { display: none; }
 
-    #detContenido > * { padding: .9rem; }
+    /* Resumen compacto: total en una línea y tramos como chips desplazables (filtran) */
+    .resumen { gap: .4rem; background: none; border: 0; padding: 0; }
+    .res-total { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .5rem; }
+    .res-total > span { font-size: .85rem; }
+    .res-total strong { font-size: 1.45rem; line-height: 1.15; }
+    .res-total small { font-size: .8rem; }
+    .res-tramos { flex-basis: 100%; gap: 0; }
+    .barra-tramos { display: none; }
+    .tramos { display: flex; overflow-x: auto; gap: .35rem; padding-bottom: .1rem; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .tramos button { flex: none; border-radius: 999px; display: flex; align-items: center; gap: .35rem; padding: 0 .65rem; min-height: 0; height: 2rem; font-size: .8rem; }
+    .tramos button span { font-size: .8rem; }
+    .tramos button strong { font-size: .8rem; }
+    .tramos button i { width: .55rem; height: .55rem; margin-right: .25rem; }
+
+    /* Buscar + ordenar en una fila; clientes como lista compacta en un solo panel */
+    .lista-cab { flex-wrap: nowrap; gap: .4rem; padding: .45rem .5rem; }
+    .lista-cab h2 { display: none; }
+    .lista-cab #buscar { flex: 1 1 auto; max-width: none; min-width: 0; min-height: 0; height: 38px; }
+    .lista-cab #orden { flex: none; width: 7rem; min-height: 0; height: 38px; padding-right: .3rem; }
+    #listaClientes > li { grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; padding: .3rem .4rem .3rem .65rem; }
+    #listaClientes .elegir { grid-template-columns: minmax(0, 1fr) auto; gap: 0 .5rem; padding: .25rem 0; min-height: 2.75rem; }
+    #listaClientes .l1 { display: flex; align-items: center; gap: .35rem; min-width: 0; }
+    #listaClientes .nom { font-weight: 700; min-width: 0; }
+    #listaClientes .l1 .estado { flex: none; font-size: .7rem; padding: 0 .4rem; }
+    #listaClientes .sal { grid-row: 1 / span 2; grid-column: 2; align-self: center; }
+    #listaClientes .det { grid-column: 1; font-size: .78rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #listaClientes .acciones .btn-wa { display: none; }
+    #listaClientes .acciones .btn { min-height: 0; height: 34px; padding: 0 .7rem; font-size: .875rem; }
+
+    /* En celular el detalle se ve solo, a pantalla completa */
+    .detalle { display: none; }
+    main#app.ver-detalle > :not(.cuerpo), main#app.ver-detalle .lista { display: none; }
+    main#app.ver-detalle .detalle { display: block; }
+    .det-top { display: flex; align-items: center; gap: .5rem; position: sticky; top: 0; z-index: 5; background: var(--panel); padding: .4rem .6rem .4rem .4rem; border-bottom: 1px solid var(--linea); border-radius: 8px 8px 0 0; }
+    .det-top h2 { flex: 1; min-width: 0; font-size: 1.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .det-top .btn { min-height: 0; height: 36px; }
+    .det-top #btnVolver { width: 36px; padding: 0; font-size: 1.6rem; line-height: 1; }
+    .det-top #btnWaTop { padding: 0 .65rem; font-size: .875rem; }
+    #detNombre, .det-cab #btnWhatsapp, #detDatos { display: none; }
+    #detContenido > * { padding: .7rem .75rem; }
+    .det-cab { gap: .35rem; }
+    .det-cifras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }
+    .det-cifras div { display: grid; min-width: 0; }
+    .det-cifras span { font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--suave); }
+    .det-cifras strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .det-cifras .mora { color: var(--alerta); }
+    .det-cab .det-extra { display: block; font-size: .8rem; }
+    #detContenido h3 { font-size: 1.1rem; }
+    .facturas li, .abonos li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0 .5rem; padding: .35rem 0; }
+    .abonos li { grid-template-columns: minmax(0, 1fr) auto; }
+    .facturas .f-info, .abonos .f-info { font-weight: 600; font-size: .9rem; }
+    .facturas .estado { font-size: .7rem; padding: 0 .4rem; }
+    .facturas small, .abonos small { font-size: .78rem; font-weight: 400; }
+    .facturas small.f-largo { display: none; }
+    .facturas small.f-corto { display: block; }
+    .facturas .btn-texto { min-height: 34px; padding: 0 .2rem; }
+    .abono { gap: .7rem; }
+    .valor-abono input { font-size: 1.2rem; min-height: 0; height: 44px; }
     .segmentos { grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); }
+    .segmentos button { min-height: 0; height: 40px; }
+    #detContenido #btnAbono { min-height: 44px; font-size: 1rem; }
   }
 
   /* Logo junto al nombre */
@@ -209,7 +255,7 @@
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=5"></script>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=6"></script>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -253,11 +299,18 @@
     </section>
 
     <section class="detalle" id="detalle" aria-live="polite">
+      <div class="det-top">
+        <button type="button" class="btn" id="btnVolver" aria-label="Volver a Cartera">‹</button>
+        <h2 id="detTopNombre"></h2>
+        <a class="btn btn-wa" id="btnWaTop" target="_blank" rel="noopener" aria-label="Enviar recordatorio por WhatsApp">Recordar</a>
+      </div>
       <p class="vacio" id="detVacio">Elige un cliente para ver sus facturas pendientes y registrar abonos.</p>
       <div id="detContenido" hidden>
         <div class="det-cab">
           <h2 id="detNombre"></h2>
           <p id="detDatos" class="num"></p>
+          <div class="det-cifras" id="detCifras"></div>
+          <p class="det-extra num" id="detExtra"></p>
           <a class="btn btn-wa" id="btnWhatsapp" target="_blank" rel="noopener">Enviar recordatorio por WhatsApp</a>
         </div>
 
@@ -337,6 +390,7 @@
   const TRAMOS = ['Al día', '1 a 30 días', '31 a 60 días', 'Más de 60'];
   const CLASE_ESTADO = ['estado-neutro', 'estado-pendiente', 'estado-media', 'estado-mal'];
   const tramoDe = (dias) => (dias <= 0 ? 0 : dias <= 30 ? 1 : dias <= 60 ? 2 : 3);
+  const DIAS_POR_VENCER = 7;  // en la lista del celular: "Por vencer" si la próxima vence en 7 días o menos
 
   let tAviso;
   function aviso(texto, tipo = 'info') {
@@ -365,7 +419,7 @@
     $('#login').hidden = con;
     $('#app').hidden = !con;
     $('#salir').hidden = !con;
-    if (!con) return;
+    if (!con) { $('#app').classList.remove('ver-detalle'); return; }
     const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
     if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
     $('#usuario').textContent = perfil?.nombre ?? session.user.email;
@@ -431,15 +485,20 @@
   function detalleCliente(c) {
     const n = `${c.facturas_pendientes} ${c.facturas_pendientes === 1 ? 'factura' : 'facturas'}`;
     const dias = Number(c.max_dias_vencida) || 0;
+    const dd = (x) => `${x} ${x === 1 ? 'día' : 'días'}`;
+    // corto y estado: para la lista compacta del celular
     if (Number(c.saldo_vencido) > 0 && dias > 0) {
-      return { texto: `${n} · la más vieja con ${dias} ${dias === 1 ? 'día' : 'días'} de mora`, tramo: tramoDe(dias) };
+      return { texto: `${n} · la más vieja con ${dd(dias)} de mora`, tramo: tramoDe(dias),
+        corto: `${n} · ${dd(dias)} de mora`, estado: ['En mora', CLASE_ESTADO[tramoDe(dias)]] };
     }
     const proximas = pendientes.filter((f) => f.cliente_id === c.cliente_id && f.vence_en).map((f) => diasHasta(f.vence_en));
     if (proximas.length) {
       const d = Math.min(...proximas);
-      return { texto: `${n} · ${d <= 0 ? 'vence hoy' : `vence en ${d} ${d === 1 ? 'día' : 'días'}`}`, tramo: 0 };
+      const t = `${n} · ${d <= 0 ? 'vence hoy' : `vence en ${dd(d)}`}`;
+      return { texto: t, tramo: 0, corto: t,
+        estado: d <= DIAS_POR_VENCER ? ['Por vencer', 'estado-pendiente'] : ['Al día', 'estado-ok'] };
     }
-    return { texto: n, tramo: 0 };
+    return { texto: n, tramo: 0, corto: n, estado: ['Al día', 'estado-ok'] };
   }
 
   function pintarLista() {
@@ -462,9 +521,9 @@
       return `
       <li class="${clienteActual?.cliente_id === c.cliente_id ? 'activo' : ''}">
         <button type="button" class="elegir" data-id="${c.cliente_id}" aria-current="${clienteActual?.cliente_id === c.cliente_id}">
-          <span class="nom">${esc(c.nombre)}</span>
+          <span class="l1"><span class="nom">${esc(c.nombre)}</span><span class="estado ${d.estado[1]} solo-celular">${d.estado[0]}</span></span>
           <span class="sal">${cop.format(c.saldo)}</span>
-          <span class="det c-${d.tramo}">${esc(d.texto)}</span>
+          <span class="det c-${d.tramo}"><span class="solo-escritorio">${esc(d.texto)}</span><span class="solo-celular">${esc(d.corto)}</span></span>
         </button>
         <div class="acciones">
           ${wa ? `<a class="btn btn-wa" href="${esc(wa)}" target="_blank" rel="noopener"><span class="solo-escritorio">WhatsApp</span><span class="solo-celular">Recordar</span></a>` : ''}
@@ -478,16 +537,48 @@
   $('#orden').addEventListener('change', pintarLista);
   $('#listaClientes').addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-id]');
-    if (b) return abrirCliente(+b.dataset.id);
+    if (b) {
+      await abrirCliente(+b.dataset.id);
+      if (!$('#detContenido').hidden) verDetalle();
+      return;
+    }
     const ab = e.target.closest('[data-abonar]');
     if (ab) {
       await abrirCliente(+ab.dataset.abonar);
       if (!$('#detContenido').hidden) {
-        $('#frmAbono').scrollIntoView({ block: 'center', behavior: 'smooth' });
+        verDetalle();
+        $('#frmAbono').scrollIntoView({ block: 'center', behavior: esCelular.matches ? 'auto' : 'smooth' });
         $('#abValor').focus({ preventScroll: true });
       }
     }
   });
+
+  // ---------- Celular: el detalle a pantalla completa ----------
+  const esCelular = matchMedia('(max-width: 700px)');
+  let scrollLista = 0;
+  function verDetalle() {
+    if (!esCelular.matches) return;
+    const app = $('#app');
+    if (!app.classList.contains('ver-detalle')) {
+      scrollLista = window.scrollY;
+      app.classList.add('ver-detalle');
+      if (!history.state?.carteraDetalle) history.pushState({ carteraDetalle: true }, '');
+    }
+    window.scrollTo(0, 0);
+  }
+  function cerrarDetalle() {
+    const app = $('#app');
+    if (!app.classList.contains('ver-detalle')) return;
+    app.classList.remove('ver-detalle');
+    window.scrollTo(0, scrollLista);
+  }
+  // Volver: si se entró con pushState, el atrás del navegador hace el cierre (popstate)
+  function volverALista() {
+    if (history.state?.carteraDetalle) history.back();
+    else cerrarDetalle();
+  }
+  $('#btnVolver').addEventListener('click', volverALista);
+  window.addEventListener('popstate', cerrarDetalle);
 
   // ---------- Detalle del cliente ----------
   async function abrirCliente(id) {
@@ -517,10 +608,21 @@
     if (c.documento) partes.push(esc(c.documento));
     $('#detDatos').innerHTML = partes.join(' · ');
 
+    // Celular: tres cifras y una línea con los demás datos
+    const vencido = Number(c.saldo_vencido) || 0;
+    $('#detTopNombre').textContent = c.nombre;
+    $('#detCifras').innerHTML = `
+      <div><span>Saldo</span><strong>${cop.format(c.saldo)}</strong></div>
+      <div><span>En mora</span><strong class="${vencido > 0 ? 'mora' : ''}">${cop.format(vencido)}</strong></div>
+      <div><span>Cupo libre</span><strong>${c.cupo_credito != null ? cop.format(Math.max(c.cupo_credito - c.saldo, 0)) : 'Sin cupo'}</strong></div>`;
+    $('#detExtra').textContent = [`Plazo ${c.plazo_dias} días`, c.telefono, c.documento].filter(Boolean).join(' · ');
+
     const wa = enlaceWhatsapp(c);
     const btnWa = $('#btnWhatsapp');
     btnWa.hidden = !wa;
     if (wa) btnWa.href = wa;
+    $('#btnWaTop').hidden = !wa;
+    if (wa) $('#btnWaTop').href = wa;
 
     // Facturas
     $('#tbFacturas').innerHTML = facturas.map((f) => {
@@ -529,10 +631,14 @@
       const estado = dias > 0
         ? `<span class="estado ${CLASE_ESTADO[t]}">${dias} ${dias === 1 ? 'día' : 'días'} de mora</span>`
         : `<span class="estado estado-neutro">Vence ${fCorta.format(fechaLocal(f.vence_en))}</span>`;
+      const dv = dias > 0 ? null : (f.vence_en ? diasHasta(f.vence_en) : null);
+      const plazo = dias > 0 ? `venció hace ${dias} ${dias === 1 ? 'día' : 'días'}`
+        : dv == null ? '' : dv <= 0 ? 'vence hoy' : `vence en ${dv} ${dv === 1 ? 'día' : 'días'}`;
       return `
       <li>
         <div class="f-info">Venta ${f.id} ${estado}
-          <small class="num">${fCorta.format(fechaLocal(f.fecha))} · total ${cop.format(f.total)} · abonado ${cop.format(f.abonado)}</small></div>
+          <small class="num f-largo">${fCorta.format(fechaLocal(f.fecha))} · total ${cop.format(f.total)} · abonado ${cop.format(f.abonado)}</small>
+          <small class="num f-corto">${fCorta.format(fechaLocal(f.fecha))}${plazo ? ` · ${plazo}` : ''}</small></div>
         <strong>${cop.format(f.saldo)}</strong>
         <button type="button" class="btn-texto" data-pagar="${f.id}">Abonar</button>
       </li>`;
@@ -630,6 +736,7 @@
       pintarLista();
       $('#detContenido').hidden = true;
       $('#detVacio').hidden = false;
+      volverALista();
     } else {
       aviso(`Abono registrado. Saldo pendiente: ${cop.format(data.saldo_restante)}.`);
       abrirCliente(id);
@@ -637,6 +744,8 @@
   });
 
   // ---------- Inicio ----------
+  // Al recargar estando en el detalle se arranca en la lista: se limpia la marca del historial
+  if (history.state?.carteraDetalle) history.replaceState(null, '');
   db.auth.onAuthStateChange((evento, s) => {
     if (evento === 'TOKEN_REFRESHED') return;
     setTimeout(() => mostrarSesion(s), 0);

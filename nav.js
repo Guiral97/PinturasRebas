@@ -1,5 +1,5 @@
 // Barra de navegación común a todas las pantallas.
-// Uso: <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=5"></script>
+// Uso: <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=6"></script>
 // justo en la cabecera (se ejecuta en el momento y llena la barra).
 // En el celular (≤ 700 px) la barra pasa abajo: Caja, Pedidos, Inventario, Cartera y "Más".
 // Después de iniciar sesión, cada pantalla llama navPendientes(db) para el contador de pedidos
@@ -85,13 +85,14 @@
       #nav {
         position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; margin: 0;
         display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0;
-        padding: .25rem .25rem calc(.4rem + env(safe-area-inset-bottom));
+        padding: .15rem .25rem calc(.2rem + env(safe-area-inset-bottom));
         background: var(--panel); border-top: 1px solid var(--linea);
       }
       #nav a, #nav .nav-mas {
-        flex-direction: column; justify-content: center; gap: .1rem; min-height: 3.2rem;
-        padding: .3rem 0; font-size: .75rem; background: none; text-align: center;
+        flex-direction: column; justify-content: center; gap: .05rem; min-height: 2.75rem;
+        padding: .2rem 0; font-size: .7rem; background: none; text-align: center;
       }
+      #nav svg { width: 19px; height: 19px; }
       #nav a[aria-current="page"], #nav .nav-mas[aria-current="page"] { background: none; color: var(--acento); font-weight: 700; }
       #nav .nav-secundaria { display: none; }
       #nav .nav-mas { display: flex; }
@@ -102,8 +103,33 @@
         box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
       }
       #nav .nav-menu a { flex-direction: row; justify-content: flex-start; gap: .6rem; font-size: 1rem; padding: .7rem .8rem; min-height: 2.75rem; }
-      body { padding-bottom: calc(4.2rem + env(safe-area-inset-bottom)); }
-      #aviso { bottom: calc(4.6rem + env(safe-area-inset-bottom)) !important; }
+      body { padding-bottom: calc(3.6rem + env(safe-area-inset-bottom)); }
+      #aviso { bottom: calc(4rem + env(safe-area-inset-bottom)) !important; }
+      /* Con el teclado abierto la barra no tapa el campo que se está llenando */
+      body:has(input:not([type="checkbox"], [type="radio"], [type="button"]):focus, textarea:focus) #nav { display: none; }
+    }
+
+    /* ===== Celular: tamaños compactos comunes a todas las pantallas (cada pantalla ajusta lo suyo) ===== */
+    @media (max-width: 700px) {
+      body { font-size: 15px; }
+      .barra { padding: .35rem .75rem; gap: .4rem .6rem; min-height: 3rem; }
+      .barra .logo { height: 1.85rem; margin: 0; }
+      .barra .tienda { font-size: 1.1rem; }
+      #salir { min-height: 2.25rem; padding: .2rem .6rem; font-size: .85rem; }
+      main#app, main#pos { padding: .6rem .75rem; }
+      main#app h1, .cab-pagina h1, .titulo-pantalla { font-size: 1.45rem; }
+      input:not([type="checkbox"], [type="radio"]), select, textarea { font-size: 15px; padding: .35rem .6rem; }
+      input:not([type="checkbox"], [type="radio"]), select, .btn { min-height: 2.5rem; }
+      .btn { padding: .35rem .75rem; }
+      /* Diálogos como hoja que sube desde abajo, con el pie (Guardar, Registrar…) siempre a la vista */
+      dialog[open] {
+        width: 100%; max-width: none; max-height: 92dvh; margin: auto 0 0; border-radius: 14px 14px 0 0;
+        border-left: 0; border-right: 0; border-bottom: 0; overflow: auto; overscroll-behavior: contain;
+      }
+      dialog:has(.dlg-cuerpo) { padding: 0; }
+      dialog:not(:has(.dlg-cuerpo)) { padding: .9rem .75rem calc(.9rem + env(safe-area-inset-bottom)); }
+      dialog .dlg-cuerpo { padding: .85rem .75rem; gap: .8rem; }
+      dialog .dlg-pie { padding: .55rem .75rem calc(.55rem + env(safe-area-inset-bottom)); }
     }
     @media print { #nav { display: none !important; } }
     /* Solo con sesión: en el ingreso (o mientras se revisa la sesión) no hay secciones a las que ir.

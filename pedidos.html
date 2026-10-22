@@ -265,13 +265,123 @@
   .marca .tienda { margin-right: 0; }
   .logo { height: 3.3rem; width: auto; display: block; flex: none; margin: -.45rem 0; }
   @media (max-width: 700px) { .logo { height: 2.9rem; margin: -.3rem 0; } }
+  /* ===== Celular: lista y detalle se turnan la pantalla; todo más compacto ===== */
+  .barra-detalle { display: none; }
+  @media (max-width: 700px) {
+    /* Cabecera: título y "+ Nuevo" en una fila; debajo buscar y los filtros como fichas */
+    .cabecera { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .45rem .5rem; margin-bottom: .5rem; }
+    .cabecera h1 { grid-column: 1; grid-row: 1; min-width: 0; }
+    .cabecera #btnNuevo { grid-column: 2; grid-row: 1; margin-left: 0; min-height: 2.25rem; padding: .2rem .8rem; font-size: .9rem; }
+    .cabecera #buscar { grid-column: 1 / -1; grid-row: 2; max-width: none; min-height: 2.375rem; }
+    .cabecera #filtroEstado { grid-column: 1 / -1; grid-row: 3; min-width: 0; }
+    #filtroEstado { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: .35rem; padding-bottom: .1rem; }
+    #filtroEstado .btn { flex: none; min-height: 2.1rem; padding: .1rem .85rem; border-radius: 999px; font-size: .875rem; white-space: nowrap; }
+    #filtroEstado .btn[aria-pressed="true"] { background: var(--acento); border-color: var(--acento); color: var(--acento-tinta); }
+
+    /* Resumen en dos columnas */
+    .resumen { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem .75rem; padding-bottom: .5rem; margin-bottom: .6rem; border-bottom-width: 1px; }
+    .resumen span { font-size: .75rem; line-height: 1.2; }
+    .resumen strong { font-size: 1.2rem; line-height: 1.1; }
+
+    /* Tablero compacto */
+    .tablero { gap: .75rem; }
+    .columna, .columna > div { gap: .4rem; }
+    .columna h2 { font-size: 1.1rem; }
+    .columna .vacio { padding: .6rem; }
+    .tp { padding: .55rem .65rem; gap: .25rem; }
+    .tp-det, .tp-ent, .tp-falta { font-size: .8rem; }
+    .tp-acc { gap: .35rem; }
+    .tablero .tp .tp-acc .btn { min-height: 2.25rem; padding: .2rem .5rem; font-size: .875rem; }
+
+    /* Lista compacta */
+    #lista button { padding: .45rem .65rem; gap: .05rem .75rem; }
+    #lista .det, #lista .ent { font-size: .8rem; }
+    #lista .estado { font-size: .72rem; padding: 0 .45rem; }
+    .vacio { padding: .9rem .65rem; }
+
+    /* Lista → detalle a pantalla completa (en todos los filtros) */
+    #app.con-detalle .cabecera, #app.con-detalle .resumen, #app.con-detalle #tablero, #app.con-detalle #seccionLista { display: none; }
+    #app:not(.con-detalle) .cuerpo > .panel { display: none; }
+    #volver { display: none; }
+    .cuerpo { gap: 0; }
+    .panel { margin: -.6rem -.75rem 0; padding: 0 .75rem .75rem; border: 0; border-radius: 0; gap: .85rem; }
+    #app.con-detalle .barra-detalle {
+      display: flex; align-items: center; gap: .4rem; position: sticky; top: 0; z-index: 6;
+      margin: 0 -.75rem; padding: .3rem .75rem; background: var(--panel); border-bottom: 1px solid var(--linea);
+    }
+    .btn-atras { flex: none; display: inline-flex; align-items: center; gap: .15rem; min-height: 2.25rem; padding: 0 .6rem 0 .3rem; border: 0; border-radius: var(--radio); background: none; color: var(--acento); font-weight: 700; }
+    .btn-atras span { font-size: 1.5rem; line-height: 1; margin-top: -.15rem; }
+    .barra-detalle strong { min-width: 0; font-family: "Barlow Condensed", sans-serif; font-size: 1.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #vTitulo, #eTitulo { display: none; }
+
+    /* Detalle */
+    #vista, #editor { gap: .85rem !important; }
+    .cab { gap: .5rem; }
+    .cab p { font-size: .875rem; margin-top: .1rem; }
+    .nota-caja { padding: .55rem .7rem; font-size: .9rem; }
+
+    /* Tabla del detalle: cada línea en dos renglones, sin desplazamiento lateral */
+    .tabla-caja { overflow: visible; }
+    .tabla-caja table { min-width: 0; }
+    .tabla-caja thead { display: none; }
+    .tabla-caja tbody { display: block; }
+    .tabla-caja tbody tr { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; column-gap: .35rem; align-items: baseline; padding: .5rem 0; border-bottom: 1px solid var(--linea); }
+    .tabla-caja tbody td { padding: 0; border: 0; }
+    .tabla-caja td:first-child { grid-column: 1 / -1; min-width: 0; margin-bottom: .15rem; }
+    .tabla-caja td.c-cant { grid-row: 2; grid-column: 1; text-align: left; }
+    .tabla-caja td.c-cant::after { content: " ×"; color: var(--suave); }
+    .tabla-caja td.c-precio { grid-row: 2; grid-column: 2; text-align: left; color: var(--suave); }
+    .tabla-caja td.c-disp { grid-row: 2; grid-column: 3; text-align: left; font-size: .8rem; color: var(--suave); overflow: hidden; text-overflow: ellipsis; }
+    .tabla-caja td.c-disp::before { content: "· Disponible "; }
+    .tabla-caja td.c-disp.falta { color: var(--alerta); }
+    .tabla-caja td.c-disp.sin-dato { display: none; }
+    .tabla-caja td.c-sub { grid-row: 2; grid-column: 4; text-align: right; font-weight: 700; }
+
+    .total { padding-top: .4rem; }
+    .total-cifra { font-size: 1.6rem; }
+
+    /* Acciones principales en un pie fijo, sobre la barra de secciones */
+    #vAcciones, #ePie {
+      position: sticky; bottom: calc(3.1rem + 1px + env(safe-area-inset-bottom)); z-index: 5;
+      margin: 0 -.75rem -.75rem; padding: .5rem .75rem; gap: .35rem;
+      background: var(--panel); border-top: 1px solid var(--linea);
+    }
+    body:has(input:not([type="checkbox"], [type="radio"], [type="button"]):focus, textarea:focus) :is(#vAcciones, #ePie) { bottom: 0; }
+    #vAcciones .btn { flex: 1 1 auto; min-height: 2.25rem; padding: .2rem .6rem; font-size: .875rem; }
+    #vAcciones .btn-primario { flex: 1 1 100%; order: 10; min-height: 2.75rem; font-size: 1rem; }
+    #ePie { flex-wrap: nowrap; }
+    #ePie .btn { flex: 1 1 auto; min-height: 2.75rem; }
+    #ePie .btn-primario { flex-grow: 2; }
+
+    /* Editor compacto */
+    h3 { font-size: 1.1rem; }
+    .rejilla { gap: .55rem; }
+    .cinta { padding: .6rem .8rem .7rem; }
+    .cinta label { font-size: .875rem; margin-bottom: .3rem; }
+    #resultados button { padding: .5rem .65rem; }
+    .linea { padding: .45rem 0; gap: .3rem .5rem; }
+    .linea .meta { font-size: .8rem; }
+    .linea .paso button { width: 2rem; height: 2rem; font-size: 1.05rem; }
+    .linea .paso input { width: 2.75rem; height: 2rem; min-height: 2rem; padding: 0; }
+    .linea .quitar { width: 2rem; height: 2rem; font-size: 1.25rem; }
+
+    /* Diálogos: el botón principal siempre a la vista */
+    dialog h2 { font-size: 1.4rem; }
+    #dlgEntregar[open], #dlgCancelar[open] { padding-bottom: 0; }
+    #dlgEntregar form, #dlgCancelar form { gap: .75rem; }
+    #dlgEntregar .dlg-acciones, #dlgCancelar .dlg-acciones {
+      position: sticky; bottom: 0; margin: 0 -.75rem; padding: .55rem .75rem calc(.55rem + env(safe-area-inset-bottom));
+      background: var(--panel); border-top: 1px solid var(--linea);
+    }
+    #dlgEntregar .dlg-acciones .btn-primario { flex-grow: 2; min-height: 2.75rem; }
+  }
 </style>
 </head>
 <body>
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=5"></script>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=6"></script>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -328,6 +438,11 @@
 
     <section class="panel" aria-live="polite">
       <button class="btn-volver" type="button" id="volver" hidden>← Volver al tablero</button>
+      <!-- Solo en celular: el detalle ocupa la pantalla y aquí se vuelve a la lista -->
+      <div class="barra-detalle">
+        <button type="button" class="btn-atras" id="atras" aria-label="Volver a la lista de pedidos"><span aria-hidden="true">‹</span> Volver</button>
+        <strong id="tituloDetalle"></strong>
+      </div>
       <p class="vacio" id="panelVacio">Elige un pedido para ver su detalle, o crea uno nuevo. Un pedido se convierte en venta cuando el cliente lo recoge.</p>
 
       <!-- Detalle de un pedido -->
@@ -389,7 +504,7 @@
           <ul id="lineas"></ul>
         </div>
         <div class="total"><span>Total estimado</span><span class="total-cifra num" id="eTotal">$ 0</span></div>
-        <div class="acciones" style="justify-content:flex-end">
+        <div class="acciones" id="ePie" style="justify-content:flex-end">
           <button class="btn" type="button" id="eCancelar">Descartar cambios</button>
           <button class="btn btn-primario" type="button" id="eGuardar">Guardar pedido</button>
         </div>
@@ -533,11 +648,39 @@
     return intl.length >= 11 ? intl : null;
   }
 
+  let urlDetalle = null;    // última dirección con un pedido abierto (botón atrás en celular)
   function ponerUrl(params) {
     const u = new URL(location.href);
     u.search = params ? new URLSearchParams(params).toString() : '';
-    history.replaceState(null, '', u);
+    if (params) urlDetalle = u.href;
+    history.replaceState(history.state, '', u);
   }
+
+  // Celular: la lista (o el tablero) y el detalle se turnan la pantalla. Al abrir el detalle
+  // se agrega una entrada al historial para que el botón atrás del teléfono vuelva a la lista.
+  const movil = window.matchMedia('(max-width: 700px)');
+  if (movil.matches && 'scrollRestoration' in history) history.scrollRestoration = 'manual';
+  let scrollLista = 0;
+  function cambioDetalle(abre) {
+    if (!movil.matches) return;
+    if (abre) {
+      scrollLista = window.scrollY;
+      if (!history.state?.detalle) history.pushState({ detalle: 1 }, '', location.href);
+      window.scrollTo(0, 0);
+    } else {
+      if (history.state?.detalle) history.back();
+      requestAnimationFrame(() => window.scrollTo(0, scrollLista));
+    }
+  }
+  function tituloDetalle() {
+    $('#tituloDetalle').textContent = !$('#editor').hidden ? $('#eTitulo').textContent : $('#vTitulo').textContent;
+  }
+  // En celular las acciones del pedido van al final del detalle, en un pie fijo
+  function ubicarAcciones() {
+    (movil.matches ? $('#vista') : $('#vista .cab')).append($('#vAcciones'));
+  }
+  movil.addEventListener?.('change', ubicarAcciones);
+  ubicarAcciones();
 
   // ---------- Sesión ----------
   async function mostrarSesion(session) {
@@ -678,6 +821,8 @@
     $('#seccionLista').hidden = tablero;
     $('#cuerpo').classList.toggle('solo-panel', tablero);
     $('#volver').hidden = !(tablero && conPanel);
+    // Celular (CSS): con un pedido abierto se ve solo el panel, en cualquier filtro
+    $('#app').classList.toggle('con-detalle', conPanel);
   }
 
   function pintarLista() {
@@ -752,12 +897,25 @@
     window.navPendientes?.(db);
   }
 
-  $('#volver').addEventListener('click', async () => {
-    if (editando && !(await confirmarDescartar())) return;
+  // Volver a la lista o al tablero ("← Volver", "‹ Volver" en celular o el botón atrás del teléfono)
+  function cerrarDetalle() {
     actual = null;
     mostrarPanel('vacio');
     ponerUrl(null);
     pintarLista();
+  }
+  async function volverALista() {
+    if (editando && !(await confirmarDescartar())) return;
+    cerrarDetalle();
+  }
+  $('#volver').addEventListener('click', volverALista);
+  $('#atras').addEventListener('click', volverALista);
+  window.addEventListener('popstate', async () => {
+    const abierto = !$('#vista').hidden || !$('#editor').hidden;
+    if (!abierto) { if (!history.state?.detalle) ponerUrl(null); return; }
+    if (history.state?.detalle) return;
+    if (editando && !(await confirmarDescartar())) { history.pushState({ detalle: 1 }, '', urlDetalle || location.href); return; }
+    cerrarDetalle();
   });
   $('#lista').addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-id]');
@@ -774,6 +932,7 @@
     $('#editor').hidden = cual !== 'editor';
     if (cual !== 'editor') { detenerCamara(); editando = null; }
     actualizarVista();
+    if (antes !== (cual !== 'vacio')) cambioDetalle(cual !== 'vacio');
     // Desde el tablero, el pedido se abre arriba
     if (!antes && cual !== 'vacio' && filtro === 'abiertos') window.scrollTo(0, 0);
   }
@@ -808,6 +967,7 @@
     mostrarPanel('vista');
 
     $('#vTitulo').textContent = `Pedido ${p.id}`;
+    tituloDetalle();
     $('#vEstado').textContent = ESTADOS[p.estado];
     $('#vEstado').className = `estado ${CLASE_ESTADO[p.estado]}`;
     $('#vCliente').textContent = [p.cliente ?? 'Sin cliente', p.documento, p.telefono].filter(Boolean).join(' · ');
@@ -843,10 +1003,10 @@
       return `
       <tr>
         <td>${esc(d.etiqueta)}<small>${esc(d.codigo ?? 'Sin código')}</small></td>
-        <td class="der num">${cant.format(d.cantidad)}</td>
-        <td class="der num">${cop.format(d.precio_unitario)}</td>
-        <td class="der num">${cop.format(d.subtotal)}</td>
-        <td class="der num ${corto ? 'falta' : ''}">${abierto ? disp : '—'}</td>
+        <td class="der num c-cant">${cant.format(d.cantidad)}</td>
+        <td class="der num c-precio">${cop.format(d.precio_unitario)}</td>
+        <td class="der num c-sub">${cop.format(d.subtotal)}</td>
+        <td class="der num c-disp${corto ? ' falta' : ''}${abierto ? '' : ' sin-dato'}">${abierto ? disp : '—'}</td>
       </tr>`;
     }).join('') || '<tr><td colspan="5" class="vacio">Este pedido no tiene productos.</td></tr>';
 
@@ -948,6 +1108,7 @@
     ponerUrl(p ? { id: p.id } : { nuevo: 1 });
 
     $('#eTitulo').textContent = p ? `Editar pedido ${p.id}` : 'Nuevo pedido';
+    tituloDetalle();
     $('#eCliente').innerHTML = '<option value="">Elige el cliente</option>' +
       clientes.map((c) => `<option value="${c.id}">${esc(c.nombre)}${c.documento ? ' (' + esc(c.documento) + ')' : ''}</option>`).join('');
     $('#eCliente').value = p?.cliente_id ?? '';
