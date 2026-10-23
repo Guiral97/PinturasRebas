@@ -15,7 +15,7 @@
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="config.js"></script>
 <script src="etiquetas.js?v=20261010c"></script>
-<script src="impresora-directa.js?v=20261022a"></script>
+<script src="impresora-directa.js?v=20261023a"></script>
 <script src="fotos.js?v=1"></script>
 <style>
   :root {
@@ -1143,6 +1143,7 @@
           <button type="button" class="btn" data-directo="serial" hidden>Puerto COM</button>
         </div>
         <p class="et-nota" id="etDirectoEstado" role="status"></p>
+        <button type="button" class="btn" id="etOtroCanal" hidden>¿No salió? Probar otro canal</button>
       </div>
     </div>
     <div class="dlg-pie">
@@ -2169,6 +2170,7 @@
     if (!etPres) return;
     const cd = window.impresoraDirecta?.conectada();
     estadoDirecto(cd ? `Conectada: ${cd.nombre}` : '');
+    pintarOtroCanal();
     $('#etNombre').textContent = etPres.etiqueta;
     $('#etCodigo').textContent = etPres.codigo_barras || `Código nuevo: ${codigoInterno(etPres.id)}`;
     $('#tituloEtiquetas').textContent = etPres.codigo_barras ? 'Imprimir etiquetas' : 'Crear código e imprimir';
@@ -2253,6 +2255,20 @@
     p.className = error ? 'et-nota error' : 'et-nota';
   }
 
+  // Muestra "Probar otro canal" cuando la impresora Bluetooth tiene más de uno
+  function pintarOtroCanal() {
+    const cd = ID?.conectada();
+    const btn = $('#etOtroCanal');
+    btn.hidden = !(cd?.tipo === 'ble' && cd.canal?.total > 1);
+    if (!btn.hidden) btn.textContent = `¿No salió? Probar otro canal (${cd.canal.numero % cd.canal.total + 1} de ${cd.canal.total})`;
+  }
+
+  // Cambia de canal y vuelve a imprimir; el que funcione queda recordado en este equipo
+  $('#etOtroCanal').addEventListener('click', () => {
+    ID.otroCanal();
+    $('[data-directo="ble"]').click();
+  });
+
   $('#etDirecto').addEventListener('click', async (e) => {
     const b = e.target.closest('[data-directo]');
     if (!b) return;
@@ -2260,7 +2276,7 @@
     const cantidad = cantidadEtiquetas();
     if (!cantidad) return;
     const m = medidaElegida();
-    const botones = [...document.querySelectorAll('[data-directo], #imprimirEtiquetas')];
+    const botones = [...document.querySelectorAll('[data-directo], #imprimirEtiquetas, #etOtroCanal')];
     botones.forEach((x) => (x.disabled = true));
     try {
       estadoDirecto(tipo === 'ble' ? 'Elige la impresora en la lista del navegador…' : 'Elige el puerto de la impresora…');
@@ -2277,6 +2293,7 @@
     } finally {
       botones.forEach((x) => (x.disabled = false));
       pintarVistaEtiqueta();   // vuelve a bloquear "Imprimir" si la medida no sirve
+      pintarOtroCanal();
     }
   });
 

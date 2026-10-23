@@ -126,39 +126,70 @@
   // ---------- Conexión ----------
   let conexion = null;   // { tipo: 'ble'|'serial', nombre, enviar(bytes), cerrar() }
 
+  // Canales de impresión conocidos, del más probable al menos probable
+  const CANALES_PREFERIDOS = ['0000ff02', '0000ae01', '0000ffe1', '49535343-8841', 'bef8d6c9', '0000ff01'];
+  const prioridad = (c) => {
+    const i = CANALES_PREFERIDOS.findIndex((p) => c.uuid.startsWith(p));
+    return (i < 0 ? CANALES_PREFERIDOS.length : i) * 2 + (c.properties.writeWithoutResponse ? 0 : 1);
+  };
+  const corto = (c) => (c.uuid.startsWith('0000') ? c.uuid.slice(4, 8) : c.uuid.slice(0, 8));
+
+  // Canal que funcionó con cada impresora (comodidad de este equipo)
+  function leerCanales() {
+    try { return JSON.parse(localStorage.getItem('rebas-ble-canal') || '{}'); } catch (_) { return {}; }
+  }
+  function guardarCanal(nombre, uuid) {
+    try { localStorage.setItem('rebas-ble-canal', JSON.stringify({ ...leerCanales(), [nombre]: uuid })); } catch (_) {}
+  }
+
   async function conectarBluetooth() {
     const dispositivo = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
       optionalServices: SERVICIOS
     });
     const gatt = await dispositivo.gatt.connect();
-    let car = null;
+    const nombreEquipo = dispositivo.name || 'Impresora Bluetooth';
+    // Todos los canales donde se puede escribir. Muchas impresoras tienen varios y
+    // solo uno imprime: en los demás los datos se aceptan y se pierden sin error.
+    const canales = [];
     for (const uuid of SERVICIOS) {
       let servicio;
       try { servicio = await gatt.getPrimaryService(uuid); } catch (_) { continue; }
-      const cars = await servicio.getCharacteristics();
-      // ff02 es el canal de impresión de las Phomemo; si no, el primero que acepte escritura
-      const escribe = (c) => c.properties.writeWithoutResponse || c.properties.write;
-      car = cars.find((c) => c.uuid.startsWith('0000ff02') && escribe(c))
-        || cars.find((c) => c.properties.writeWithoutResponse) || cars.find((c) => c.properties.write);
-      if (car) break;
+      let cars = [];
+      try { cars = await servicio.getCharacteristics(); } catch (_) { continue; }
+      for (const c of cars) {
+        if (c.properties.writeWithoutResponse || c.properties.write) canales.push(c);
+        // Algunas impresoras no aceptan datos hasta que alguien escucha sus avisos
+        if (c.properties.notify) { try { await c.startNotifications(); } catch (_) {} }
+      }
     }
-    if (!car) {
+    if (!canales.length) {
       gatt.disconnect();
-      throw new Error(`"${dispositivo.name || 'El equipo'}" se conectó, pero no tiene un canal de impresión conocido. Prueba con "Puerto COM".`);
+      throw new Error(`"${nombreEquipo}" se conectó, pero no tiene un canal de impresión conocido. Prueba con "Puerto COM".`);
     }
+    canales.sort((a, b) => prioridad(a) - prioridad(b));
+    const guardado = leerCanales()[nombreEquipo];
+    let indice = Math.max(0, canales.findIndex((c) => c.uuid === guardado));
+    let car = canales[indice];
 
     // Bytes por envío; si la impresora no lo acepta se baja a 20. Android corta en
     // silencio los envíos sin respuesta a 20 bytes y la imagen llega incompleta.
     let tam = esAndroid() ? 20 : 180;
-    const sinRespuesta = car.properties.writeWithoutResponse;
+    const sinRespuesta = () => car.properties.writeWithoutResponse;
     async function escribir(trozo) {
-      if (sinRespuesta) await car.writeValueWithoutResponse(trozo);
+      if (sinRespuesta()) await car.writeValueWithoutResponse(trozo);
       else await car.writeValueWithResponse(trozo);
     }
     return {
       tipo: 'ble',
-      nombre: `${dispositivo.name || 'Impresora Bluetooth'} (canal ${car.uuid.slice(4, 8)})`,
+      get nombre() { return `${nombreEquipo} (canal ${corto(car)})`; },
+      get canal() { return { numero: indice + 1, total: canales.length }; },
+      // Pasa al siguiente canal y lo recuerda para la próxima vez
+      otroCanal() {
+        indice = (indice + 1) % canales.length;
+        car = canales[indice];
+        guardarCanal(nombreEquipo, car.uuid);
+      },
       async enviar(bytes, progreso) {
         if (!dispositivo.gatt.connected) await dispositivo.gatt.connect();
         for (let i = 0; i < bytes.length; ) {
@@ -172,7 +203,7 @@
           i += trozo.length;
           progreso?.(i / bytes.length);
           // Pausa corta para no llenar la memoria de la impresora
-          if (sinRespuesta) await espera(tam > 20 ? 4 : 2);
+          if (sinRespuesta()) await espera(tam > 20 ? 4 : 2);
         }
       },
       cerrar() { try { dispositivo.gatt.disconnect(); } catch (_) {} }
@@ -239,6 +270,8 @@
 
   Object.assign(window, {
     impresoraDirecta: { conectar, soportaBluetooth, soportaSerial, imprimirDirecto, bytesEtiquetas, canvasEtiqueta, errorDirecto,
-      conectada: () => conexion && { tipo: conexion.tipo, nombre: conexion.nombre } }
+      conectada: () => conexion && { tipo: conexion.tipo, nombre: conexion.nombre, canal: conexion.canal },
+      // Bluetooth con varios canales: cambia al siguiente (el que imprime varía según el modelo)
+      otroCanal: () => { if (conexion?.otroCanal) conexion.otroCanal(); return conexion?.nombre; } }
   });
 })();
