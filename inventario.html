@@ -2175,7 +2175,7 @@
     $('#etCodigo').textContent = etPres.codigo_barras || `Código nuevo: ${codigoInterno(etPres.id)}`;
     $('#tituloEtiquetas').textContent = etPres.codigo_barras ? 'Imprimir etiquetas' : 'Crear código e imprimir';
     $('#imprimirEtiquetas').textContent = etPres.codigo_barras ? 'Imprimir' : 'Crear código e imprimir';
-    $('#etCantidad').value = Math.min(500, Math.max(1, Math.ceil(Number(etPres.stock) || 0)));
+    $('#etCantidad').value = 1;
 
     const g = leerMedidaGuardada();
     if (g) {
