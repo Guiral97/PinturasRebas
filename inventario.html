@@ -242,47 +242,78 @@
   .imp-tipos { grid-template-columns: repeat(2, 1fr); }
   .imp-check { display: flex; gap: .5rem; align-items: center; font-weight: 400; }
   .imp-check input { width: auto; min-height: 0; }
-  .imp-columnas { margin-bottom: 1.5rem; }
+  /* Columnas: resumen plegado; el mapa se abre con "Cambiar columnas" */
+  .imp-columnas { margin-bottom: 1rem; gap: .75rem; }
+  .imp-col-cab { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
+  .imp-col-cab > div { flex: 1 1 20rem; min-width: 0; }
+  .imp-col-cab h2 { margin: 0; display: flex; align-items: center; gap: .4rem; }
+  .imp-col-cab h2.falta { color: var(--alerta); }
+  .imp-col-cab .carga-nota { margin: .2rem 0 0; }
+  .imp-col-cuerpo { display: grid; gap: .75rem; }
+  .imp-col-cuerpo .carga-nota { margin: 0; }
   .imp-mapa { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .75rem; }
   .imp-mapa select.activo { border-color: var(--acento); }
-  .imp-cab { align-items: center; gap: .6rem 1rem; }
+  /* Barra fija: filtros, totales y botón de importar siempre a la vista */
+  .imp-cab {
+    position: sticky; top: 0; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.25rem;
+    padding: .65rem 0; margin-bottom: .9rem; background: var(--fondo); border-bottom: 1px solid var(--linea);
+  }
   .imp-cab h3 { margin: 0; }
   .imp-cab .filtros { margin-right: auto; }
-  .imp-cab .filtro { min-height: 2.25rem; padding: 0 .75rem; font-size: .9rem; }
+  .imp-cab .filtro { min-height: 2.25rem; padding: 0 .75rem; font-size: .9rem; white-space: nowrap; flex: none; }
   .imp-cab .filtro .punto { background: var(--suave); }
   .imp-cab .filtro .p-nueva { background: var(--aviso); } .imp-cab .filtro .p-existe { background: var(--acento); }
   .imp-cab .filtro .p-error { background: var(--alerta); } .imp-cab .filtro .p-hecha { background: var(--ok); }
-  .imp-cab #impResumen { font-variant-numeric: tabular-nums; }
-  .imp-ayuda { margin: 0 0 .6rem; }
-  .imp-ayuda .btn-texto { padding: 0 .2rem; }
-  /* La tabla se desplaza dentro de su caja: los títulos y el botón de importar quedan a la vista */
-  #impPrevia .tabla-caja { max-height: 72vh; overflow: auto; }
-  .imp-tabla { min-width: 0; }
-  .imp-tabla thead th { position: sticky; top: 0; z-index: 1; background: var(--panel); box-shadow: inset 0 -1px var(--linea); }
-  .imp-tabla th, .imp-tabla td { padding: .35rem .3rem; vertical-align: middle; }
-  #impPrevia .imp-tabla th:first-child, #impPrevia .imp-tabla td:first-child { min-width: 0; width: 2.75rem; padding-left: .6rem; color: var(--suave); }
-  /* Celdas planas, como una hoja de cálculo: el borde aparece al pasar o al editar */
-  .imp-tabla input { width: 100%; min-height: 2.25rem; padding: .3rem .45rem; font-size: .9rem; background: transparent; border-color: transparent; }
-  .imp-tabla tr:hover input:not(:disabled), .imp-tabla input:focus { background: var(--fondo); border-color: var(--linea); }
-  .imp-tabla input:focus { border-color: var(--acento); }
-  .imp-tabla input:not(:disabled):placeholder-shown { border-color: var(--linea); border-style: dashed; }
+  .imp-totales { display: flex; gap: 1.25rem; margin: 0; font-variant-numeric: tabular-nums; }
+  .imp-totales dt { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--suave); }
+  .imp-totales dd { margin: 0; font-weight: 700; font-size: 1.1rem; line-height: 1.2; }
+  /* Igual en todas las filas */
+  .imp-comunes { margin-bottom: 1rem; gap: .75rem; }
+  .imp-com-cab { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .75rem; }
+  .imp-com-cab h3 { margin: 0; font-size: 1rem; }
+  .imp-com-cab .carga-nota { margin: 0; }
+  .imp-com-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: .75rem; }
+  .imp-com-campos .campo { font-size: .85rem; font-weight: 600; color: var(--suave); }
+  .imp-com-campos input { background: var(--fondo); color: var(--tinta); font-size: 1rem; }
+  /* Tabla: se lee como texto; la fila que se corrige se abre con sus campos */
+  .imp-tabla { min-width: 46rem; font-variant-numeric: tabular-nums; }
+  .imp-tabla th, .imp-tabla td { padding: .55rem .5rem; vertical-align: middle; }
+  #impPrevia .imp-tabla th:first-child, #impPrevia .imp-tabla td:first-child { min-width: 0; width: 2.75rem; padding-left: .8rem; color: var(--suave); }
+  .imp-tabla .c-cant { width: 5.5rem; } .imp-tabla .c-costo, .imp-tabla .c-precio { width: 7.5rem; }
+  .imp-tabla .c-gan { width: 6rem; } .imp-tabla .c-estado { width: 12rem; } .imp-tabla .c-acc { width: 5.5rem; }
+  .imp-tabla tbody tr:not(.hecha):not(.excluida):not(.editando) { cursor: pointer; }
+  .imp-tabla tbody tr:not(.editando):hover td { background: color-mix(in srgb, var(--acento) 6%, transparent); }
+  .imp-abrir { border: 0; background: none; padding: 0; color: var(--tinta); font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+  .imp-abrir:hover { color: var(--acento); }
+  .imp-tabla td small { line-height: 1.35; margin-top: .1rem; }
+  .imp-tabla tr.editando td { background: color-mix(in srgb, var(--acento) 8%, transparent); vertical-align: top; }
+  .imp-tabla tr.editando td:first-child { box-shadow: inset 3px 0 var(--acento); padding-top: 1rem; }
+  .imp-editor { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: .5rem; }
+  .imp-editor .ancho { grid-column: 1 / -1; }
+  .imp-editor .campo { font-size: .78rem; font-weight: 600; color: var(--suave); gap: .15rem; }
+  .imp-tabla input { width: 100%; min-height: 2.4rem; padding: .3rem .5rem; font-size: .95rem; background: var(--fondo); color: var(--tinta); }
   .imp-tabla input.num { text-align: right; }
-  .imp-tabla input:disabled { color: var(--tinta); opacity: 1; }
-  .imp-codigo { width: 9.5rem; } .imp-sku { width: 7rem; } .imp-nombre { min-width: 15rem; } .imp-marca { width: 8rem; }
-  .imp-categoria { width: 9rem; } .imp-presentacion { width: 7rem; } .imp-color { width: 6rem; } .imp-cantidad { width: 5rem; }
-  .imp-costo, .imp-precio { width: 7rem; } .imp-nota { width: 7.5rem; } .imp-estado { width: 12rem; min-width: 12rem; }
+  .imp-tabla input:disabled { background: transparent; border-color: transparent; opacity: 1; padding-left: 0; }
+  .imp-tabla tr.editando td.c-num { padding-top: 1.45rem; }
+  .imp-tabla tr.editando .imp-gan, .imp-tabla tr.editando .imp-estado { padding-top: 1.6rem; }
+  .imp-tabla .imp-acc { text-align: right; white-space: nowrap; }
+  .imp-tabla tr.editando .imp-acc { padding-top: 1.2rem; }
+  .imp-quitar { width: 2.4rem; height: 2.4rem; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radio); background: none; color: var(--suave); vertical-align: middle; }
+  .imp-quitar:hover { color: var(--alerta); background: color-mix(in srgb, var(--alerta) 12%, transparent); }
+  .imp-tabla .btn-texto { min-height: 2.4rem; }
   .imp-estado small { line-height: 1.3; margin-top: .15rem; }
   .imp-tabla tr.con-error td { background: color-mix(in srgb, var(--alerta) 7%, transparent); }
   .imp-tabla tr.con-error td:first-child { box-shadow: inset 3px 0 var(--alerta); }
   .imp-tabla tr.excluida td, .imp-tabla tr.hecha td { color: var(--suave); }
-  .imp-tabla tr.excluida input:disabled, .imp-tabla tr.hecha input:disabled { color: var(--suave); }
-  .imp-tabla tr.excluida input { text-decoration: line-through; }
+  .imp-tabla tr.excluida td:nth-child(2) strong { text-decoration: line-through; }
   .imp-tabla td .estado { white-space: normal; }
-  .imp-tabla .btn-texto { min-height: 2.25rem; }
+  .imp-pie { margin: 0; padding: .7rem .8rem; border-top: 1px solid var(--linea); color: var(--suave); font-size: .9rem; }
   .imp-fallo { color: var(--alerta); font-weight: 600; }
   @media (max-width: 900px) { .imp-pasos { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 700px) {
     .imp-pasos { gap: 1rem; margin-bottom: 1rem; }
+    .imp-cab { position: static; }   /* en celular ocuparía media pantalla */
+    .imp-cab .filtros { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; }
     .imp-cab .btn-primario { flex: 1 1 100%; }
   }
 
@@ -1034,25 +1065,45 @@
     </div>
 
     <div class="tarjeta imp-columnas" id="impColumnas" hidden>
-      <h2>3. Columnas</h2>
-      <p class="carga-nota">Se eligieron solas por el título. Corrige las que no correspondan.</p>
-      <div class="imp-mapa" id="impMapa"></div>
+      <div class="imp-col-cab">
+        <div>
+          <h2 id="impColTitulo">3. Columnas</h2>
+          <p class="carga-nota" id="impColResumen"></p>
+        </div>
+        <button type="button" class="btn" id="impColBtn" aria-expanded="false" aria-controls="impColCuerpo">Cambiar columnas</button>
+      </div>
+      <div class="imp-col-cuerpo" id="impColCuerpo" hidden>
+        <p class="carga-nota">Se eligieron solas por el título. Corrige las que no correspondan.</p>
+        <div class="imp-mapa" id="impMapa"></div>
+      </div>
     </div>
 
     <div id="impPrevia" hidden>
       <div class="carga-cab imp-cab">
         <h3>Vista previa</h3>
         <div class="filtros" id="impVer" role="group" aria-label="Ver filas"></div>
-        <span id="impResumen"></span>
+        <dl class="imp-totales">
+          <div><dt>Unidades</dt><dd id="impUnidades">0</dd></div>
+          <div><dt>Costo total</dt><dd id="impCosto">—</dd></div>
+        </dl>
         <button class="btn btn-primario" type="button" id="impBoton" disabled>Importar</button>
       </div>
-      <p class="carga-nota imp-ayuda">Haz clic en cualquier celda para corregirla antes de importar. Si el producto ya existe, solo cambian la cantidad, el costo, el precio y la nota.
-        <button type="button" class="btn-texto" id="impColsBtn" hidden></button></p>
+      <section class="tarjeta imp-comunes" id="impComunes" aria-labelledby="impComTitulo" hidden>
+        <div class="imp-com-cab">
+          <h3 id="impComTitulo">Igual en todas las filas</h3>
+          <p class="carga-nota" id="impComAyuda"></p>
+        </div>
+        <div class="imp-com-campos" id="impComCampos"></div>
+      </section>
       <div class="tabla-caja">
         <table class="imp-tabla">
-          <thead id="thImportar"></thead>
+          <thead><tr>
+            <th class="der">#</th><th>Producto</th><th class="der c-cant">Cantidad</th><th class="der c-costo">Costo</th><th class="der c-precio">Precio</th>
+            <th class="der c-gan">Ganancia</th><th class="c-estado">Estado</th><th class="c-acc"><span class="visually-hidden">Acciones</span></th>
+          </tr></thead>
           <tbody id="tbImportar"></tbody>
         </table>
+        <p class="imp-pie" id="impPie"></p>
       </div>
       <datalist id="impListaMarcas"></datalist>
       <datalist id="impListaCats"></datalist>
@@ -3107,7 +3158,9 @@
     impEdits.clear();
     impExcluidas.clear();
     impVer = 'todas';
+    impEditando = null;
     mapaAutomatico();
+    impMapaAbierto = impMapa.cantidad < 0;   // sin cantidad no se puede importar: se muestra el mapa
     pintarMapa();
     analizarImportacion();
   }
@@ -3186,25 +3239,23 @@
     pintarImportacion(completa);
   }
 
-  // Columnas editables de la vista previa. Las del producto no se editan si ya existe en el catálogo.
-  const CELDAS_IMP = ['codigo', 'sku', 'nombre', 'marca', 'categoria', 'presentacion', 'color', 'cantidad', 'costo', 'precio', 'nota'];
+  // Campos que se corrigen en la vista previa. Los del producto no se editan si ya existe en el catálogo.
+  const CAMPOS_EDITOR = ['nombre', 'codigo', 'sku', 'marca', 'categoria', 'presentacion', 'color', 'nota'];
   const DE_PRODUCTO = new Set(['nombre', 'marca', 'categoria', 'presentacion', 'color']);
   const NUMERICAS = new Set(['cantidad', 'costo', 'precio']);
   const LISTAS_IMP = { marca: 'impListaMarcas', categoria: 'impListaCats', presentacion: 'impListaPres' };
   const TITULO_IMP = Object.fromEntries(CAMPOS_IMP.map((c) => [c.k, c.t]));
-  const formaFila = (r) => `${r.hecho ? 'h' : ''}${r.excluida ? 'x' : ''}${r.existe?.id ?? ''}`;
-  const claseFila = (r) => (r.hecho ? 'hecha' : r.excluida ? 'excluida' : r.error ? 'con-error' : '');
+  // Datos que suelen repetirse en toda la factura: si son iguales en todas las filas, se cambian una sola vez arriba
+  const COMUNES_IMP = ['marca', 'categoria', 'presentacion', 'nota'];
+  const PH_COMUN = { marca: 'Sin marca', categoria: 'Sin categoría', presentacion: 'Unidad', nota: 'Número de factura' };
   // Grupos del filtro de la vista previa
   const GRUPOS_IMP = [['todas', 'Todas'], ['nueva', 'Nuevas'], ['existe', 'Ya existen'], ['error', 'Con error'], ['quitada', 'Quitadas'], ['hecha', 'Importadas']];
   const grupoFila = (r) => (r.hecho ? 'hecha' : r.excluida ? 'quitada' : r.error ? 'error' : r.existe ? 'existe' : 'nueva');
-  // Las columnas sin ningún dato se ocultan (se pueden mostrar para escribir en ellas)
-  const SIEMPRE_IMP = new Set(['nombre', 'presentacion', 'cantidad', 'costo', 'precio']);
-  let impVer = 'todas', impTodasCols = false, impCols = CELDAS_IMP;
-  function columnasImp() {
-    const editadas = new Set([...impEdits.values()].flatMap(Object.keys));
-    return CELDAS_IMP.filter((k) => impTodasCols || SIEMPRE_IMP.has(k) || editadas.has(k)
-      || impFilas.some((r) => String(valorCelda(r, k) ?? '').trim()));
-  }
+  let impVer = 'todas', impEditando = null, impMapaAbierto = false, impComunesK = new Set();
+  const editandoImp = (r) => impEditando === r.n && !r.hecho && !r.excluida;
+  const formaFila = (r) => `${r.hecho ? 'h' : ''}${r.excluida ? 'x' : ''}${r.existe?.id ?? ''}${editandoImp(r) ? 'e' : ''}`;
+  const claseFila = (r) => (r.hecho ? 'hecha' : r.excluida ? 'excluida' : editandoImp(r) ? 'editando' : r.error ? 'con-error' : '');
+  const QUITAR_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
 
   function valorCelda(r, k) {
     if (r.existe && DE_PRODUCTO.has(k))
@@ -3220,33 +3271,114 @@
     if (r.excluida) return '<span class="estado estado-neutro">No se importa</span>';
     if (r.error) return `<span class="estado estado-mal">${ALERTA_SVG} ${esc(r.error)}</span>`;
     const fallo = r.fallo ? `<small class="imp-fallo">No se importó: ${esc(r.fallo)}. Se reintenta al importar otra vez.</small>` : '';
-    if (r.existe) {
-      const precio = r.precioNuevo ? ` · precio ${cop.format(r.existe.precio_venta)} → ${cop.format(r.precioNuevo)}` : '';
-      return `<span class="estado estado-confirmado">Existe</span><small>Stock ${Number(r.existe.stock)} → ${Number(r.existe.stock) + r.cantidad}${precio}${r.avisos.length ? ' · ' + esc(r.avisos.join(' · ')) : ''}</small>${fallo}`;
-    }
+    if (r.existe)
+      return `<span class="estado estado-confirmado">Existe</span><small>Stock ${Number(r.existe.stock)} → ${Number(r.existe.stock) + r.cantidad}${r.avisos.length ? ' · ' + esc(r.avisos.join(' · ')) : ''}</small>${fallo}`;
     return `<span class="estado estado-pendiente">Nueva</span>${r.avisos.length ? `<small>${esc(r.avisos.join(' · '))}</small>` : ''}${fallo}`;
   }
 
+  // Precio y costo con los que queda la presentación (los del catálogo si la lista no los cambia)
+  const precioFila = (r) => r.precioNuevo ?? (r.existe ? Number(r.existe.precio_venta) : null);
+  const costoFila = (r) => (r.costo > 0 ? r.costo : r.existe ? Number(r.existe.costo) : null);
+  function ganFila(r) {
+    const pct = pctSobreCosto(costoFila(r), precioFila(r));
+    if (pct == null || r.error) return '<span class="stock-nota">—</span>';
+    const clase = pct <= 0 ? 'neg' : pct < GANANCIA_BAJA ? 'baja' : '';
+    return `<span class="gan ${clase}">${pct > 0 ? '+' : ''}${fmtPct(pct)} %</span>`;
+  }
+  // Un número de la lista: con formato, o el texto en rojo si no se pudo leer
+  function numFila(r, k, fmt) {
+    if (Number.isNaN(r[k])) return `<span class="imp-fallo">${esc(r.txt[k])}</span>`;
+    return r[k] == null ? '<span class="stock-nota">—</span>' : fmt(r[k]);
+  }
+
+  function inputImp(r, k) {
+    const soloLectura = r.existe && DE_PRODUCTO.has(k);
+    const ph = k === 'precio' && r.existe ? cop.format(r.existe.precio_venta) : k === 'presentacion' ? 'Unidad' : '';
+    return `<input data-f="${k}" value="${esc(valorCelda(r, k))}"${soloLectura ? ' disabled' : ''}${
+      LISTAS_IMP[k] && !soloLectura ? ` list="${LISTAS_IMP[k]}"` : ''}${NUMERICAS.has(k) ? ' inputmode="decimal" class="num"' : ''
+      } placeholder="${esc(ph)}" autocomplete="off" spellcheck="false" aria-label="${esc(TITULO_IMP[k])}, fila ${r.n}">`;
+  }
+
+  function accionesFila(r) {
+    if (r.hecho) return '';
+    if (r.excluida) return `<button type="button" class="btn-texto" data-excluir="${r.n}">Incluir</button>`;
+    return `${editandoImp(r) ? '<button type="button" class="btn-texto" data-listo>Listo</button>' : ''}<button type="button" class="imp-quitar" data-excluir="${r.n}" aria-label="Quitar fila ${r.n}" title="No importar esta fila">${QUITAR_SVG}</button>`;
+  }
+
   function celdasFila(r) {
+    if (editandoImp(r)) {
+      return `<td class="der num">${r.n}</td>
+        <td><div class="imp-editor">${CAMPOS_EDITOR.map((k) =>
+          `<label class="campo${k === 'nombre' ? ' ancho' : ''}">${esc(TITULO_IMP[k])}${inputImp(r, k)}</label>`).join('')}</div></td>
+        <td class="c-num">${inputImp(r, 'cantidad')}</td><td class="c-num">${inputImp(r, 'costo')}</td><td class="c-num">${inputImp(r, 'precio')}</td>
+        <td class="der imp-gan">${ganFila(r)}</td><td class="imp-estado">${estadoFila(r)}</td><td class="imp-acc">${accionesFila(r)}</td>`;
+    }
+    // Debajo del nombre: el código y lo que no está en "Igual en todas las filas"
+    const detalle = [
+      r.codigo || r.existe?.codigo_barras || (r.existe ? '' : 'sin código: se le asigna uno'),
+      r.sku || r.existe?.sku,
+      ...['marca', 'categoria', 'presentacion', 'color', 'nota'].filter((k) => !impComunesK.has(k)).map((k) => {
+        const v = String(valorCelda(r, k) ?? '').trim() || (k === 'presentacion' ? 'Unidad' : '');
+        return v && k === 'color' ? `color ${v}` : v;
+      })
+    ].filter(Boolean).join(' · ');
+    const nombre = esc(valorCelda(r, 'nombre') || 'Sin nombre');
     const fijo = r.hecho || r.excluida;
-    return `<td class="der num">${r.n}</td><td class="imp-estado">${estadoFila(r)}</td>` + impCols.map((k) => {
-      const soloLectura = fijo || (r.existe && DE_PRODUCTO.has(k));
-      const ph = k === 'precio' && r.existe ? cop.format(r.existe.precio_venta) : k === 'presentacion' ? 'Unidad' : '';
-      return `<td class="imp-${k}"><input data-f="${k}" value="${esc(valorCelda(r, k))}"${soloLectura ? ' disabled' : ''}${
-        LISTAS_IMP[k] && !soloLectura ? ` list="${LISTAS_IMP[k]}"` : ''}${NUMERICAS.has(k) ? ' inputmode="decimal" class="num"' : ''
-        } placeholder="${esc(ph)}" autocomplete="off" spellcheck="false" aria-label="${esc(TITULO_IMP[k])}, fila ${r.n}"></td>`;
-    }).join('') + `<td>${r.hecho ? '' : `<button type="button" class="btn-texto" data-excluir="${r.n}">${r.excluida ? 'Incluir' : 'Quitar'}</button>`}</td>`;
+    const antes = r.existe && r.precioNuevo ? `<small>antes ${cop.format(r.existe.precio_venta)}</small>` : '';
+    return `<td class="der num">${r.n}</td>
+      <td data-k="nombre">${fijo ? `<strong>${nombre}</strong>` : `<button type="button" class="imp-abrir" data-editar>${nombre}</button>`}<small>${esc(detalle)}</small></td>
+      <td class="der" data-k="cantidad">${numFila(r, 'cantidad', (v) => v.toLocaleString('es-CO'))}</td>
+      <td class="der" data-k="costo">${numFila(r, 'costo', (v) => cop.format(v))}</td>
+      <td class="der" data-k="precio"><strong>${Number.isNaN(r.precio) ? numFila(r, 'precio') : precioFila(r) ? cop.format(precioFila(r)) : '—'}</strong>${antes}</td>
+      <td class="der imp-gan">${ganFila(r)}</td><td class="imp-estado">${estadoFila(r)}</td><td class="imp-acc">${accionesFila(r)}</td>`;
+  }
+
+  // Filas a las que se aplica un dato de "Igual en todas las filas"
+  const filasComun = (k) => impFilas.filter((r) => !r.hecho && !r.excluida && !(r.existe && DE_PRODUCTO.has(k)));
+
+  function pintarComunes() {
+    const caja = $('#impComunes');
+    if (caja.contains(document.activeElement)) return;   // mientras se escribe ahí no se redibuja
+    const comunes = COMUNES_IMP.map((k) => {
+      const filas = filasComun(k);
+      const valores = new Set(filas.map((r) => String(valorCelda(r, k) ?? '').trim()));
+      return filas.length > 1 && valores.size === 1 ? { k, valor: [...valores][0] } : null;
+    }).filter(Boolean);
+    impComunesK = new Set(comunes.map((c) => c.k));
+    caja.hidden = !comunes.length;
+    const hayExistentes = impFilas.some((r) => r.existe && !r.hecho && !r.excluida);
+    $('#impComAyuda').textContent = 'Cambia un dato aquí y se aplica a todas. Si una fila es distinta, ábrela en la tabla.'
+      + (hayExistentes ? ' Los productos que ya existen conservan su marca, categoría y presentación.' : '');
+    $('#impComCampos').innerHTML = comunes.map(({ k, valor }) => `
+      <label class="campo">${esc(TITULO_IMP[k])}
+        <input data-com="${k}" value="${esc(valor)}" placeholder="${esc(PH_COMUN[k])}"${LISTAS_IMP[k] ? ` list="${LISTAS_IMP[k]}"` : ''} autocomplete="off" spellcheck="false">
+      </label>`).join('');
+  }
+
+  function pintarColumnas() {
+    const usadas = CAMPOS_IMP.filter((c) => impMapa[c.k] >= 0);
+    const falta = impMapa.cantidad < 0;
+    const t = $('#impColTitulo');
+    t.classList.toggle('falta', falta);
+    t.innerHTML = falta ? `${ALERTA_SVG} 3. Columnas: falta la cantidad` : `3. Columnas: ${usadas.length} ${usadas.length === 1 ? 'reconocida' : 'reconocidas'}`;
+    const pct = $('#impPct').value;
+    $('#impColResumen').textContent = [
+      ...usadas.map((c) => c.t),
+      impMapa.precio < 0 && (pct !== '' ? `sin precio: se calcula con el ${pct} %` : 'sin precio: pon el % de ganancia')
+    ].filter(Boolean).join(' · ');
+    $('#impColCuerpo').hidden = !impMapaAbierto;
+    $('#impColBtn').setAttribute('aria-expanded', String(impMapaAbierto));
+    $('#impColBtn').textContent = impMapaAbierto ? 'Listo' : 'Cambiar columnas';
   }
 
   function pintarImportacion(completa = true) {
     $('#impPrevia').hidden = !impFilas.length;
+    pintarColumnas();
     const pendientes = impFilas.filter(pendienteImp);
     const unidades = pendientes.reduce((s, r) => s + r.cantidad, 0);
     const valor = pendientes.reduce((s, r) => s + r.cantidad * (r.costo || 0), 0);
-    $('#impResumen').textContent = [
-      `${unidades.toLocaleString('es-CO')} ${unidades === 1 ? 'unidad' : 'unidades'}`,
-      valor > 0 && `costo ${cop.format(valor)}`
-    ].filter(Boolean).join(' · ');
+    $('#impUnidades').textContent = unidades.toLocaleString('es-CO');
+    $('#impCosto').textContent = valor > 0 ? cop.format(valor) : '—';
     const btn = $('#impBoton');
     btn.disabled = importando || !pendientes.length;
     if (!importando) btn.textContent = pendientes.length ? `Importar ${pendientes.length} ${pendientes.length === 1 ? 'fila' : 'filas'}` : 'Importar';
@@ -3258,40 +3390,63 @@
     $('#impVer').innerHTML = GRUPOS_IMP.filter(([g]) => g === 'todas' || porGrupo[g]).map(([g, t]) =>
       `<button type="button" class="filtro" data-ver="${g}" aria-pressed="${g === impVer}">${g === 'todas' ? '' : `<span class="punto p-${g}"></span>`}${t} <span class="cuenta">${porGrupo[g]}</span></button>`).join('');
 
+    if (impEditando && !impFilas.some((r) => editandoImp(r))) impEditando = null;
+    pintarComunes();
+
     const tb = $('#tbImportar');
     const activo = document.activeElement;
-    // Mientras se escribe en la tabla no cambian las columnas, para no perder el cursor
-    const cols = tb.contains(activo) ? impCols : columnasImp();
-    const ocultas = CELDAS_IMP.length - columnasImp().length;
-    const bCols = $('#impColsBtn');
-    bCols.hidden = !impTodasCols && !ocultas;
-    bCols.textContent = impTodasCols ? 'Ocultar columnas vacías' : `Mostrar ${ocultas === 1 ? 'la columna vacía' : `las ${ocultas} columnas vacías`}`;
-
-    if (completa || tb.rows.length !== impFilas.length || cols.join() !== impCols.join()) {
-      impCols = cols;
+    if (completa || tb.rows.length !== impFilas.length) {
       const opcionesLista = (lista) => [...new Set(lista.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')).map((v) => `<option value="${esc(v)}">`).join('');
       $('#impListaMarcas').innerHTML = opcionesLista(marcas.map((m) => m.nombre));
       $('#impListaCats').innerHTML = opcionesLista(categorias.map((c) => c.nombre));
       $('#impListaPres').innerHTML = opcionesLista(['Unidad', ...catalogo.map((p) => p.presentacion)]);
-      const titulo = (k) => k === 'color' ? 'Color' : k === 'costo' ? 'Costo' : k === 'precio' ? 'Precio' : TITULO_IMP[k];
-      $('#thImportar').innerHTML = `<tr><th class="der">#</th><th>Estado</th>${impCols.map((k) =>
-        `<th${NUMERICAS.has(k) ? ' class="der"' : ''}>${esc(titulo(k))}</th>`).join('')}<th><span class="visually-hidden">Acciones</span></th></tr>`;
-      tb.innerHTML = impFilas.map((r) => `<tr data-n="${r.n}" data-forma="${formaFila(r)}" class="${claseFila(r)}">${celdasFila(r)}</tr>`).join('');
+      const htmls = impFilas.map(celdasFila);
+      tb.innerHTML = impFilas.map((r, i) => `<tr data-n="${r.n}" data-forma="${formaFila(r)}" class="${claseFila(r)}">${htmls[i]}</tr>`).join('');
+      [...tb.rows].forEach((tr, i) => { tr._html = htmls[i]; });
     } else {
       impFilas.forEach((r, i) => {
         const tr = tb.rows[i];
         tr.className = claseFila(r);
-        if (tr.dataset.forma !== formaFila(r) && !tr.contains(activo)) {
-          tr.dataset.forma = formaFila(r);
-          tr.innerHTML = celdasFila(r);
+        const forma = formaFila(r);
+        // La fila abierta solo actualiza estado, ganancia y los campos que no se están escribiendo
+        if (editandoImp(r) && tr.dataset.forma === forma) {
+          tr.querySelector('.imp-estado').innerHTML = estadoFila(r);
+          tr.querySelector('.imp-gan').innerHTML = ganFila(r);
+          tr.querySelectorAll('input[data-f]').forEach((inp) => { if (inp !== activo) inp.value = valorCelda(r, inp.dataset.f); });
           return;
         }
-        tr.querySelector('.imp-estado').innerHTML = estadoFila(r);
-        tr.querySelectorAll('input[data-f]').forEach((inp) => { if (inp !== activo) inp.value = valorCelda(r, inp.dataset.f); });
+        const html = celdasFila(r);
+        if (tr.dataset.forma === forma && tr._html === html) return;
+        // Si tenía el cursor (por ejemplo, un código que ahora sí existe), vuelve al mismo campo
+        const campo = tr.contains(activo) ? activo.dataset?.f : null;
+        tr.dataset.forma = forma;
+        tr.innerHTML = html;
+        tr._html = html;
+        const inp = campo && tr.querySelector(`input[data-f="${campo}"]:not(:disabled)`);
+        if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
       });
     }
-    // La fila que se está editando no se esconde aunque cambie de grupo
-    impFilas.forEach((r, i) => { tb.rows[i].hidden = impVer !== 'todas' && grupoFila(r) !== impVer && !tb.rows[i].contains(activo); });
+    let visibles = 0;
+    impFilas.forEach((r, i) => {
+      const oculta = impVer !== 'todas' && grupoFila(r) !== impVer && !editandoImp(r);
+      tb.rows[i].hidden = oculta;
+      if (!oculta) visibles++;
+    });
+    $('#impPie').textContent = `${visibles === impFilas.length ? `${visibles} ${visibles === 1 ? 'fila' : 'filas'}` : `Mostrando ${visibles} de ${impFilas.length}`}`
+      + ' · Haz clic en una fila para corregirla. Si el producto ya existe, solo cambian la cantidad, el costo, el precio y la nota.';
+  }
+
+  function editarFilaImp(n, campo) {
+    impEditando = n;
+    pintarImportacion(false);
+    const inps = [...$('#tbImportar').querySelectorAll(`tr[data-n="${n}"] input[data-f]:not(:disabled)`)];
+    (inps.find((i) => i.dataset.f === campo) ?? inps[0])?.focus();
+  }
+  function cerrarFilaImp() {
+    const n = impEditando;
+    impEditando = null;
+    analizarImportacion(false);
+    $('#tbImportar').querySelector(`tr[data-n="${n}"] .imp-abrir`)?.focus();
   }
 
   // Marca o categoría por nombre (sin importar tildes ni mayúsculas); si no existe, se crea
@@ -3441,17 +3596,40 @@
     clearTimeout(tImpFila);
     tImpFila = setTimeout(() => analizarImportacion(false), 250);
   });
-  // Al salir de una fila se redibuja si cambió (por ejemplo, un código que ahora sí existe)
+  // Al salir de un campo se redibuja si cambió (por ejemplo, un código que ahora sí existe)
   $('#tbImportar').addEventListener('focusout', () => setTimeout(() => analizarImportacion(false), 0));
   $('#tbImportar').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && e.target.matches('input')) { e.preventDefault(); e.target.blur(); }
+    if ((e.key === 'Enter' || e.key === 'Escape') && e.target.matches('input')) { e.preventDefault(); cerrarFilaImp(); }
   });
   $('#tbImportar').addEventListener('click', (e) => {
     const b = e.target.closest('[data-excluir]');
-    if (!b) return;
-    const n = Number(b.dataset.excluir);
-    if (impExcluidas.has(n)) impExcluidas.delete(n); else impExcluidas.add(n);
-    analizarImportacion(true);
+    if (b) {
+      const n = Number(b.dataset.excluir);
+      if (impExcluidas.has(n)) impExcluidas.delete(n); else impExcluidas.add(n);
+      if (impEditando === n) impEditando = null;
+      analizarImportacion(true);
+      return;
+    }
+    if (e.target.closest('[data-listo]')) { cerrarFilaImp(); return; }
+    // Clic en cualquier parte de la fila: se abre para corregirla, en el campo donde se hizo clic
+    const tr = e.target.closest('tr[data-n]');
+    if (!tr || e.target.closest('input, label')) return;
+    const n = Number(tr.dataset.n);
+    if (impEditando === n || impHechos.has(n) || impExcluidas.has(n)) return;
+    editarFilaImp(n, e.target.closest('td[data-k]')?.dataset.k);
+  });
+  // Igual en todas las filas: el cambio se guarda en cada fila como si se hubiera escrito ahí
+  $('#impComunes').addEventListener('input', (e) => {
+    const inp = e.target.closest('[data-com]');
+    if (!inp) return;
+    const k = inp.dataset.com, v = inp.value.trim();
+    filasComun(k).forEach((r) => impEdits.set(r.n, { ...impEdits.get(r.n), [k]: v }));
+    clearTimeout(tImpFila);
+    tImpFila = setTimeout(() => analizarImportacion(false), 250);
+  });
+  $('#impComunes').addEventListener('focusout', () => setTimeout(() => analizarImportacion(false), 0));
+  $('#impComunes').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.matches('input')) { e.preventDefault(); e.target.blur(); }
   });
   $('#impNuevoProv').addEventListener('click', async () => {
     const id = await crearMaestro('proveedores', 'empresa proveedora');
@@ -3463,9 +3641,9 @@
     impVer = b.dataset.ver;
     pintarImportacion(false);
   });
-  $('#impColsBtn').addEventListener('click', () => {
-    impTodasCols = !impTodasCols;
-    pintarImportacion(true);
+  $('#impColBtn').addEventListener('click', () => {
+    impMapaAbierto = !impMapaAbierto;
+    pintarColumnas();
   });
   $('#impBoton').addEventListener('click', importar);
   $('#impPct').value = leerPct();
