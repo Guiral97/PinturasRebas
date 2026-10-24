@@ -1011,6 +1011,7 @@
           </div>
         </div>
         <label class="imp-check"><input type="checkbox" id="impRecalcular"> Recalcular también el precio de los que ya existen con este %</label>
+        <label class="imp-check"><input type="checkbox" id="impMayus"> Nombres de productos nuevos en MAYÚSCULA</label>
       </div>
     </div>
 
@@ -3111,6 +3112,7 @@
   function analizarImportacion(completa = true) {
     const pct = $('#impPct').value === '' ? null : Number($('#impPct').value);
     const recalcular = $('#impRecalcular').checked;
+    const mayus = $('#impMayus').checked;
     const notaGeneral = $('#impNota').value.trim();
     const vistos = new Map();   // código o presentación -> número de fila
     const nombreMarca = new Set(marcas.map((m) => norm(m.nombre)));
@@ -3123,7 +3125,7 @@
         [k, k in ed ? ed[k] : impMapa[k] >= 0 ? String(f[impMapa[k]] ?? '').trim() : '']));
       txt.codigo = txt.codigo.replace(/^'/, '');
       const r = {
-        n: i + 1, txt, codigo: txt.codigo, sku: txt.sku, nombre: txt.nombre, marca: txt.marca, categoria: txt.categoria,
+        n: i + 1, txt, codigo: txt.codigo, sku: txt.sku, nombre: mayus ? txt.nombre.toLocaleUpperCase('es-CO') : txt.nombre, marca: txt.marca, categoria: txt.categoria,
         presentacion: txt.presentacion || 'Unidad', color: txt.color, cantidad: leerNumero(txt.cantidad),
         costo: leerNumero(txt.costo), precio: leerNumero(txt.precio), nota: txt.nota || notaGeneral,
         hecho: impHechos.has(i + 1), excluida: impExcluidas.has(i + 1), fallo: impFallos.get(i + 1) ?? '',
@@ -3180,6 +3182,7 @@
       return { nombre: r.existe.producto, marca: marcaDe(r.existe), categoria: r.existe.categoria, presentacion: r.existe.presentacion, color: r.existe.codigo_color }[k] ?? '';
     if (k === 'precio') return r.txt.precio || (r.precioNuevo ? String(r.precioNuevo) : '');
     if (k === 'nota') return r.nota;
+    if (k === 'nombre') return r.nombre;
     return r.txt[k];
   }
 
@@ -3381,6 +3384,12 @@
   });
   ['#impPct', '#impNota'].forEach((s) => $(s).addEventListener('input', () => impFilas.length && analizarImportacion(false)));
   $('#impRecalcular').addEventListener('change', () => impFilas.length && analizarImportacion(false));
+  // Comodidad del equipo: se recuerda si se quieren los nombres en mayúscula
+  try { $('#impMayus').checked = localStorage.getItem('rebas-importar-mayus') === '1'; } catch (_) {}
+  $('#impMayus').addEventListener('change', () => {
+    try { localStorage.setItem('rebas-importar-mayus', $('#impMayus').checked ? '1' : '0'); } catch (_) {}
+    if (impFilas.length) analizarImportacion(false);
+  });
 
   // Edición en la vista previa: se guarda por fila y campo; la tabla se actualiza sin perder el cursor
   let tImpFila;
