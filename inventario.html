@@ -245,22 +245,40 @@
   .imp-columnas { margin-bottom: 1.5rem; }
   .imp-mapa { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .75rem; }
   .imp-mapa select.activo { border-color: var(--acento); }
-  .imp-cab { align-items: center; }
+  .imp-cab { align-items: center; gap: .6rem 1rem; }
   .imp-cab h3 { margin: 0; }
-  .imp-cab span { margin-right: auto; }
+  .imp-cab .filtros { margin-right: auto; }
+  .imp-cab .filtro { min-height: 2.25rem; padding: 0 .75rem; font-size: .9rem; }
+  .imp-cab .filtro .punto { background: var(--suave); }
+  .imp-cab .filtro .p-nueva { background: var(--aviso); } .imp-cab .filtro .p-existe { background: var(--acento); }
+  .imp-cab .filtro .p-error { background: var(--alerta); } .imp-cab .filtro .p-hecha { background: var(--ok); }
+  .imp-cab #impResumen { font-variant-numeric: tabular-nums; }
   .imp-ayuda { margin: 0 0 .6rem; }
-  .imp-tabla { min-width: 112rem; }
-  .imp-tabla th, .imp-tabla td { padding: .45rem .35rem; vertical-align: middle; }
-  .imp-tabla input { width: 100%; min-height: 2.25rem; padding: .3rem .45rem; font-size: .9rem; background: var(--fondo); }
+  .imp-ayuda .btn-texto { padding: 0 .2rem; }
+  /* La tabla se desplaza dentro de su caja: los títulos y el botón de importar quedan a la vista */
+  #impPrevia .tabla-caja { max-height: 72vh; overflow: auto; }
+  .imp-tabla { min-width: 0; }
+  .imp-tabla thead th { position: sticky; top: 0; z-index: 1; background: var(--panel); box-shadow: inset 0 -1px var(--linea); }
+  .imp-tabla th, .imp-tabla td { padding: .35rem .3rem; vertical-align: middle; }
+  #impPrevia .imp-tabla th:first-child, #impPrevia .imp-tabla td:first-child { min-width: 0; width: 2.75rem; padding-left: .6rem; color: var(--suave); }
+  /* Celdas planas, como una hoja de cálculo: el borde aparece al pasar o al editar */
+  .imp-tabla input { width: 100%; min-height: 2.25rem; padding: .3rem .45rem; font-size: .9rem; background: transparent; border-color: transparent; }
+  .imp-tabla tr:hover input:not(:disabled), .imp-tabla input:focus { background: var(--fondo); border-color: var(--linea); }
+  .imp-tabla input:focus { border-color: var(--acento); }
+  .imp-tabla input:not(:disabled):placeholder-shown { border-color: var(--linea); border-style: dashed; }
   .imp-tabla input.num { text-align: right; }
-  .imp-tabla input:disabled { background: transparent; border-color: transparent; color: var(--tinta); opacity: 1; }
-  .imp-codigo { width: 9.5rem; } .imp-sku { width: 7rem; } .imp-nombre { min-width: 16rem; } .imp-marca { width: 8rem; }
-  .imp-categoria { width: 9.5rem; } .imp-presentacion { width: 7rem; } .imp-color { width: 6rem; } .imp-cantidad { width: 5rem; }
-  .imp-costo, .imp-precio { width: 6.5rem; } .imp-nota { width: 7.5rem; } .imp-estado { width: 15rem; }
-  .imp-tabla tr.con-error .imp-estado .estado { white-space: normal; }
+  .imp-tabla input:disabled { color: var(--tinta); opacity: 1; }
+  .imp-codigo { width: 9.5rem; } .imp-sku { width: 7rem; } .imp-nombre { min-width: 15rem; } .imp-marca { width: 8rem; }
+  .imp-categoria { width: 9rem; } .imp-presentacion { width: 7rem; } .imp-color { width: 6rem; } .imp-cantidad { width: 5rem; }
+  .imp-costo, .imp-precio { width: 7rem; } .imp-nota { width: 7.5rem; } .imp-estado { width: 12rem; min-width: 12rem; }
+  .imp-estado small { line-height: 1.3; margin-top: .15rem; }
+  .imp-tabla tr.con-error td { background: color-mix(in srgb, var(--alerta) 7%, transparent); }
+  .imp-tabla tr.con-error td:first-child { box-shadow: inset 3px 0 var(--alerta); }
   .imp-tabla tr.excluida td, .imp-tabla tr.hecha td { color: var(--suave); }
   .imp-tabla tr.excluida input:disabled, .imp-tabla tr.hecha input:disabled { color: var(--suave); }
+  .imp-tabla tr.excluida input { text-decoration: line-through; }
   .imp-tabla td .estado { white-space: normal; }
+  .imp-tabla .btn-texto { min-height: 2.25rem; }
   .imp-fallo { color: var(--alerta); font-weight: 600; }
   @media (max-width: 900px) { .imp-pasos { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 700px) {
@@ -1024,16 +1042,15 @@
     <div id="impPrevia" hidden>
       <div class="carga-cab imp-cab">
         <h3>Vista previa</h3>
-        <span id="impResumen" class="num"></span>
+        <div class="filtros" id="impVer" role="group" aria-label="Ver filas"></div>
+        <span id="impResumen"></span>
         <button class="btn btn-primario" type="button" id="impBoton" disabled>Importar</button>
       </div>
-      <p class="carga-nota imp-ayuda">Corrige cualquier dato aquí mismo antes de importar. Si el producto ya existe, solo cambian la cantidad, el costo, el precio y la nota.</p>
+      <p class="carga-nota imp-ayuda">Haz clic en cualquier celda para corregirla antes de importar. Si el producto ya existe, solo cambian la cantidad, el costo, el precio y la nota.
+        <button type="button" class="btn-texto" id="impColsBtn" hidden></button></p>
       <div class="tabla-caja">
         <table class="imp-tabla">
-          <thead><tr>
-            <th class="der">#</th><th>Código de barras</th><th>SKU</th><th>Nombre</th><th>Marca</th><th>Categoría</th><th>Presentación</th><th>Color</th>
-            <th class="der">Cantidad</th><th class="der">Costo</th><th class="der">Precio</th><th>Factura o nota</th><th>Estado</th><th><span class="visually-hidden">Acciones</span></th>
-          </tr></thead>
+          <thead id="thImportar"></thead>
           <tbody id="tbImportar"></tbody>
         </table>
       </div>
@@ -3089,6 +3106,7 @@
     impFallos.clear();
     impEdits.clear();
     impExcluidas.clear();
+    impVer = 'todas';
     mapaAutomatico();
     pintarMapa();
     analizarImportacion();
@@ -3176,6 +3194,17 @@
   const TITULO_IMP = Object.fromEntries(CAMPOS_IMP.map((c) => [c.k, c.t]));
   const formaFila = (r) => `${r.hecho ? 'h' : ''}${r.excluida ? 'x' : ''}${r.existe?.id ?? ''}`;
   const claseFila = (r) => (r.hecho ? 'hecha' : r.excluida ? 'excluida' : r.error ? 'con-error' : '');
+  // Grupos del filtro de la vista previa
+  const GRUPOS_IMP = [['todas', 'Todas'], ['nueva', 'Nuevas'], ['existe', 'Ya existen'], ['error', 'Con error'], ['quitada', 'Quitadas'], ['hecha', 'Importadas']];
+  const grupoFila = (r) => (r.hecho ? 'hecha' : r.excluida ? 'quitada' : r.error ? 'error' : r.existe ? 'existe' : 'nueva');
+  // Las columnas sin ningún dato se ocultan (se pueden mostrar para escribir en ellas)
+  const SIEMPRE_IMP = new Set(['nombre', 'presentacion', 'cantidad', 'costo', 'precio']);
+  let impVer = 'todas', impTodasCols = false, impCols = CELDAS_IMP;
+  function columnasImp() {
+    const editadas = new Set([...impEdits.values()].flatMap(Object.keys));
+    return CELDAS_IMP.filter((k) => impTodasCols || SIEMPRE_IMP.has(k) || editadas.has(k)
+      || impFilas.some((r) => String(valorCelda(r, k) ?? '').trim()));
+  }
 
   function valorCelda(r, k) {
     if (r.existe && DE_PRODUCTO.has(k))
@@ -3200,58 +3229,69 @@
 
   function celdasFila(r) {
     const fijo = r.hecho || r.excluida;
-    return `<td class="der num">${r.n}</td>` + CELDAS_IMP.map((k) => {
+    return `<td class="der num">${r.n}</td><td class="imp-estado">${estadoFila(r)}</td>` + impCols.map((k) => {
       const soloLectura = fijo || (r.existe && DE_PRODUCTO.has(k));
       const ph = k === 'precio' && r.existe ? cop.format(r.existe.precio_venta) : k === 'presentacion' ? 'Unidad' : '';
       return `<td class="imp-${k}"><input data-f="${k}" value="${esc(valorCelda(r, k))}"${soloLectura ? ' disabled' : ''}${
         LISTAS_IMP[k] && !soloLectura ? ` list="${LISTAS_IMP[k]}"` : ''}${NUMERICAS.has(k) ? ' inputmode="decimal" class="num"' : ''
         } placeholder="${esc(ph)}" autocomplete="off" spellcheck="false" aria-label="${esc(TITULO_IMP[k])}, fila ${r.n}"></td>`;
-    }).join('') + `<td class="imp-estado">${estadoFila(r)}</td>
-      <td>${r.hecho ? '' : `<button type="button" class="btn-texto" data-excluir="${r.n}">${r.excluida ? 'Incluir' : 'Quitar'}</button>`}</td>`;
+    }).join('') + `<td>${r.hecho ? '' : `<button type="button" class="btn-texto" data-excluir="${r.n}">${r.excluida ? 'Incluir' : 'Quitar'}</button>`}</td>`;
   }
 
   function pintarImportacion(completa = true) {
     $('#impPrevia').hidden = !impFilas.length;
     const pendientes = impFilas.filter(pendienteImp);
-    const cuenta = (f) => impFilas.filter(f).length;
-    const nuevas = pendientes.filter((r) => !r.existe).length;
     const unidades = pendientes.reduce((s, r) => s + r.cantidad, 0);
     const valor = pendientes.reduce((s, r) => s + r.cantidad * (r.costo || 0), 0);
-    const errores = cuenta((r) => r.error), hechas = cuenta((r) => r.hecho), quitadas = cuenta((r) => r.excluida && !r.hecho);
     $('#impResumen').textContent = [
-      `${nuevas} ${nuevas === 1 ? 'nueva' : 'nuevas'}`,
-      `${pendientes.length - nuevas} ya en el catálogo`,
-      errores && `${errores} con error`,
-      quitadas && `${quitadas} ${quitadas === 1 ? 'quitada' : 'quitadas'}`,
-      hechas && `${hechas} ${hechas === 1 ? 'importada' : 'importadas'}`,
-      `${unidades.toLocaleString('es-CO')} unidades`,
+      `${unidades.toLocaleString('es-CO')} ${unidades === 1 ? 'unidad' : 'unidades'}`,
       valor > 0 && `costo ${cop.format(valor)}`
     ].filter(Boolean).join(' · ');
     const btn = $('#impBoton');
     btn.disabled = importando || !pendientes.length;
     if (!importando) btn.textContent = pendientes.length ? `Importar ${pendientes.length} ${pendientes.length === 1 ? 'fila' : 'filas'}` : 'Importar';
 
+    // Filtro por grupo: solo los que tienen filas; si el elegido queda vacío, se vuelve a Todas
+    const porGrupo = { todas: impFilas.length };
+    impFilas.forEach((r) => { porGrupo[grupoFila(r)] = (porGrupo[grupoFila(r)] ?? 0) + 1; });
+    if (impVer !== 'todas' && !porGrupo[impVer]) impVer = 'todas';
+    $('#impVer').innerHTML = GRUPOS_IMP.filter(([g]) => g === 'todas' || porGrupo[g]).map(([g, t]) =>
+      `<button type="button" class="filtro" data-ver="${g}" aria-pressed="${g === impVer}">${g === 'todas' ? '' : `<span class="punto p-${g}"></span>`}${t} <span class="cuenta">${porGrupo[g]}</span></button>`).join('');
+
     const tb = $('#tbImportar');
-    if (completa || tb.rows.length !== impFilas.length) {
+    const activo = document.activeElement;
+    // Mientras se escribe en la tabla no cambian las columnas, para no perder el cursor
+    const cols = tb.contains(activo) ? impCols : columnasImp();
+    const ocultas = CELDAS_IMP.length - columnasImp().length;
+    const bCols = $('#impColsBtn');
+    bCols.hidden = !impTodasCols && !ocultas;
+    bCols.textContent = impTodasCols ? 'Ocultar columnas vacías' : `Mostrar ${ocultas === 1 ? 'la columna vacía' : `las ${ocultas} columnas vacías`}`;
+
+    if (completa || tb.rows.length !== impFilas.length || cols.join() !== impCols.join()) {
+      impCols = cols;
       const opcionesLista = (lista) => [...new Set(lista.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')).map((v) => `<option value="${esc(v)}">`).join('');
       $('#impListaMarcas').innerHTML = opcionesLista(marcas.map((m) => m.nombre));
       $('#impListaCats').innerHTML = opcionesLista(categorias.map((c) => c.nombre));
       $('#impListaPres').innerHTML = opcionesLista(['Unidad', ...catalogo.map((p) => p.presentacion)]);
+      const titulo = (k) => k === 'color' ? 'Color' : k === 'costo' ? 'Costo' : k === 'precio' ? 'Precio' : TITULO_IMP[k];
+      $('#thImportar').innerHTML = `<tr><th class="der">#</th><th>Estado</th>${impCols.map((k) =>
+        `<th${NUMERICAS.has(k) ? ' class="der"' : ''}>${esc(titulo(k))}</th>`).join('')}<th><span class="visually-hidden">Acciones</span></th></tr>`;
       tb.innerHTML = impFilas.map((r) => `<tr data-n="${r.n}" data-forma="${formaFila(r)}" class="${claseFila(r)}">${celdasFila(r)}</tr>`).join('');
-      return;
+    } else {
+      impFilas.forEach((r, i) => {
+        const tr = tb.rows[i];
+        tr.className = claseFila(r);
+        if (tr.dataset.forma !== formaFila(r) && !tr.contains(activo)) {
+          tr.dataset.forma = formaFila(r);
+          tr.innerHTML = celdasFila(r);
+          return;
+        }
+        tr.querySelector('.imp-estado').innerHTML = estadoFila(r);
+        tr.querySelectorAll('input[data-f]').forEach((inp) => { if (inp !== activo) inp.value = valorCelda(r, inp.dataset.f); });
+      });
     }
-    const activo = document.activeElement;
-    impFilas.forEach((r, i) => {
-      const tr = tb.rows[i];
-      tr.className = claseFila(r);
-      if (tr.dataset.forma !== formaFila(r) && !tr.contains(activo)) {
-        tr.dataset.forma = formaFila(r);
-        tr.innerHTML = celdasFila(r);
-        return;
-      }
-      tr.querySelector('.imp-estado').innerHTML = estadoFila(r);
-      tr.querySelectorAll('input[data-f]').forEach((inp) => { if (inp !== activo) inp.value = valorCelda(r, inp.dataset.f); });
-    });
+    // La fila que se está editando no se esconde aunque cambie de grupo
+    impFilas.forEach((r, i) => { tb.rows[i].hidden = impVer !== 'todas' && grupoFila(r) !== impVer && !tb.rows[i].contains(activo); });
   }
 
   // Marca o categoría por nombre (sin importar tildes ni mayúsculas); si no existe, se crea
@@ -3416,6 +3456,16 @@
   $('#impNuevoProv').addEventListener('click', async () => {
     const id = await crearMaestro('proveedores', 'empresa proveedora');
     if (id) $('#impProv').value = id;
+  });
+  $('#impVer').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-ver]');
+    if (!b) return;
+    impVer = b.dataset.ver;
+    pintarImportacion(false);
+  });
+  $('#impColsBtn').addEventListener('click', () => {
+    impTodasCols = !impTodasCols;
+    pintarImportacion(true);
   });
   $('#impBoton').addEventListener('click', importar);
   $('#impPct').value = leerPct();
