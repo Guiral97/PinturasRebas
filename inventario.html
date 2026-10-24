@@ -236,6 +236,27 @@
   .pos { color: var(--ok); font-weight: 600; }
   .neg { color: var(--alerta); font-weight: 600; }
 
+  /* Importar */
+  .imp-pasos { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; margin-bottom: 1.5rem; }
+  .imp-pasos textarea { font-family: inherit; font-size: .9rem; resize: vertical; min-height: 8rem; }
+  .imp-tipos { grid-template-columns: repeat(2, 1fr); }
+  .imp-check { display: flex; gap: .5rem; align-items: center; font-weight: 400; }
+  .imp-check input { width: auto; min-height: 0; }
+  .imp-columnas { margin-bottom: 1.5rem; }
+  .imp-mapa { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .75rem; }
+  .imp-mapa select.activo { border-color: var(--acento); }
+  .imp-cab { align-items: center; }
+  .imp-cab h3 { margin: 0; }
+  .imp-cab span { margin-right: auto; }
+  .imp-tabla td { vertical-align: middle; }
+  .imp-tabla tr.con-error td { color: var(--suave); }
+  .imp-tabla td .estado { white-space: normal; }
+  @media (max-width: 900px) { .imp-pasos { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 700px) {
+    .imp-pasos { gap: 1rem; margin-bottom: 1rem; }
+    .imp-cab .btn-primario { flex: 1 1 100%; }
+  }
+
   /* Clientes */
   .clientes { display: grid; grid-template-columns: 22rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
   /* Mezclas */
@@ -708,6 +729,7 @@
       <button role="tab" id="t-catalogo" aria-controls="p-catalogo" aria-selected="true">Catálogo</button>
       <button role="tab" id="t-entradas" aria-controls="p-entradas" aria-selected="false">Entradas</button>
       <button role="tab" id="t-carga" aria-controls="p-carga" aria-selected="false">Carga rápida</button>
+      <button role="tab" id="t-importar" aria-controls="p-importar" aria-selected="false">Importar</button>
       <button role="tab" id="t-mezclas" aria-controls="p-mezclas" aria-selected="false">Mezclas</button>
       <button role="tab" id="t-clientes" aria-controls="p-clientes" aria-selected="false">Clientes</button>
     </div>
@@ -932,6 +954,72 @@
           </table>
         </div>
         <p class="carga-nota">Cada cantidad se guarda en el momento como inventario inicial. Si te equivocas, usa “Deshacer”: queda un ajuste con el motivo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ IMPORTAR ============ -->
+  <section id="p-importar" role="tabpanel" aria-labelledby="t-importar" hidden>
+    <div class="imp-pasos">
+      <div class="tarjeta">
+        <h2>1. Lista de productos</h2>
+        <div class="campo">
+          <label for="impTexto">Copia las filas en Excel (con la fila de títulos) y pégalas aquí</label>
+          <textarea id="impTexto" rows="6" spellcheck="false" placeholder="Código de barras	Nombre	Marca	Categoría	Presentación	Cantidad	Costo	Precio"></textarea>
+          <small>O elige un archivo CSV: <input type="file" id="impArchivo" accept=".csv,.txt,.tsv,text/csv,text/plain"></small>
+        </div>
+        <p class="carga-nota">Sirve el archivo de una factura o una lista propia. Solo hacen falta <strong>nombre</strong> y <strong>cantidad</strong>; lo que ya existe se reconoce por el código de barras o el SKU.</p>
+      </div>
+
+      <div class="tarjeta">
+        <h2>2. Cómo entra</h2>
+        <fieldset>
+          <legend>Tipo</legend>
+          <div class="segmentos imp-tipos" id="impTipos">
+            <button type="button" class="btn" data-tipo="compra" aria-pressed="true">Compra</button>
+            <button type="button" class="btn" data-tipo="inicial" aria-pressed="false">Inventario inicial</button>
+          </div>
+        </fieldset>
+        <div class="campo" id="impCampoProv">
+          <label for="impProv">Proveedor</label>
+          <div class="con-boton">
+            <select id="impProv"><option value="">Sin proveedor</option></select>
+            <button type="button" class="btn" id="impNuevoProv">Nuevo</button>
+          </div>
+        </div>
+        <div class="dos">
+          <div class="campo">
+            <label for="impNota">Nota</label>
+            <input id="impNota" placeholder="Número de factura">
+            <small>Si la lista trae columna de factura, se usa esa.</small>
+          </div>
+          <div class="campo">
+            <label for="impPct">Ganancia</label>
+            <div class="con-sufijo"><input id="impPct" type="number" step="any" inputmode="decimal" class="num" placeholder="30"><span>%</span></div>
+            <small>Precio de los nuevos sin precio en la lista.</small>
+          </div>
+        </div>
+        <label class="imp-check"><input type="checkbox" id="impRecalcular"> Recalcular también el precio de los que ya existen con este %</label>
+      </div>
+    </div>
+
+    <div class="tarjeta imp-columnas" id="impColumnas" hidden>
+      <h2>3. Columnas</h2>
+      <p class="carga-nota">Se eligieron solas por el título. Corrige las que no correspondan.</p>
+      <div class="imp-mapa" id="impMapa"></div>
+    </div>
+
+    <div id="impPrevia" hidden>
+      <div class="carga-cab imp-cab">
+        <h3>Vista previa</h3>
+        <span id="impResumen" class="num"></span>
+        <button class="btn btn-primario" type="button" id="impBoton" disabled>Importar</button>
+      </div>
+      <div class="tabla-caja">
+        <table class="imp-tabla">
+          <thead><tr><th class="der">#</th><th>Producto</th><th>Código</th><th class="der">Cantidad</th><th class="der">Costo</th><th class="der">Precio</th><th>Estado</th></tr></thead>
+          <tbody id="tbImportar"></tbody>
+        </table>
       </div>
     </div>
   </section>
@@ -1268,7 +1356,7 @@
   $('#salir').addEventListener('click', () => db.auth.signOut());
 
   // ---------- Pestañas ----------
-  const tabs = ['catalogo', 'entradas', 'carga', 'mezclas', 'clientes'];
+  const tabs = ['catalogo', 'entradas', 'carga', 'importar', 'mezclas', 'clientes'];
   function abrirPestana(nombre) {
     tabs.forEach((t) => {
       $(`#t-${t}`).setAttribute('aria-selected', t === nombre);
@@ -1325,6 +1413,7 @@
     if (m.error || c.error || p.error) return aviso('No se pudieron cargar marcas, categorías o proveedores.', 'error');
     marcas = m.data; categorias = c.data; proveedores = p.data;
     $('#provMov').innerHTML = opciones(proveedores, 'Sin proveedor', $('#provMov').value);
+    $('#impProv').innerHTML = opciones(proveedores, 'Sin proveedor', $('#impProv').value);
   }
 
   async function cargarClientes() {
@@ -2896,10 +2985,339 @@
     if (p && cantidad > 0) agregarContado(p, cantidad, sinCodigo);
   }
 
-  // Si se cierra la página con un conteo sin guardar, el navegador avisa
+  // Si se cierra la página con un conteo sin guardar (o importando), el navegador avisa
   window.addEventListener('beforeunload', (e) => {
-    if (actual || !$('#frmCargaNuevo').hidden) { e.preventDefault(); e.returnValue = ''; }
+    if (actual || !$('#frmCargaNuevo').hidden || importando) { e.preventDefault(); e.returnValue = ''; }
   });
+
+  // ---------- Importar ----------
+  // Lista pegada desde Excel o archivo CSV. Lo que ya existe (por código de barras o SKU, o por
+  // nombre + presentación + marca si no trae código) recibe la compra o el inventario inicial;
+  // lo nuevo se crea (con su marca y categoría) y después recibe la cantidad. Cada fila va por
+  // separado: si una falla, las demás siguen y la que falló se puede reintentar.
+  const CAMPOS_IMP = [
+    { k: 'codigo', t: 'Código de barras', claves: ['codigo de barras', 'codigodebarras', 'codigo barras', 'ean', 'codigo'] },
+    { k: 'sku', t: 'SKU', claves: ['sku', 'referencia'] },
+    { k: 'nombre', t: 'Nombre', claves: ['nombre', 'producto', 'descripcion', 'articulo'] },
+    { k: 'marca', t: 'Marca', claves: ['marca'] },
+    { k: 'categoria', t: 'Categoría', claves: ['categoria', 'linea'] },
+    { k: 'presentacion', t: 'Presentación', claves: ['presentacion', 'medida'] },
+    { k: 'color', t: 'Código de color', claves: ['codigo color', 'codigo de color', 'color'] },
+    { k: 'cantidad', t: 'Cantidad', claves: ['cantidad', 'cant', 'unidades'] },
+    { k: 'costo', t: 'Costo unitario', claves: ['costo final', 'costo con', 'costo', 'v unit', 'valor unitario', 'precio compra'] },
+    { k: 'precio', t: 'Precio de venta', claves: ['precio venta', 'precio de venta', 'pvp', 'precio'] },
+    { k: 'nota', t: 'Factura o nota', claves: ['factura', 'nota', 'documento'] }
+  ];
+  const normTitulo = (t) => norm(t).replace(/[^a-z0-9]+/g, ' ').trim();
+  let impTitulos = [], impTabla = [], impMapa = {}, impFilas = [];
+  let impTipo = 'compra', importando = false;
+  const impHechos = new Set(), impFallos = new Map();   // por número de fila
+
+  // CSV o texto pegado de Excel (tabulado). Respeta comillas y saltos de línea dentro de una celda.
+  function leerTabla(texto) {
+    texto = texto.replace(/^﻿/, '');
+    const primera = texto.split(/\r?\n/, 1)[0];
+    const sep = primera.includes('\t') ? '\t' : primera.split(';').length >= primera.split(',').length ? ';' : ',';
+    const filas = [];
+    let fila = [], campo = '', comillas = false;
+    for (let i = 0; i < texto.length; i++) {
+      const c = texto[i];
+      if (comillas) {
+        if (c !== '"') campo += c;
+        else if (texto[i + 1] === '"') { campo += '"'; i++; }
+        else comillas = false;
+      } else if (c === '"' && campo === '') comillas = true;
+      else if (c === sep) { fila.push(campo); campo = ''; }
+      else if (c === '\n' || c === '\r') {
+        if (c === '\r' && texto[i + 1] === '\n') i++;
+        fila.push(campo); filas.push(fila); fila = []; campo = '';
+      } else campo += c;
+    }
+    if (campo !== '' || fila.length) { fila.push(campo); filas.push(fila); }
+    return filas.map((f) => f.map((x) => x.trim())).filter((f) => f.some(Boolean));
+  }
+
+  // "3.416", "3,416", "2.850,00", "2,850.00", "1,5" -> número (los puntos de miles son lo común aquí)
+  function leerNumero(t) {
+    let s = String(t ?? '').replace(/[\s$]/g, '');
+    if (!s) return null;
+    const p = s.lastIndexOf('.'), c = s.lastIndexOf(',');
+    if (p >= 0 && c >= 0) s = p > c ? s.replace(/,/g, '') : s.replace(/\./g, '').replace(',', '.');
+    else if (c >= 0) s = /^-?[1-9]\d{0,2}(,\d{3})+$/.test(s) ? s.replace(/,/g, '') : s.replace(',', '.');
+    else if (/^-?[1-9]\d{0,2}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+    const n = Number(s);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  // Cada campo toma la primera columna libre cuyo título empiece por una de sus claves
+  function mapaAutomatico() {
+    const titulos = impTitulos.map(normTitulo), usados = new Set();
+    impMapa = {};
+    CAMPOS_IMP.forEach((c) => {
+      impMapa[c.k] = -1;
+      for (const clave of c.claves) {
+        const i = titulos.findIndex((t, j) => !usados.has(j) && (t === clave || t.startsWith(clave + ' ') || (clave.length > 4 && t.startsWith(clave))));
+        if (i >= 0) { impMapa[c.k] = i; usados.add(i); break; }
+      }
+    });
+  }
+
+  function cargarTextoImportacion(texto) {
+    impTabla = leerTabla(texto);
+    impTitulos = impTabla.shift() ?? [];
+    impHechos.clear();
+    impFallos.clear();
+    mapaAutomatico();
+    pintarMapa();
+    analizarImportacion();
+  }
+
+  function pintarMapa() {
+    $('#impColumnas').hidden = !impTitulos.length;
+    $('#impMapa').innerHTML = CAMPOS_IMP.map((c) => `
+      <label class="campo">${esc(c.t)}
+        <select data-campo="${c.k}" class="${impMapa[c.k] >= 0 ? 'activo' : ''}">
+          <option value="-1">No usar</option>
+          ${impTitulos.map((t, i) => `<option value="${i}" ${impMapa[c.k] === i ? 'selected' : ''}>${esc(t || `Columna ${i + 1}`)}</option>`).join('')}
+        </select>
+      </label>`).join('');
+  }
+
+  const precioConPct = (costo, pct) => (costo > 0 && pct != null ? redondearPrecio(costo * (1 + pct / 100)) : null);
+
+  function analizarImportacion() {
+    const val = (f, k) => (impMapa[k] >= 0 ? String(f[impMapa[k]] ?? '').trim() : '');
+    const pct = $('#impPct').value === '' ? null : Number($('#impPct').value);
+    const recalcular = $('#impRecalcular').checked;
+    const notaGeneral = $('#impNota').value.trim();
+    const vistos = new Map();   // código o presentación -> número de fila
+    const nombreMarca = new Set(marcas.map((m) => norm(m.nombre)));
+    const nombreCat = new Set(categorias.map((c) => norm(c.nombre)));
+
+    impFilas = impTabla.map((f, i) => {
+      const r = {
+        n: i + 1, codigo: val(f, 'codigo').replace(/^'/, ''), sku: val(f, 'sku'), nombre: val(f, 'nombre'),
+        marca: val(f, 'marca'), categoria: val(f, 'categoria'), presentacion: val(f, 'presentacion') || 'Unidad',
+        color: val(f, 'color'), cantidad: leerNumero(val(f, 'cantidad')), costo: leerNumero(val(f, 'costo')),
+        precio: leerNumero(val(f, 'precio')), nota: val(f, 'nota') || notaGeneral,
+        hecho: impHechos.has(i + 1), fallo: impFallos.get(i + 1) ?? '', error: '', existe: null, precioNuevo: null, avisos: []
+      };
+      const codigos = [r.codigo, r.sku].filter(Boolean);
+      r.existe = catalogo.find((p) => codigos.some((c) => p.codigo_barras === c || p.sku === c))
+        ?? (codigos.length ? null : catalogo.find((p) => norm(p.producto) === norm(r.nombre)
+          && norm(p.presentacion) === norm(r.presentacion) && (!r.marca || norm(marcaDe(p)) === norm(r.marca)))) ?? null;
+      const clave = r.existe ? `p${r.existe.id}` : r.codigo || r.sku;
+      // Las ya importadas también cuentan: una fila repetida no se carga en el reintento
+      if (r.hecho) { if (clave && !vistos.has(clave)) vistos.set(clave, r.n); return r; }
+      const madre = r.existe?.madre_id ? catalogo.find((p) => p.id === r.existe.madre_id) : null;
+
+      if (/^\d+([.,]\d+)?e\+?\d+$/i.test(r.codigo)) r.error = 'El código llegó como 7,7E+12: en Excel ponle formato de número sin decimales y vuelve a copiar.';
+      else if (r.cantidad == null || Number.isNaN(r.cantidad)) r.error = 'Falta la cantidad.';
+      else if (r.cantidad < 0) r.error = 'La cantidad no puede ser negativa.';
+      else if (Number.isNaN(r.costo) || (r.costo ?? 0) < 0) r.error = 'El costo no es un número válido.';
+      else if (Number.isNaN(r.precio) || (r.precio ?? 0) < 0) r.error = 'El precio no es un número válido.';
+      else if (clave && vistos.has(clave)) r.error = `Repetido con la fila ${vistos.get(clave)}.`;
+      else if (madre) r.error = `Es una parte de ${madre.presentacion}: la cantidad se carga en la presentación completa.`;
+      else if (!r.existe && !r.nombre) r.error = 'Falta el nombre del producto nuevo.';
+      if (clave && !vistos.has(clave)) vistos.set(clave, r.n);
+      if (r.error) return r;
+
+      if (r.existe) {
+        if (!r.existe.activo) r.avisos.push('inactiva');
+        if (recalcular) {
+          const nuevo = precioConPct(r.costo || Number(r.existe.costo), pct);
+          if (nuevo && nuevo !== Number(r.existe.precio_venta)) r.precioNuevo = nuevo;
+        }
+      } else {
+        r.precioNuevo = r.precio > 0 ? r.precio : precioConPct(r.costo, pct);
+        if (!r.precioNuevo) r.error = 'Sin precio: escribe el % de ganancia o usa una columna de precio.';
+        if (r.marca && !nombreMarca.has(norm(r.marca))) r.avisos.push(`marca nueva: ${r.marca}`);
+        if (r.categoria && !nombreCat.has(norm(r.categoria))) r.avisos.push(`categoría nueva: ${r.categoria}`);
+        if (!r.codigo) r.avisos.push('se le asigna código interno');
+      }
+      return r;
+    });
+    pintarImportacion();
+  }
+
+  function pintarImportacion() {
+    $('#impPrevia').hidden = !impFilas.length;
+    const pendientes = impFilas.filter((r) => !r.error && !r.hecho);
+    const cuenta = (f) => impFilas.filter(f).length;
+    const nuevas = pendientes.filter((r) => !r.existe).length;
+    const unidades = pendientes.reduce((s, r) => s + r.cantidad, 0);
+    const valor = pendientes.reduce((s, r) => s + r.cantidad * (r.costo || 0), 0);
+    $('#impResumen').textContent = [
+      `${nuevas} ${nuevas === 1 ? 'nueva' : 'nuevas'}`,
+      `${pendientes.length - nuevas} ya en el catálogo`,
+      cuenta((r) => r.error) && `${cuenta((r) => r.error)} con error`,
+      cuenta((r) => r.hecho) && `${cuenta((r) => r.hecho)} importadas`,
+      `${unidades.toLocaleString('es-CO')} unidades`,
+      valor > 0 && `costo ${cop.format(valor)}`
+    ].filter(Boolean).join(' · ');
+    const btn = $('#impBoton');
+    btn.disabled = importando || !pendientes.length;
+    if (!importando) btn.textContent = pendientes.length ? `Importar ${pendientes.length} ${pendientes.length === 1 ? 'fila' : 'filas'}` : 'Importar';
+
+    $('#tbImportar').innerHTML = impFilas.map((r) => {
+      const nombre = r.existe ? r.existe.etiqueta : [r.marca, r.nombre, r.color, r.presentacion].filter(Boolean).join(' ');
+      let estado;
+      if (r.hecho) estado = '<span class="estado estado-ok">Importada</span>';
+      else if (r.error) estado = `<span class="estado estado-mal">${ALERTA_SVG} ${esc(r.error)}</span>`;
+      else if (r.fallo) estado = `<span class="estado estado-mal">${ALERTA_SVG} No se importó: ${esc(r.fallo)}</span><small>Se reintenta al importar otra vez.</small>`;
+      else if (r.existe) estado = `<span class="estado estado-confirmado">Existe</span><small>Stock ${Number(r.existe.stock)} → ${Number(r.existe.stock) + r.cantidad}${r.avisos.length ? ' · ' + esc(r.avisos.join(' · ')) : ''}</small>`;
+      else estado = `<span class="estado estado-pendiente">Nueva</span>${r.avisos.length ? `<small>${esc(r.avisos.join(' · '))}</small>` : ''}`;
+      const precio = r.precioNuevo
+        ? cop.format(r.precioNuevo) + (r.existe ? `<small>antes ${cop.format(r.existe.precio_venta)}</small>` : '')
+        : r.existe ? `<span class="stock-nota">${cop.format(r.existe.precio_venta)}</span>` : '—';
+      return `<tr class="${r.error ? 'con-error' : ''}">
+        <td class="der num">${r.n}</td>
+        <td>${esc(nombre || '—')}${r.nota ? `<small>${esc(r.nota)}</small>` : ''}</td>
+        <td class="num">${esc(r.codigo || r.sku || '')}</td>
+        <td class="der num">${r.cantidad != null && !Number.isNaN(r.cantidad) ? r.cantidad.toLocaleString('es-CO') : '—'}</td>
+        <td class="der num">${r.costo > 0 ? cop.format(r.costo) : '—'}</td>
+        <td class="der num">${precio}</td>
+        <td>${estado}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Marca o categoría por nombre (sin importar tildes ni mayúsculas); si no existe, se crea
+  async function idMaestro(tabla, lista, nombre) {
+    const hay = lista.find((x) => norm(x.nombre) === norm(nombre));
+    if (hay) return hay.id;
+    const { data, error } = await db.from(tabla).insert({ nombre }).select('id, nombre').single();
+    if (error) throw new Error(`${tabla === 'marcas' ? 'Marca' : 'Categoría'} ${nombre}: ${mensajeError(error)}`);
+    lista.push(data);
+    return data.id;
+  }
+
+  async function importarFila(r, proveedorId, productos) {
+    let presId = r.existe?.id;
+    if (!presId) {
+      const marca_id = r.marca ? await idMaestro('marcas', marcas, r.marca) : null;
+      const categoria_id = r.categoria ? await idMaestro('categorias', categorias, r.categoria) : null;
+      // Varias presentaciones del mismo producto (mismo nombre y marca) quedan juntas
+      const clave = `${norm(r.nombre)}|${marca_id ?? ''}`;
+      let productoId = productos.get(clave), creado = false;
+      if (!productoId) {
+        let consulta = db.from('productos').select('id').ilike('nombre', r.nombre.replace(/[\\%_]/g, '\\$&'));
+        consulta = marca_id ? consulta.eq('marca_id', marca_id) : consulta.is('marca_id', null);
+        const { data, error } = await consulta.limit(1);
+        if (error) throw new Error(mensajeError(error));
+        productoId = data[0]?.id;
+        if (!productoId) {
+          const { data: p, error: e } = await db.from('productos').insert({
+            nombre: r.nombre, marca_id, categoria_id, codigo_color: r.color || null, activo: true
+          }).select('id').single();
+          if (e) throw new Error(mensajeError(e));
+          productoId = p.id;
+          creado = true;
+        }
+      }
+      const datos = {
+        producto_id: productoId, nombre: r.presentacion, codigo_barras: r.codigo || null, sku: r.sku || null,
+        costo: r.costo || 0, precio_venta: r.precioNuevo, stock_minimo: 0, activo: true
+      };
+      const { data: pres, error } = await db.from('presentaciones').insert(datos).select('id').single();
+      if (error) {
+        if (creado) await db.from('productos').delete().eq('id', productoId);   // no dejar el producto sin presentación
+        throw new Error(await mensajeChoque(error, datos));
+      }
+      productos.set(clave, productoId);
+      presId = pres.id;
+      if (!r.codigo && window.codigoInterno)
+        await db.from('presentaciones').update({ codigo_barras: codigoInterno(presId) }).eq('id', presId);
+    } else if (r.precioNuevo) {
+      const { error } = await db.from('presentaciones').update({ precio_venta: r.precioNuevo }).eq('id', presId);
+      if (error) throw new Error(mensajeError(error));
+    }
+
+    if (r.cantidad > 0) {
+      const compra = impTipo === 'compra';
+      const { error } = await db.rpc('registrar_movimiento', {
+        p_presentacion_id: presId, p_tipo: impTipo, p_cantidad: r.cantidad,
+        p_costo_unitario: r.costo || null, p_proveedor_id: compra ? proveedorId : null,
+        p_nota: r.nota || (compra ? null : 'Importación')
+      });
+      if (error) throw new Error(error.message);
+    }
+  }
+
+  async function importar() {
+    const pendientes = impFilas.filter((r) => !r.error && !r.hecho);
+    if (!pendientes.length || importando) return;
+    // La misma factura dos veces duplicaría el stock
+    const notas = [...new Set(pendientes.map((r) => r.nota).filter(Boolean))];
+    if (impTipo === 'compra' && notas.length) {
+      const { count } = await db.from('movimientos_inventario').select('id', { count: 'exact', head: true })
+        .eq('tipo', 'compra').in('nota', notas);
+      if (count && !confirm(`Ya hay ${count} ${count === 1 ? 'compra registrada' : 'compras registradas'} con la nota ${notas.join(', ')}. ¿Importar de todos modos?`)) return;
+    }
+    importando = true;
+    const btn = $('#impBoton');
+    btn.disabled = true;
+    const proveedorId = numOrNull($('#impProv').value);
+    const productos = new Map();
+    let ok = 0;
+    for (const [i, r] of pendientes.entries()) {
+      btn.textContent = `Importando ${i + 1} de ${pendientes.length}…`;
+      try {
+        await importarFila(r, proveedorId, productos);
+        impHechos.add(r.n);
+        impFallos.delete(r.n);
+        ok++;
+      } catch (err) {
+        impFallos.set(r.n, err?.message ?? String(err));
+      }
+    }
+    if ($('#impPct').value !== '') guardarPct($('#impPct').value);
+    await Promise.all([cargarCatalogo(), cargarMovimientos(), cargarMaestros()]);
+    importando = false;
+    analizarImportacion();
+    const mal = pendientes.length - ok;
+    aviso(mal ? `Se importaron ${ok} de ${pendientes.length} filas. Revisa ${mal === 1 ? 'la marcada' : `las ${mal} marcadas`} en rojo e importa otra vez.`
+      : `Listo: ${ok} ${ok === 1 ? 'fila importada' : 'filas importadas'}.`, mal ? 'error' : 'info');
+  }
+
+  let tImp;
+  $('#impTexto').addEventListener('input', () => {
+    clearTimeout(tImp);
+    tImp = setTimeout(() => cargarTextoImportacion($('#impTexto').value), 300);
+  });
+  $('#impArchivo').addEventListener('change', async (e) => {
+    const archivo = e.target.files[0];
+    if (!archivo) return;
+    const bytes = await archivo.arrayBuffer();
+    let texto = new TextDecoder('utf-8').decode(bytes);
+    if (texto.includes('�')) texto = new TextDecoder('windows-1252').decode(bytes);   // CSV guardado por Excel en Windows
+    $('#impTexto').value = texto;
+    cargarTextoImportacion(texto);
+    e.target.value = '';
+  });
+  $('#impMapa').addEventListener('change', (e) => {
+    const s = e.target.closest('[data-campo]');
+    if (!s) return;
+    impMapa[s.dataset.campo] = Number(s.value);
+    s.classList.toggle('activo', Number(s.value) >= 0);
+    analizarImportacion();
+  });
+  $('#impTipos').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tipo]');
+    if (!b) return;
+    impTipo = b.dataset.tipo;
+    $('#impTipos').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    $('#impCampoProv').hidden = impTipo !== 'compra';
+    $('#impNota').placeholder = impTipo === 'compra' ? 'Número de factura' : 'Opcional';
+  });
+  ['#impPct', '#impNota'].forEach((s) => $(s).addEventListener('input', () => impFilas.length && analizarImportacion()));
+  $('#impRecalcular').addEventListener('change', () => impFilas.length && analizarImportacion());
+  $('#impNuevoProv').addEventListener('click', async () => {
+    const id = await crearMaestro('proveedores', 'empresa proveedora');
+    if (id) $('#impProv').value = id;
+  });
+  $('#impBoton').addEventListener('click', importar);
+  $('#impPct').value = leerPct();
 
   // ---------- Clientes ----------
   function pintarClientes() {

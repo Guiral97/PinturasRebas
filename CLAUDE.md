@@ -25,7 +25,7 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 | `index.html` | **Caja.** Lector USB (campo con foco que escucha Enter) o cámara, búsqueda por nombre/marca/color, cantidades, cliente, 4 formas de pago, descuento, cambio, recibo. Funciona sin conexión. |
 | `cotizaciones.html` + `cotizacion.js` | Cotizaciones a cliente o prospecto, impresión/PDF, conversión en pedido. |
 | `pedidos.html` | Pedidos de clientes: estados, entrega (registra la venta), cancelación. |
-| `inventario.html` | Catálogo (productos y presentaciones, **venta por partes**, **% de ganancia**), entradas de mercancía (compra, inicial, ajuste), clientes, etiquetas de código de barras. |
+| `inventario.html` | Catálogo (productos y presentaciones, **venta por partes**, **% de ganancia**), entradas de mercancía (compra, inicial, ajuste), **importación** (pegar de Excel o CSV: reconoce lo existente por código/SKU, crea lo nuevo con marca y categoría, registra compra o inicial; avisa si la factura ya se cargó), filtro **Sin existencias** y **exportar para pedido** (CSV por último proveedor), clientes, etiquetas de código de barras. |
 | `cartera.html` | Saldos por cliente, facturas con mora, abonos, recordatorio por WhatsApp (`wa.me`, antepone 57 a números de 10 dígitos). |
 | `gastos.html` | Gastos (caja/cuenta/socio), gastos fijos del mes, foto de factura, retiros y reembolsos de socios. |
 | `tablero.html` | Indicadores por período, ventas, margen, gastos y utilidad, top productos, reimpresión y anulación. |
@@ -143,4 +143,4 @@ No se guarda en la base de datos: se deduce de precio y costo. Precio = costo ×
 - Confirmar que el registro público de usuarios está desactivado y configurar el respaldo en el repo privado.
 - Factura electrónica DIAN: el recibo no la reemplaza; revisar con contador.
 - Etiquetas: ajuste vertical si la medida real de la etiqueta no coincide con la elegida.
-- Ideas sin construir: cierre de caja diario, importación masiva de productos (Excel/CSV), panel de uso del plan gratuito de Supabase, Power BI con rol de solo lectura.
+- Ideas sin construir: cierre de caja diario, panel de uso del plan gratuito de Supabase, Power BI con rol de solo lectura.
