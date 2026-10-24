@@ -190,7 +190,7 @@
   .opcion { display: flex; gap: .5rem; align-items: center; font-weight: 500; }
   .opcion input { width: auto; }
 
-  #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
+  #aviso { position: fixed; top: auto; right: auto; width: auto; margin: 0; border: 0; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
   #aviso.error { background: var(--alerta); color: #fff; }
 
   @media (max-width: 900px) {
@@ -526,7 +526,7 @@
   </div>
 </main>
 
-<div id="aviso" role="status" hidden></div>
+<div id="aviso" role="status" popover="manual" hidden></div>
 
 <!-- Convertir en pedido -->
 <dialog id="dlgConvertir">
@@ -629,8 +629,9 @@
     a.textContent = texto;
     a.className = tipo === 'error' ? 'error' : '';
     a.hidden = false;
+    if (a.showPopover) { if (a.matches(':popover-open')) a.hidePopover(); a.showPopover(); }   // encima de los diálogos abiertos
     clearTimeout(tAviso);
-    tAviso = setTimeout(() => (a.hidden = true), tipo === 'error' ? 6000 : 3500);
+    tAviso = setTimeout(() => { a.hidden = true; if (a.hidePopover && a.matches(':popover-open')) a.hidePopover(); }, tipo === 'error' ? 6000 : 3500);
   }
 
   const estadoVisible = (q) => (q.vencida ? 'vencida' : q.estado);

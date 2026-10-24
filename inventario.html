@@ -404,7 +404,7 @@
   .et-directo .fila { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
   .et-directo .fila > span { font-weight: 600; flex-basis: 100%; }
 
-  #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
+  #aviso { position: fixed; top: auto; right: auto; width: auto; margin: 0; border: 0; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
   #aviso.error { background: var(--alerta); color: #fff; }
 
   @media (max-width: 960px) {
@@ -1153,7 +1153,7 @@
   </form>
 </dialog>
 
-<div id="aviso" role="status" hidden></div>
+<div id="aviso" role="status" popover="manual" hidden></div>
 
 <style>.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}</style>
 
@@ -1200,8 +1200,9 @@
     a.textContent = texto;
     a.className = tipo === 'error' ? 'error' : '';
     a.hidden = false;
+    if (a.showPopover) { if (a.matches(':popover-open')) a.hidePopover(); a.showPopover(); }   // encima de los diálogos abiertos
     clearTimeout(tAviso);
-    tAviso = setTimeout(() => (a.hidden = true), tipo === 'error' ? 6000 : 3000);
+    tAviso = setTimeout(() => { a.hidden = true; if (a.hidePopover && a.matches(':popover-open')) a.hidePopover(); }, tipo === 'error' ? 6000 : 3000);
   }
 
   function mensajeError(error) {
@@ -1216,6 +1217,18 @@
       return 'Ese dato ya existe.';
     }
     return error.message;
+  }
+
+  // Código de barras o SKU repetido: dice qué producto ya lo tiene
+  async function mensajeChoque(error, datos) {
+    const m = error?.code === '23505' ? error.message || '' : '';
+    const campo = m.includes('codigo_barras') ? 'codigo_barras' : m.includes('sku') ? 'sku' : '';
+    if (!campo || !datos[campo]) return mensajeError(error);
+    const { data } = await db.from('presentaciones').select('nombre, activo, productos(nombre)')
+      .eq(campo, datos[campo]).limit(1).maybeSingle();
+    if (!data) return mensajeError(error);
+    const que = campo === 'sku' ? `El SKU ${datos.sku}` : `El código de barras ${datos.codigo_barras}`;
+    return `${que} ya lo tiene "${data.productos?.nombre ?? 'otro producto'} · ${data.nombre}"${data.activo ? '' : ' (inactiva)'}. Búscalo en el catálogo o usa otro código.`;
   }
 
   function opciones(lista, vacio, seleccion) {
@@ -2033,10 +2046,10 @@
 
       if (fila.dataset.id) {
         const { error } = await db.from('presentaciones').update(datos).eq('id', fila.dataset.id);
-        if (error) return aviso(`${datos.nombre}: ${mensajeError(error)}`, 'error');
+        if (error) return aviso(`${datos.nombre}: ${await mensajeChoque(error, datos)}`, 'error');
       } else {
         const { data, error } = await db.from('presentaciones').insert(datos).select('id').single();
-        if (error) return aviso(`${datos.nombre}: ${mensajeError(error)}`, 'error');
+        if (error) return aviso(`${datos.nombre}: ${await mensajeChoque(error, datos)}`, 'error');
         fila.dataset.id = data.id;
 
         const inicial = esParte ? 0 : Number(v('stock_inicial')?.value || 0);
