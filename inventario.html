@@ -134,6 +134,7 @@
   .pf-quitar { display: inline-flex; align-items: center; gap: .35rem; min-height: 2rem; padding: 0 .5rem 0 .7rem; border: 0; border-radius: var(--radio); background: color-mix(in srgb, var(--suave) 18%, transparent); color: var(--tinta); font-weight: 500; font-size: .9rem; }
   .pf-quitar:hover { background: color-mix(in srgb, var(--suave) 28%, transparent); }
   .pf-resumen .btn-texto { min-height: 2rem; }
+  .pf-resumen .pf-exportar { margin-left: auto; min-height: 2.25rem; }
 
   /* Estados unificados */
   .estado {
@@ -748,6 +749,7 @@
       <div class="pf-fila pf-segunda">
         <div class="filtros" role="group" aria-labelledby="pfRevisar">
           <span class="pf-etq" id="pfRevisar">Revisar</span>
+          <button type="button" class="filtro" id="sinExistencias" aria-pressed="false" title="Presentaciones completas en 0 (las partes salen de la completa)"><span class="punto" style="background: var(--alerta)" aria-hidden="true"></span>Sin existencias <span class="cuenta" data-cuenta="agotado"></span></button>
           <button type="button" class="filtro" id="soloBajo" aria-pressed="false"><span class="punto" aria-hidden="true"></span>Stock bajo <span class="cuenta" data-cuenta="bajo"></span></button>
           <button type="button" class="filtro" id="sinCodigo" aria-pressed="false"><span class="punto" style="background: var(--suave)" aria-hidden="true"></span>Sin código <span class="cuenta" data-cuenta="sinCodigo"></span></button>
           <button type="button" class="filtro" id="gananciaBaja" aria-pressed="false" title="Menos de 20 % sobre el costo"><span class="punto" style="background: var(--alerta)" aria-hidden="true"></span>Ganancia &lt; 20 % <span class="cuenta" data-cuenta="ganancia"></span></button>
@@ -765,6 +767,7 @@
       <div class="pf-resumen" aria-live="polite">
         <span id="pfMostrando"></span>
         <span class="pf-aplicados" id="pfAplicados"></span>
+        <button type="button" class="btn pf-exportar" id="exportarPedido" hidden title="Archivo para Excel con lo filtrado, agrupado por el último proveedor">Exportar para pedido</button>
       </div>
     </div>
     <div class="tabla-caja">
@@ -1371,16 +1374,19 @@
   }
 
   // Filtros del catálogo: los de "Revisar" se combinan; "Mostrar" elige activos, inactivos o todos
-  const filtrosCat = { bajo: false, sinCodigo: false, ganancia: false, partes: false };
-  const BOTON_FILTRO = { bajo: '#soloBajo', sinCodigo: '#sinCodigo', ganancia: '#gananciaBaja', partes: '#porPartes' };
-  const NOMBRE_FILTRO = { bajo: 'Stock bajo', sinCodigo: 'Sin código', ganancia: 'Ganancia < 20 %', partes: 'Por partes' };
+  const filtrosCat = { agotado: false, bajo: false, sinCodigo: false, ganancia: false, partes: false };
+  const BOTON_FILTRO = { agotado: '#sinExistencias', bajo: '#soloBajo', sinCodigo: '#sinCodigo', ganancia: '#gananciaBaja', partes: '#porPartes' };
+  const NOMBRE_FILTRO = { agotado: 'Sin existencias', bajo: 'Stock bajo', sinCodigo: 'Sin código', ganancia: 'Ganancia < 20 %', partes: 'Por partes' };
   const REVISAR = {
+    // Las partes no se compran: se repone la presentación completa
+    agotado: (p) => !p.madre_id && Number(p.stock) <= 0,
     bajo: esBajo,
     sinCodigo: (p) => !p.codigo_barras,
     ganancia: (p) => { const pct = pctSobreCosto(p.costo, p.precio_venta); return pct != null && pct < GANANCIA_BAJA; },
     partes: (p) => !!(p.madre_id || p.tiene_fracciones)
   };
   let estadoCat = 'activos';
+  let filasVisibles = [];          // lo que muestra el catálogo con los filtros puestos (para exportar)
   const marcaDe = (p) => (typeof p.marca === 'string' ? p.marca : '');
   const enEstado = (p) => estadoCat === 'todos' || (estadoCat === 'activos' ? p.activo : !p.activo);
 
@@ -1450,6 +1456,8 @@
       (!marca || marcaDe(p) === marca) &&
       (!q || norm(`${p.etiqueta} ${p.categoria ?? ''} ${marcaDe(p)} ${p.codigo_barras ?? ''} ${p.sku ?? ''}`).includes(q)));
     pintarFiltros(filas.length, base.length);
+    filasVisibles = filas;
+    $('#exportarPedido').hidden = !(filtrosCat.agotado || filtrosCat.bajo) || !filas.some((p) => !p.madre_id);
 
     if (!catalogo.length) {
       $('#tbCatalogo').innerHTML = '<tr><td colspan="6" class="vacio">El catálogo está vacío. Crea tu primer producto con el botón “Nuevo producto”.</td></tr>';
@@ -1544,6 +1552,81 @@
     if (b) abrirProducto(+b.dataset.producto);
   });
   $('#nuevoProducto').addEventListener('click', () => abrirProducto(null));
+
+  // ---------- Exportar para pedido a proveedores ----------
+  // El proveedor no está en el producto: se toma de la última compra registrada en Entradas.
+  async function ultimasCompras(ids) {
+    const compra = {}, proveedor = {};
+    for (let i = 0; i < ids.length; i += 150) {   // por tandas: la lista de ids va en la URL
+      const { data, error } = await db.from('movimientos_inventario')
+        .select('presentacion_id, costo_unitario, creado_en, proveedores(nombre, telefono)')
+        .eq('tipo', 'compra').in('presentacion_id', ids.slice(i, i + 150))
+        .order('creado_en', { ascending: false }).limit(10000);
+      if (error) throw error;
+      data.forEach((m) => {
+        compra[m.presentacion_id] ??= m;
+        if (m.proveedores) proveedor[m.presentacion_id] ??= m.proveedores;
+      });
+    }
+    return { compra, proveedor };
+  }
+
+  // CSV para Excel en español: separador ";", coma decimal y BOM para que lea las tildes
+  const celdaCsv = (v) => {
+    if (typeof v === 'number') return String(v).replace('.', ',');
+    let t = String(v ?? '');
+    if (/^[=+\-@]/.test(t)) t = "'" + t;          // que Excel no lo tome como fórmula
+    return /[;"\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  };
+
+  $('#exportarPedido').addEventListener('click', async () => {
+    const lista = filasVisibles.filter((p) => !p.madre_id);
+    if (!lista.length) return aviso('No hay presentaciones para exportar con estos filtros.', 'error');
+    const btn = $('#exportarPedido');
+    btn.disabled = true;
+    btn.textContent = 'Preparando…';
+    try {
+      const { compra, proveedor } = await ultimasCompras(lista.map((p) => p.id));
+      const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
+      const fechaCorta = new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', dateStyle: 'short' });
+      const filas = lista.map((p) => {
+        const stock = Number(p.stock), minimo = Number(p.stock_minimo);
+        const c = compra[p.id], prov = proveedor[p.id];
+        return {
+          proveedor: prov?.nombre ?? '',
+          celdas: [
+            prov?.nombre ?? 'Sin proveedor registrado', prov?.telefono ?? '',
+            marcaDe(p), p.producto ?? nombreProducto(p), p.codigo_color ?? '', p.presentacion ?? '', p.categoria ?? '',
+            p.sku ?? '', p.codigo_barras ?? '', stock, minimo,
+            Math.max(Math.ceil(minimo - stock), 1),     // hasta el mínimo; al menos 1
+            Number(c?.costo_unitario ?? p.costo) || '', c ? fechaCorta.format(new Date(c.creado_en)) : ''
+          ]
+        };
+      });
+      // Agrupado por proveedor (los que no tienen, al final), y dentro por marca y producto
+      filas.sort((a, b) => (!a.proveedor - !b.proveedor) || a.proveedor.localeCompare(b.proveedor, 'es')
+        || a.celdas[2].localeCompare(b.celdas[2], 'es') || a.celdas[3].localeCompare(b.celdas[3], 'es'));
+      const encabezado = ['Proveedor (última compra)', 'Teléfono proveedor', 'Marca', 'Producto', 'Código color', 'Presentación',
+        'Categoría', 'SKU', 'Código de barras', 'Existencias', 'Stock mínimo', 'Cantidad sugerida', 'Último costo', 'Última compra'];
+      const csv = '﻿' + [encabezado, ...filas.map((f) => f.celdas)].map((r) => r.map(celdaCsv).join(';')).join('\r\n');
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pedido-${filtrosCat.agotado ? 'sin-existencias' : 'stock-bajo'}-${hoy}.csv`;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const sinProv = filas.filter((f) => !f.proveedor).length;
+      aviso(`Se exportaron ${filas.length} ${filas.length === 1 ? 'referencia' : 'referencias'}`
+        + (sinProv ? `; ${sinProv} sin proveedor (registra el proveedor al hacer la entrada de compra).` : '.'));
+    } catch (e) {
+      aviso('No se pudo exportar: ' + (e.message ?? e), 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Exportar para pedido';
+    }
+  });
 
   // ---------- Diálogo de producto ----------
   const dlg = $('#dlgProducto');
