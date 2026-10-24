@@ -14,8 +14,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="config.js"></script>
-<script src="etiquetas.js?v=20261010c"></script>
-<script src="impresora-directa.js?v=20261023a"></script>
+<script src="etiquetas.js?v=20261024a"></script>
+<script src="impresora-directa.js?v=20261024a"></script>
 <script src="fotos.js?v=1"></script>
 <style>
   :root {
@@ -497,7 +497,13 @@
   .et-prod strong { display: block; }
   .et-prod span { color: var(--suave); font-variant-numeric: tabular-nums; }
   .et-vista { display: flex; justify-content: center; align-items: center; padding: 1rem; background: #fff; border: 1px solid var(--linea); border-radius: var(--radio); min-height: 7rem; }
-  .et-vista .papel { background: #fff; outline: 1px dashed #8E938E; display: flex; align-items: center; justify-content: center; }
+  .et-vista .papel { background: #fff; outline: 1px dashed #8E938E; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .et-vista .papel svg { position: relative; }
+  .et-ajuste { display: grid; gap: .6rem; }
+  .et-ajuste > summary { cursor: pointer; font-weight: 600; }
+  .et-ajuste > summary span { font-weight: 400; color: var(--suave); }
+  .et-ajuste[open] { padding-bottom: .3rem; }
+  .et-ajuste .btn { justify-self: start; }
   .et-campos { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
   .et-otra { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
   .et-nota { color: var(--suave); font-size: .92rem; margin: 0; }
@@ -1329,6 +1335,15 @@
         <div class="campo"><label for="etAncho">Ancho (mm)</label><input id="etAncho" type="number" min="20" max="80" step="1" class="num"></div>
         <div class="campo"><label for="etAlto">Alto (mm)</label><input id="etAlto" type="number" min="10" max="120" step="1" class="num"></div>
       </div>
+      <details class="et-ajuste" id="etAjuste">
+        <summary>Centrar en el papel <span id="etAjusteResumen"></span></summary>
+        <p class="et-nota">Si sale corrida, mueve la impresión y prueba con una etiqueta. Se recuerda en este equipo.</p>
+        <div class="et-otra">
+          <div class="campo"><label for="etDy">Arriba o abajo (mm)</label><input id="etDy" type="number" min="-15" max="15" step="0.5" class="num" placeholder="0"><small>Más baja, menos sube</small></div>
+          <div class="campo"><label for="etDx">Izquierda o derecha (mm)</label><input id="etDx" type="number" min="-15" max="15" step="0.5" class="num" placeholder="0"><small>Más a la derecha, menos a la izquierda</small></div>
+        </div>
+        <button type="button" class="btn" id="etAjusteCero">Sin corrimiento</button>
+      </details>
       <fieldset class="et-contenido" id="etContenido">
         <legend>Qué lleva la etiqueta</legend>
         <label class="check"><input type="checkbox" data-c="codigo"> Código de barras</label>
@@ -2375,13 +2390,23 @@
     try { localStorage.setItem('rebas-etiqueta', JSON.stringify(m)); } catch (_) {}
   }
 
+  // Corrimiento para centrar en el papel (depende de la impresora, se recuerda en este equipo)
+  const leerAjuste = (s) => Math.max(-15, Math.min(15, Number($(s).value) || 0));
+  function leerAjusteGuardado() {
+    try { return JSON.parse(localStorage.getItem('rebas-etiqueta-ajuste') || 'null') || { dx: 0, dy: 0 }; } catch (_) { return { dx: 0, dy: 0 }; }
+  }
+  function guardarAjuste() {
+    try { localStorage.setItem('rebas-etiqueta-ajuste', JSON.stringify({ dx: leerAjuste('#etDx'), dy: leerAjuste('#etDy') })); } catch (_) {}
+  }
+
   function medidaElegida() {
     const v = $('#etMedida').value;
+    const ajuste = { dx: leerAjuste('#etDx'), dy: leerAjuste('#etDy') };
     if (v !== 'otra') {
       const [ancho, alto] = v.split('x').map(Number);
-      return { ancho, alto, valor: v };
+      return { ancho, alto, valor: v, ...ajuste };
     }
-    return { ancho: Number($('#etAncho').value) || 0, alto: Number($('#etAlto').value) || 0, valor: 'otra' };
+    return { ancho: Number($('#etAncho').value) || 0, alto: Number($('#etAlto').value) || 0, valor: 'otra', ...ajuste };
   }
 
   // Qué partes lleva la etiqueta (se recuerda en este equipo)
@@ -2441,6 +2466,10 @@
     }
     const r = svgEtiqueta(codigo, { anchoMm: anchoUtil(m.ancho), altoMm: m.alto - 3, ...contenidoEtiqueta() });
     $('#etVista').innerHTML = `<div class="papel" style="width:${m.ancho}mm;height:${m.alto}mm">${r.svg}</div>`;
+    const svg = $('#etVista svg');
+    if (svg) { svg.style.left = `${m.dx}mm`; svg.style.top = `${m.dy}mm`; }
+    const mov = [m.dy ? `${Math.abs(m.dy)} mm ${m.dy > 0 ? 'abajo' : 'arriba'}` : '', m.dx ? `${Math.abs(m.dx)} mm a la ${m.dx > 0 ? 'derecha' : 'izquierda'}` : ''];
+    $('#etAjusteResumen').textContent = mov.some(Boolean) ? `(${mov.filter(Boolean).join(', ')})` : '';
     if (!r.cabe) {
       nota.textContent = r.motivo === 'vacia'
         ? 'Elige al menos una cosa para imprimir en la etiqueta.'
@@ -2480,6 +2509,9 @@
       $('#etMedida').value = g.valor;
       if (g.valor === 'otra') { $('#etAncho').value = g.ancho; $('#etAlto').value = g.alto; }
     }
+    const aj = leerAjusteGuardado();
+    $('#etDx').value = aj.dx || '';
+    $('#etDy').value = aj.dy || '';
     const guardado = leerContenidoGuardado();
     document.querySelectorAll('#etContenido [data-c]').forEach((x) => (x.checked = !!guardado[x.dataset.c]));
     pintarVistaEtiqueta();
@@ -2488,6 +2520,13 @@
   }
 
   ['#etMedida', '#etAncho', '#etAlto'].forEach((s) => $(s).addEventListener('input', pintarVistaEtiqueta));
+  ['#etDx', '#etDy'].forEach((s) => $(s).addEventListener('input', () => { guardarAjuste(); pintarVistaEtiqueta(); }));
+  $('#etAjusteCero').addEventListener('click', () => {
+    $('#etDx').value = '';
+    $('#etDy').value = '';
+    guardarAjuste();
+    pintarVistaEtiqueta();
+  });
   $('#etContenido').addEventListener('change', () => { guardarContenido(); pintarVistaEtiqueta(); });
   $('#cerrarEtiquetas').addEventListener('click', () => dlgEt.close());
 

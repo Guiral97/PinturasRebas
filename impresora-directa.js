@@ -43,8 +43,9 @@
     });
   }
 
-  // Devuelve un canvas del ancho del cabezal con la etiqueta centrada
-  async function canvasEtiqueta(codigo, { ancho = 58, alto = 30 } = {}, contenido = {}) {
+  // Devuelve un canvas del ancho del cabezal con la etiqueta centrada.
+  // dx / dy (mm): corrimiento a mano cuando la impresora no la deja centrada en el papel.
+  async function canvasEtiqueta(codigo, { ancho = 58, alto = 30, dx = 0, dy = 0 } = {}, contenido = {}) {
     const anchoCabezalMm = PUNTOS_CABEZAL / PUNTOS_MM;
     const util = Math.min(window.anchoUtil(ancho), anchoCabezalMm);
     const margenV = 1.5;
@@ -60,7 +61,8 @@
     g.fillRect(0, 0, c.width, c.height);
     const w = Math.round(r.ancho * PUNTOS_MM), h = Math.round((alto - 2 * margenV) * PUNTOS_MM);
     g.imageSmoothingEnabled = false;
-    g.drawImage(img, Math.round((c.width - w) / 2), Math.round(margenV * PUNTOS_MM), w, h);
+    g.drawImage(img, Math.round((c.width - w) / 2 + (Number(dx) || 0) * PUNTOS_MM),
+      Math.round((margenV + (Number(dy) || 0)) * PUNTOS_MM), w, h);
     return c;
   }
 

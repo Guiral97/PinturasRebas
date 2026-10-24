@@ -234,7 +234,8 @@
   // de tickets como la DIG-M220) el cabezal cubre 48 y 72 mm, centrados.
   const anchoUtil = (ancho) => (ancho === 58 ? 48 : ancho === 80 ? 72 : ancho - 3);
 
-  function htmlEtiquetas(codigo, cantidad, { ancho = 40, alto = 30 } = {}, contenido = {}) {
+  // dx / dy (mm): corrimiento a mano cuando la impresora no la deja centrada en el papel
+  function htmlEtiquetas(codigo, cantidad, { ancho = 40, alto = 30, dx = 0, dy = 0 } = {}, contenido = {}) {
     const margen = 1.5;
     const { svg } = svgEtiqueta(codigo, { anchoMm: anchoUtil(ancho), altoMm: alto - 2 * margen, ...contenido });
     const una = `<div class="et">${svg}</div>`;
@@ -247,7 +248,7 @@
               display: flex; align-items: center; justify-content: center; overflow: hidden;
               break-after: page; page-break-after: always; }
         .et:last-child { break-after: auto; page-break-after: auto; }
-        svg { display: block; }
+        svg { display: block; position: relative; left: ${Number(dx) || 0}mm; top: ${Number(dy) || 0}mm; }
       </style></head><body>${una.repeat(cantidad)}</body></html>`;
   }
 
