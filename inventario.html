@@ -1373,7 +1373,7 @@
     return `<span class="stock-num">${n}</span>${abierto}`;
   }
 
-  // Filtros del catálogo: los de "Revisar" se combinan; "Mostrar" elige activos, inactivos o todos
+  // Filtros del catálogo: los de "Revisar" se combinan (los dos de stock suman); "Mostrar" elige activos, inactivos o todos
   const filtrosCat = { agotado: false, bajo: false, sinCodigo: false, ganancia: false, partes: false };
   const BOTON_FILTRO = { agotado: '#sinExistencias', bajo: '#soloBajo', sinCodigo: '#sinCodigo', ganancia: '#gananciaBaja', partes: '#porPartes' };
   const NOMBRE_FILTRO = { agotado: 'Sin existencias', bajo: 'Stock bajo', sinCodigo: 'Sin código', ganancia: 'Ganancia < 20 %', partes: 'Por partes' };
@@ -1450,8 +1450,11 @@
     const q = norm($('#buscarCat').value.trim());
     const cat = $('#fCategoria').value, marca = $('#fMarca').value;
     const base = catalogo.filter(enEstado);
+    // "Sin existencias" y "Stock bajo" suman (una u otra); entre los demás deben cumplirse todos
+    const deStock = ['agotado', 'bajo'].filter((k) => filtrosCat[k]);
     const filas = base.filter((p) =>
-      Object.keys(filtrosCat).every((k) => !filtrosCat[k] || REVISAR[k](p)) &&
+      (!deStock.length || deStock.some((k) => REVISAR[k](p))) &&
+      Object.keys(filtrosCat).every((k) => deStock.includes(k) || !filtrosCat[k] || REVISAR[k](p)) &&
       (!cat || p.categoria === cat) &&
       (!marca || marcaDe(p) === marca) &&
       (!q || norm(`${p.etiqueta} ${p.categoria ?? ''} ${marcaDe(p)} ${p.codigo_barras ?? ''} ${p.sku ?? ''}`).includes(q)));
@@ -1612,7 +1615,7 @@
       const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `pedido-${filtrosCat.agotado ? 'sin-existencias' : 'stock-bajo'}-${hoy}.csv`;
+      a.download = `pedido-${filtrosCat.agotado && filtrosCat.bajo ? 'reposicion' : filtrosCat.agotado ? 'sin-existencias' : 'stock-bajo'}-${hoy}.csv`;
       document.body.append(a);
       a.click();
       a.remove();
