@@ -153,7 +153,7 @@
   @media (max-width: 700px) { .costos-filtros input { max-width: none; } }
   .nota-res { color: var(--suave); }
 
-  #aviso { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
+  #aviso { position: fixed; top: auto; right: auto; width: auto; margin: 0; border: 0; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
   #aviso.error { background: var(--alerta); color: #fff; }
 
   @media (max-width: 960px) { .tres, .dos { grid-template-columns: 1fr; } }
@@ -506,7 +506,7 @@
   </div>
 </dialog>
 
-<div id="aviso" role="status" hidden></div>
+<div id="aviso" role="status" popover="manual" hidden></div>
 
 <script>
   const { SUPABASE_URL, SUPABASE_ANON_KEY, NOMBRE_TIENDA } = window.APP_CONFIG;
@@ -541,8 +541,9 @@
     a.textContent = texto;
     a.className = tipo === 'error' ? 'error' : '';
     a.hidden = false;
+    if (a.showPopover) { if (a.matches(':popover-open')) a.hidePopover(); a.showPopover(); }   // encima de los diálogos abiertos
     clearTimeout(tAviso);
-    tAviso = setTimeout(() => (a.hidden = true), tipo === 'error' ? 6000 : 3500);
+    tAviso = setTimeout(() => { a.hidden = true; if (a.hidePopover && a.matches(':popover-open')) a.hidePopover(); }, tipo === 'error' ? 6000 : 3500);
   }
 
   // ---------- Fechas (siempre en hora de Colombia) ----------
@@ -985,8 +986,13 @@
         <td class="der num">${cop.format(d.precio_unitario)}</td>
         <td class="der num">${cop.format(d.subtotal)}</td>
       </tr>`).join('');
-    $('#dvTotales').textContent = v.descuento > 0
-      ? `Subtotal ${cop.format(v.subtotal)} · Descuento ${cop.format(v.descuento)} · Total ${cop.format(v.total)}`
+    const recargo = Number(v.recargo) || 0;   // sin el script 13 la columna no existe
+    $('#dvTotales').textContent = v.descuento > 0 || recargo > 0
+      ? `Subtotal ${cop.format(v.subtotal)}`
+        + (v.descuento > 0 ? ` · Descuento ${cop.format(v.descuento)}` : '')
+        + (recargo > 0 ? ` · Recargo ${cop.format(recargo)}` : '')
+        + (v.ajuste_motivo ? ` (${v.ajuste_motivo})` : '')
+        + ` · Total ${cop.format(v.total)}`
       : `Total ${cop.format(v.total)}`;
     if (v.estado === 'anulada') {
       $('#dvTotales').textContent += ` · Anulada: ${v.motivo_anulacion ?? ''}`;
@@ -1017,6 +1023,8 @@
       })),
       subtotal: Number(v.subtotal),
       descuento: Number(v.descuento),
+      recargo: Number(v.recargo) || 0,
+      motivo: v.ajuste_motivo,
       total: Number(v.total),
       copia: true
     });

@@ -40,10 +40,10 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 | `etiquetas.js` | Códigos internos EAN-13 (`20` + id a 10 dígitos + dígito de control), SVG de etiquetas, impresión por driver. |
 | `impresora-directa.js` | Impresión de etiquetas sin driver: Web Serial (puerto COM) o Web Bluetooth, ESC/POS raster. |
 | `fotos.js` | Fotos de productos (10): URL pública, mapas `porProducto` / `porPresentacion`, `reducir` (800 px, WebP o JPEG), `subir`, `borrar`. Lo usan inventario, caja y cotizaciones. |
-| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v15`). Guarda también las fotos de productos (guardado primero). El nombre debe ser `sw.js` en minúscula. |
+| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v17`). Guarda también las fotos de productos (guardado primero). El nombre debe ser `sw.js` en minúscula. |
 | `config.js` | Configuración compartida (ver abajo). |
 | `logo.svg`, `marca-rb.png`, `favicon-32.png`, `favicon-48.png`, `apple-touch-icon.png` | Marca. `marca-rb.png`: pistola blanca sobre negro, para piezas impresas. El logo cambia de color con el tema (estilo dentro del SVG). |
-| `01_…sql` a `09_…sql` | Scripts de base de datos, en orden (ver abajo). |
+| `09_…sql` a `13_…sql` | Scripts de base de datos, en orden (ver abajo). Los 01 a 08 ya no están en el repo: 01–03 se recuperan del historial de git; 04–08 solo existen en Supabase. |
 | `98_borrar_datos_prueba.sql`, `99_datos_prueba.sql`, `99_borrar_productos_por_codigo.sql` | Datos de prueba y limpieza. |
 | `CONTEXTO_PROYECTO_Pinturas_Rebas.md` | Contexto antiguo (antes de 04). **Este `CLAUDE.md` lo reemplaza.** |
 
@@ -79,6 +79,7 @@ Define `window.APP_CONFIG` con `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `NOMBRE_TIEN
 10. `10_fotos_productos.sql`: `productos.imagen` (ruta en el bucket **público** `productos`, 1 MB, webp/jpeg/png) y políticas de Storage para usuarios activos. No reemplaza funciones ni vistas.
 11. `11_usuarios.sql`: `es_socio()`, `listar_usuarios()` (con correo de `auth.users` y si la invitación está pendiente) y `actualizar_usuario()` (nadie se desactiva ni se quita el rol de socio a sí mismo). Las invitaciones van por la Edge Function.
 12. `12_catalogo_publico.sql`: `productos.publicado` (por defecto no) y `catalogo_publico()` (`security definer`, ejecutable por `anon`): solo datos de vitrina, nunca precios, costos ni stock exacto. Se marca en el diálogo del producto en Inventario.
+13. `13_ajuste_venta.sql`: **ajuste al total en la caja**: `ventas.recargo` y `ventas.ajuste_motivo`, y `registrar_venta_ajustada(p_venta, p_recargo, p_motivo)`, que llama a `registrar_venta_caja` (sin reemplazarla) y en la misma transacción guarda el motivo y suma el recargo al total. La caja la usa solo cuando hay descuento o recargo (motivo obligatorio, sale en el recibo).
 
 **Cambios de base de datos:** siempre en un **script nuevo numerado** (`09_…sql`), sin tocar los anteriores, con un encabezado que diga qué hace y después de cuál se ejecuta. Si un script reemplaza una función, copia la versión **más reciente** (hoy `registrar_venta*` y `registrar_movimiento` viven en `08`). Al reemplazar una vista, conserva las columnas en el mismo orden y agrega las nuevas al final.
 

@@ -1,6 +1,6 @@
 // Recibo imprimible (impresora térmica de 58/80 mm o impresora normal).
 // Uso: imprimirRecibo({ id, fecha, cliente, vendedor, metodo, estado,
-//        items: [{ etiqueta, cantidad, precio }], subtotal, descuento, total,
+//        items: [{ etiqueta, cantidad, precio }], subtotal, descuento, recargo, motivo, total,
 //        recibido, copia })
 (function () {
   const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
@@ -23,9 +23,12 @@
           <td class="der">${cop.format(i.cantidad * i.precio)}</td></tr>`).join('');
 
     const filas = [];
-    if (v.descuento > 0) {
+    const recargo = Number(v.recargo) || 0;
+    if (v.descuento > 0 || recargo > 0) {
       filas.push(`<tr><td>Subtotal</td><td class="der">${cop.format(v.subtotal)}</td></tr>`);
-      filas.push(`<tr><td>Descuento</td><td class="der">-${cop.format(v.descuento)}</td></tr>`);
+      if (v.descuento > 0) filas.push(`<tr><td>Descuento</td><td class="der">-${cop.format(v.descuento)}</td></tr>`);
+      if (recargo > 0) filas.push(`<tr><td>Recargo</td><td class="der">+${cop.format(recargo)}</td></tr>`);
+      if (v.motivo) filas.push(`<tr><td colspan="2" class="motivo">Motivo: ${esc(v.motivo)}</td></tr>`);
     }
     filas.push(`<tr class="total"><td>TOTAL</td><td class="der">${cop.format(v.total)}</td></tr>`);
     filas.push(`<tr><td>Pago</td><td class="der">${METODOS[v.metodo] ?? v.metodo}</td></tr>`);
@@ -51,6 +54,7 @@
         .der { text-align: right; white-space: nowrap; padding-left: 6px; }
         .prod { padding-top: 5px; overflow-wrap: anywhere; }
         .total td { font-size: ${ancho === '58mm' ? 16 : 19}px; font-weight: 900; padding-top: 5px; }
+        .motivo { padding-bottom: 3px; overflow-wrap: anywhere; }
         .nota { font-size: ${ancho === '58mm' ? 10.5 : 11.5}px; margin-top: 4px; }
       </style></head><body>
       <h1>${esc(cfg.NOMBRE_TIENDA)}</h1>

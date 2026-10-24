@@ -224,6 +224,15 @@
   .cifras dt { color: var(--suave); }
   .cifras dd { margin: 0; text-align: right; }
   .totales { display: grid; gap: .5rem; }
+  /* Ajuste al total: descuento o recargo, con motivo obligatorio */
+  .ajuste-cab { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .35rem .75rem; }
+  .ajuste-tipo { display: inline-flex; border: 1px solid var(--linea); border-radius: var(--radio); overflow: hidden; }
+  .ajuste-tipo button { border: 0; background: var(--fondo); color: var(--suave); font-weight: 600; font-size: .85rem; padding: .3rem .65rem; min-height: 2.1rem; }
+  .ajuste-tipo button + button { border-left: 1px solid var(--linea); }
+  .ajuste-tipo button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); }
+  .ajuste-ayuda { color: var(--suave); font-size: .82rem; }
+  #ajusteMotivo.falta { border-color: var(--alerta); outline: 2px solid var(--alerta); }
+  .cifras .recargo { color: var(--aviso); }
   .total {
     border-top: 2px solid var(--tinta); padding-top: .6rem;
     display: flex; justify-content: space-between; align-items: baseline;
@@ -238,7 +247,7 @@
 
   /* Aviso y diálogo */
   #aviso {
-    position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%);
+    position: fixed; top: auto; right: auto; width: auto; margin: 0; border: 0; left: 50%; bottom: 1.25rem; transform: translateX(-50%);
     max-width: min(34rem, calc(100% - 2rem));
     background: var(--tinta); color: var(--panel);
     padding: .75rem 1rem; border-radius: var(--radio);
@@ -404,12 +413,8 @@
       max-height: 85dvh; overflow: auto; overscroll-behavior: contain;
       border-radius: 14px 14px 0 0; border-width: 1px 0 0; box-shadow: 0 -8px 28px rgba(0, 0, 0, .28);
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      grid-template-areas: "cab cab" "cliente desc" "pago pago" "cifras cifras" "total total" "efectivo efectivo" "pie pie";
-      gap: .6rem; padding: 0 .75rem; align-items: start;
-    }
-    /* Con cliente elegido la ficha necesita todo el ancho */
-    body.hoja-abierta .resumen:has(#clienteFicha:not([hidden])) {
       grid-template-areas: "cab cab" "cliente cliente" "desc desc" "pago pago" "cifras cifras" "total total" "efectivo efectivo" "pie pie";
+      gap: .6rem; padding: 0 .75rem; align-items: start;
     }
     .resumen > * { padding: 0; border-bottom: 0; }
     .resumen > .hoja-cab {
@@ -532,13 +537,21 @@
     </fieldset>
 
     <div class="totales">
-      <div class="campo">
-        <label for="descuento">Descuento (pesos)</label>
-        <input id="descuento" type="number" min="0" step="100" inputmode="numeric" value="0" class="num">
+      <div class="campo ajuste">
+        <div class="ajuste-cab">
+          <label for="ajusteValor">Ajuste al total</label>
+          <div class="ajuste-tipo" id="ajusteTipo" role="group" aria-label="Tipo de ajuste">
+            <button type="button" data-ajuste="descuento" aria-pressed="true">− Descuento</button>
+            <button type="button" data-ajuste="recargo" aria-pressed="false">+ Recargo</button>
+          </div>
+        </div>
+        <input id="ajusteValor" type="number" min="0" step="100" inputmode="numeric" value="0" class="num" aria-describedby="ajusteAyuda">
+        <input id="ajusteMotivo" maxlength="200" autocomplete="off" placeholder="Motivo (obligatorio)" aria-label="Motivo del ajuste" hidden>
+        <small id="ajusteAyuda" class="ajuste-ayuda" hidden>Sale en el recibo.</small>
       </div>
       <dl class="cifras num">
         <dt>Subtotal</dt><dd id="subtotal">$ 0</dd>
-        <dt>Descuento</dt><dd id="descMostrado">$ 0</dd>
+        <dt id="ajusteRotulo">Descuento</dt><dd id="descMostrado">$ 0</dd>
       </dl>
       <div class="total">
         <span>Total</span>
@@ -569,7 +582,7 @@
   </div>
 </main>
 
-<div id="aviso" role="status" hidden></div>
+<div id="aviso" role="status" popover="manual" hidden></div>
 
 <dialog id="dlgVenta">
   <h2 id="dlgTitulo">Venta registrada</h2>
@@ -606,7 +619,9 @@
   const el = {
     login: $('#login'), pos: $('#pos'), salir: $('#salir'), usuario: $('#usuario'),
     scan: $('#scan'), resultados: $('#resultados'), lineas: $('#lineas'), vacio: $('#vacio'),
-    cliente: $('#cliente'), metodos: $('#metodos'), descuento: $('#descuento'),
+    cliente: $('#cliente'), metodos: $('#metodos'),
+    ajusteTipo: $('#ajusteTipo'), ajusteValor: $('#ajusteValor'), ajusteMotivo: $('#ajusteMotivo'),
+    ajusteAyuda: $('#ajusteAyuda'), ajusteRotulo: $('#ajusteRotulo'),
     subtotal: $('#subtotal'), descMostrado: $('#descMostrado'), total: $('#total'),
     bloqueEfectivo: $('#bloqueEfectivo'), recibido: $('#recibido'), cambio: $('#cambio'),
     cobrar: $('#cobrar'), aviso: $('#aviso'), btnCamara: $('#btnCamara'), lector: $('#lector'),
@@ -684,8 +699,9 @@
     el.aviso.textContent = texto;
     el.aviso.className = tipo === 'error' ? 'error' : '';
     el.aviso.hidden = false;
+    if (el.aviso.showPopover) { if (el.aviso.matches(':popover-open')) el.aviso.hidePopover(); el.aviso.showPopover(); }   // encima de los diálogos abiertos
     clearTimeout(temporizadorAviso);
-    temporizadorAviso = setTimeout(() => (el.aviso.hidden = true), tipo === 'error' ? 6000 : 3500);
+    temporizadorAviso = setTimeout(() => { el.aviso.hidden = true; if (el.aviso.hidePopover && el.aviso.matches(':popover-open')) el.aviso.hidePopover(); }, tipo === 'error' ? 6000 : 3500);
   }
 
   function enfocar() {
@@ -1218,16 +1234,36 @@
   });
 
   // ---------- Totales ----------
+  // Ajuste al total: un descuento (resta, hasta el subtotal) o un recargo (suma), con motivo
+  let tipoAjuste = 'descuento';
   function calcular() {
     const subtotal = itemsVenta().reduce((s, i) => s + i.precio * i.cantidad, 0);
-    const descuento = Math.min(Math.max(parseFloat(el.descuento.value) || 0, 0), subtotal);
-    return { subtotal, descuento, total: subtotal - descuento };
+    const valor = Math.max(parseFloat(el.ajusteValor.value) || 0, 0);
+    const descuento = tipoAjuste === 'descuento' ? Math.min(valor, subtotal) : 0;
+    const recargo = tipoAjuste === 'recargo' ? valor : 0;
+    const motivo = el.ajusteMotivo.value.trim();
+    return { subtotal, descuento, recargo, motivo, total: subtotal - descuento + recargo };
+  }
+
+  function limpiarAjuste() {
+    tipoAjuste = 'descuento';
+    el.ajusteValor.value = 0;
+    el.ajusteMotivo.value = '';
+    el.ajusteMotivo.classList.remove('falta');
+    el.ajusteTipo.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.ajuste === tipoAjuste));
   }
 
   function recalcular() {
-    const { subtotal, descuento, total } = calcular();
+    const { subtotal, descuento, recargo, total } = calcular();
     el.subtotal.textContent = cop.format(subtotal);
-    el.descMostrado.textContent = cop.format(descuento);
+    el.ajusteRotulo.textContent = recargo > 0 ? 'Recargo' : 'Descuento';
+    el.descMostrado.textContent = recargo > 0 ? `+ ${cop.format(recargo)}` : descuento > 0 ? `− ${cop.format(descuento)}` : cop.format(0);
+    el.descMostrado.classList.toggle('recargo', recargo > 0);
+    // El motivo solo se pide cuando hay ajuste
+    const hayAjuste = descuento > 0 || recargo > 0;
+    el.ajusteMotivo.hidden = !hayAjuste;
+    el.ajusteAyuda.hidden = !hayAjuste;
+    el.ajusteMotivo.placeholder = `Motivo del ${tipoAjuste} (obligatorio)`;
     el.total.textContent = cop.format(total);
 
     el.bloqueEfectivo.hidden = metodo !== 'efectivo';
@@ -1254,7 +1290,18 @@
     hoja.boton.disabled = el.cobrar.disabled;
   }
 
-  el.descuento.addEventListener('input', () => { uuidVenta = null; recalcular(); });
+  el.ajusteValor.addEventListener('input', () => { uuidVenta = null; recalcular(); });
+  el.ajusteMotivo.addEventListener('input', () => { uuidVenta = null; el.ajusteMotivo.classList.remove('falta'); });
+  el.ajusteTipo.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-ajuste]');
+    if (!b) return;
+    tipoAjuste = b.dataset.ajuste;
+    uuidVenta = null;
+    el.ajusteTipo.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    recalcular();
+    el.ajusteValor.focus();
+    el.ajusteValor.select();
+  });
   el.recibido.addEventListener('input', recalcular);
   el.billetes.addEventListener('click', (e) => {
     const b = e.target.closest('[data-billete]');
@@ -1303,9 +1350,20 @@
   });
 
   // Huella de la venta en pantalla: si es la misma que quedó en duda, se reutiliza su código
-  function firmaVenta(metodoVenta, clienteId, descuento) {
-    return JSON.stringify([itemsVenta().map((i) => [i.presentacion_id, i.cantidad]), clienteId, metodoVenta, descuento]);
+  function firmaVenta(metodoVenta, clienteId, ajuste) {
+    return JSON.stringify([itemsVenta().map((i) => [i.presentacion_id, i.cantidad]), clienteId, metodoVenta, ajuste]);
   }
+  const ajusteActual = () => { const { descuento, recargo, motivo } = calcular(); return [descuento, recargo, motivo]; };
+
+  // Con descuento o recargo la venta va por registrar_venta_ajustada (script 13),
+  // que guarda el motivo y suma el recargo; sin ajuste, por registrar_venta_caja como siempre
+  function rpcVenta(params, recargo = 0, motivo = null) {
+    if (!(params.p_descuento > 0 || recargo > 0)) return db.rpc('registrar_venta_caja', params);
+    return db.rpc('registrar_venta_ajustada', { p_venta: params, p_recargo: recargo, p_motivo: motivo });
+  }
+  const mensajeVenta = (error) => /registrar_venta_ajustada/.test(error.message || '')
+    ? 'Falta ejecutar el script 13_ajuste_venta.sql en Supabase para cobrar con descuento o recargo.'
+    : error.message;
 
   // Al volver internet: ¿la venta a crédito que quedó en duda sí se registró?
   async function verificarDudosa() {
@@ -1314,9 +1372,8 @@
     if (esErrorDeRed(res)) return;
     if (res.data) {
       aviso(`La venta a crédito que quedó en duda sí se registró (venta ${res.data.id}). No la vuelvas a cobrar.`);
-      const { descuento } = calcular();
-      if (dudosa.firma === firmaVenta('credito', el.cliente.value ? +el.cliente.value : null, descuento)) {
-        carrito = []; el.descuento.value = 0; el.cliente.value = ''; pintarCliente(); pintar();
+      if (dudosa.firma === firmaVenta('credito', el.cliente.value ? +el.cliente.value : null, ajusteActual())) {
+        carrito = []; limpiarAjuste(); el.cliente.value = ''; pintarCliente(); pintar();
       }
     }
     dudosa = null;
@@ -1327,7 +1384,7 @@
   el.cobrar.addEventListener('click', async () => {
     if (!carrito.length || procesando) return;
     const metodoVenta = metodo;   // fijo durante todo el cobro, aunque cambie el estado de la red
-    const { subtotal, total, descuento } = calcular();
+    const { subtotal, total, descuento, recargo, motivo } = calcular();
     const clienteId = el.cliente.value ? +el.cliente.value : null;
     const clienteNombre = clienteId ? el.cliente.selectedOptions[0].textContent : null;
 
@@ -1347,6 +1404,12 @@
       aviso('Sin conexión no se puede vender a crédito. Cobra con otra forma de pago o espera a que vuelva internet.', 'error');
       return;
     }
+    if ((descuento > 0 || recargo > 0) && !motivo) {
+      aviso(`Escribe el motivo del ${recargo > 0 ? 'recargo' : 'descuento'}: sale en el recibo.`, 'error');
+      el.ajusteMotivo.classList.add('falta');
+      el.ajusteMotivo.focus();
+      return;
+    }
     const recibido = parseFloat(el.recibido.value);
     if (metodoVenta === 'efectivo' && Number.isFinite(recibido) && recibido < total) {
       aviso('El efectivo recibido no alcanza para el total.', 'error');
@@ -1355,7 +1418,8 @@
     }
 
     // El mismo código si se reintenta la misma venta: nunca se registra dos veces
-    const firma = firmaVenta(metodoVenta, clienteId, descuento);
+    const firma = firmaVenta(metodoVenta, clienteId, [descuento, recargo, motivo]);
+    const motivoAjuste = descuento > 0 || recargo > 0 ? motivo : null;
     if (dudosa && dudosa.firma === firma) uuidVenta = dudosa.uuid;
     uuidVenta = uuidVenta ?? nuevoUuid();
     const uuidCobro = uuidVenta;
@@ -1367,7 +1431,7 @@
       metodo: metodoVenta,
       estado: metodoVenta === 'credito' ? 'pendiente_pago' : 'pagada',
       items: items.map((i) => ({ etiqueta: i.etiqueta, cantidad: i.cantidad, precio: i.precio })),
-      subtotal, descuento, total,
+      subtotal, descuento, recargo, motivo: motivoAjuste, total,
       recibido: metodoVenta === 'efectivo' && Number.isFinite(recibido) ? recibido : null
     };
 
@@ -1377,14 +1441,14 @@
 
     let resultado = null;
     if (enLinea && haySesion) {
-      const res = await conLimite(db.rpc('registrar_venta_caja', {
+      const res = await conLimite(rpcVenta({
         p_uuid: uuidCobro,
         p_items: items.map(({ presentacion_id, cantidad, precio }) => ({ presentacion_id, cantidad, precio })),
         p_cliente_id: clienteId,
         p_metodo_pago: metodoVenta,
         p_descuento: descuento,
         p_sin_conexion: false
-      }), 10000);
+      }, recargo, motivoAjuste), 10000);
 
       if (!res.error) {
         resultado = { id: res.data.venta_id };
@@ -1393,7 +1457,7 @@
         el.cobrar.textContent = 'Cobrar venta';
         recalcular();
         uuidVenta = null;
-        aviso('No se registró la venta: ' + res.error.message, 'error');
+        aviso('No se registró la venta: ' + mensajeVenta(res.error), 'error');
         return;
       } else {
         if (metodoVenta === 'credito') {
@@ -1416,7 +1480,7 @@
       const provisional = await siguienteProvisional();
       cola.push({
         uuid: uuidCobro, provisional, creada_en: base.fecha,
-        cliente_id: clienteId, cliente: clienteNombre, metodo: metodoVenta, descuento, total,
+        cliente_id: clienteId, cliente: clienteNombre, metodo: metodoVenta, descuento, recargo, motivo: motivoAjuste, total,
         items: items.map(({ presentacion_id, cantidad, precio, etiqueta }) => ({ presentacion_id, cantidad, precio, etiqueta })),
         vendedor: base.vendedor, error: null
       });
@@ -1449,7 +1513,7 @@
     cerrarHoja(false);
     carrito = [];
     uuidVenta = null;
-    el.descuento.value = 0;
+    limpiarAjuste();
     el.recibido.value = '';
     el.cliente.value = '';
     pintarCliente();
@@ -1475,7 +1539,7 @@
     let enviadas = 0, revisar = 0, conError = 0;
 
     for (const v of [...cola]) {
-      const res = await conLimite(db.rpc('registrar_venta_caja', {
+      const res = await conLimite(rpcVenta({
         p_uuid: v.uuid,
         p_items: v.items.map(({ presentacion_id, cantidad, precio }) => ({ presentacion_id, cantidad, precio })),
         p_cliente_id: v.cliente_id,
@@ -1484,11 +1548,11 @@
         p_sin_conexion: true,
         p_creada_en: v.creada_en,
         p_recibo_provisional: v.provisional
-      }), 15000);
+      }, v.recargo || 0, v.motivo || null), 15000);
 
       if (esErrorDeRed(res)) { marcarSinRed(); break; }
       if (res.error) {
-        v.error = res.error.message;
+        v.error = mensajeVenta(res.error);
         conError++;
       } else {
         cola = cola.filter((x) => x.uuid !== v.uuid);
