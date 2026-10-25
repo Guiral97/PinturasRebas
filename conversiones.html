@@ -120,6 +120,9 @@
   .dlg-pie .btn-peligro { margin-right: auto; }
   .error-dlg { color: var(--alerta); font-weight: 600; margin: 0; min-height: 1.4em; }
   .calculado { margin: 0; font-size: .95rem; }
+  .pres-gramos { list-style: none; margin: -.4rem 0 0; padding: .5rem .75rem; border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: .2rem; font-size: .9rem; max-height: 12rem; overflow: auto; }
+  .pres-gramos li { display: flex; justify-content: space-between; gap: 1rem; }
+  .pres-gramos .sin { color: var(--suave); }
 
   #aviso { position: fixed; top: auto; right: auto; width: auto; margin: 0; border: 0; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: 8px; z-index: 50; }
   #aviso.error { background: var(--alerta); color: #fff; }
@@ -266,6 +269,14 @@
       <p class="ayuda" id="lqValorAyuda">Pesa un galón lleno y réstale lo que pesa un envase vacío igual.</p>
     </div>
     <p class="calculado num" id="lqCalculado"></p>
+    <div class="campo" id="lqProductoCampo">
+      <label for="lqProducto">Producto del inventario (opcional)</label>
+      <input id="lqProducto" list="productosLista" autocomplete="off" placeholder="Busca por nombre o marca">
+      <datalist id="productosLista"></datalist>
+      <p class="ayuda">Con el producto vinculado, la caja dice cuántos gramos pesar al venderlo.</p>
+    </div>
+    <ul class="pres-gramos num" id="lqPresentaciones" hidden></ul>
+    <p class="ayuda" id="lqSin16" hidden>Para vincular el líquido a un producto, ejecuta <b>16_liquidos_producto.sql</b> en Supabase.</p>
     <div class="campo"><label for="lqNotas">Notas (opcional)</label><input id="lqNotas" autocomplete="off" placeholder="Ej.: dato de la ficha técnica, marca…"></div>
     <label class="check"><input type="checkbox" id="lqActivo" checked> Mostrar en la calculadora y en la tabla</label>
     <p class="error-dlg" id="lqError" role="alert"></p>
@@ -312,6 +323,9 @@
   let modo = 'peso';              // 'peso': medida -> gramos · 'volumen': gramos -> medida
   let editLiquido = null, editMedida = null;
   let forma = 'galon';            // cómo se escribe la densidad en el diálogo
+  let catalogo = [];              // v_catalogo: presentaciones activas, para vincular el producto
+  let productos = new Map();      // texto que se ve en la lista -> producto_id
+  let conProducto = false;        // 16_liquidos_producto.sql ejecutado
 
   const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -339,6 +353,39 @@
     return `${nf(4).format(f)} de galón`;
   }
 
+  // Igual que en index.html: galones de una presentación por su nombre ("Galón", "Media", "1/4",
+  // "1/4 de galón", "500 ml", "1 litro"); null si el nombre no es una medida (ej. "Unidad")
+  const sinTildes = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
+  function galonesDeNombre(nombre, medidas) {
+    const t = sinTildes(nombre);
+    const m = medidas.find((x) => sinTildes(x.nombre) === t);
+    if (m) return Number(m.fraccion);
+    const num = (s) => Number(s.replace(',', '.'));
+    let r;
+    if (/^gal(on)?$/.test(t)) return 1;
+    if ((r = t.match(/^(\d+) ?\/ ?(\d+)( de)?( gal(on|ones)?)?$/))) return +r[1] / +r[2];
+    if ((r = t.match(/^(\d+(?:[.,]\d+)?) ?gal(on|ones)?$/))) return num(r[1]);
+    if ((r = t.match(/^(\d+(?:[.,]\d+)?) ?(ml|cc)$/))) return num(r[1]) / ML_GALON;
+    if ((r = t.match(/^(\d+(?:[.,]\d+)?) ?(l|lt|lts|litro|litros)$/))) return num(r[1]) * 1000 / ML_GALON;
+    return null;
+  }
+  // Igual que en index.html: una parte es su fracción de la madre
+  function galonesDe(p, catalogo, medidas) {
+    if (p.madre_id) {
+      const madre = catalogo.find((x) => x.id === p.madre_id);
+      const g = madre && galonesDeNombre(madre.presentacion, medidas);
+      return g ? g * Number(p.fraccion) : null;
+    }
+    return galonesDeNombre(p.presentacion, medidas);
+  }
+
+  // La etiqueta termina en la presentación: "Marca Producto Galón" -> "Marca Producto"
+  function nombreProducto(p) {
+    const t = p.etiqueta ?? '', s = p.presentacion ?? '';
+    return (s && t.endsWith(s) && t.slice(0, -s.length).trim()) || t;
+  }
+  const textoProducto = (id) => [...productos].find(([, v]) => v === id)?.[0] ?? '';
+
   let tAviso;
   function aviso(texto, tipo = 'info') {
     const a = $('#aviso');
@@ -353,7 +400,7 @@
   // Mensaje entendible si la tabla no existe (script sin ejecutar o proyecto equivocado)
   const faltaTabla = (error) => /liquido|medidas_liquido/.test(error?.message || '') && /does not exist|schema cache|not find/i.test(error.message);
   function errorGuardar(error) {
-    if (error.code === '23505') return 'Ya hay uno con ese nombre.';
+    if (error.code === '23505') return /producto/.test(error.message) ? 'Ese producto ya está vinculado a otro líquido.' : 'Ya hay uno con ese nombre.';
     if (error.code === '23514') return 'El valor está fuera de lo posible. Revisa el número.';
     return error.message;
   }
@@ -382,9 +429,12 @@
 
   // ---------- Datos ----------
   async function cargar() {
+    // Sin 16_liquidos_producto.sql la pantalla funciona igual, sin el vínculo al producto
+    conProducto = !(await db.from('liquidos').select('producto_id').limit(1)).error;
     const [rl, rm] = await Promise.all([
-      db.from('liquidos').select('id, nombre, densidad, notas, activo').order('nombre'),
-      db.from('medidas_liquido').select('id, nombre, fraccion').order('fraccion', { ascending: false })
+      db.from('liquidos').select(`id, nombre, densidad, notas, activo${conProducto ? ', producto_id' : ''}`).order('nombre'),
+      db.from('medidas_liquido').select('id, nombre, fraccion').order('fraccion', { ascending: false }),
+      conProducto && !catalogo.length ? cargarCatalogo() : null
     ]);
     const error = rl.error || rm.error;
     if (error) {
@@ -396,6 +446,27 @@
     liquidos = rl.data.map((l) => ({ ...l, densidad: Number(l.densidad) }));
     medidas = rm.data.map((m) => ({ ...m, fraccion: Number(m.fraccion) }));
     pintarTodo();
+  }
+
+  // Presentaciones activas, para elegir el producto y mostrar los gramos de cada una
+  async function cargarCatalogo() {
+    const todo = [];
+    for (let desde = 0; ; desde += 1000) {
+      const res = await db.from('v_catalogo').select('id, producto_id, etiqueta, presentacion, madre_id, fraccion')
+        .eq('activo', true).order('id').range(desde, desde + 999);
+      if (res.error) return aviso('No se pudo cargar el inventario: ' + res.error.message, 'error');
+      todo.push(...res.data);
+      if (res.data.length < 1000) break;
+    }
+    catalogo = todo;
+    // Un nombre por producto (de su presentación completa); si dos se llaman igual, con el número
+    const nombres = new Map();
+    catalogo.filter((p) => !p.madre_id).forEach((p) => { if (!nombres.has(p.producto_id)) nombres.set(p.producto_id, nombreProducto(p)); });
+    const cuenta = {};
+    nombres.forEach((n) => (cuenta[n] = (cuenta[n] || 0) + 1));
+    productos = new Map([...nombres].map(([id, n]) => [cuenta[n] > 1 ? `${n} (#${id})` : n, id])
+      .sort((a, b) => a[0].localeCompare(b[0], 'es')));
+    $('#productosLista').innerHTML = [...productos.keys()].map((n) => `<option value="${esc(n)}"></option>`).join('');
   }
 
   const activos = () => liquidos.filter((l) => l.activo);
@@ -427,6 +498,7 @@
         <div>
           <div class="nom">${esc(l.nombre)}${l.activo ? '' : ' <span class="estado estado-neutro">Oculto</span>'}</div>
           <div class="det num">${fDens(l.densidad)} g/ml · galón ${fGramos(l.densidad * ML_GALON)}${l.notas ? ' · ' + esc(l.notas) : ''}</div>
+          ${l.producto_id ? `<div class="det">En la caja: ${esc(textoProducto(l.producto_id) || 'producto inactivo')}</div>` : ''}
         </div>
         <button type="button" class="btn-texto" data-liquido="${l.id}">Editar</button>
       </li>`).join('') : '<li class="vacio">Todavía no hay líquidos. Agrega el ajustador con el peso de un galón.</li>';
@@ -535,6 +607,27 @@
     p.textContent = forma === 'galon'
       ? `Densidad: ${fDens(d)} g/ml · ${media.nombre}: ${fGramos(d * media.fraccion * ML_GALON)}`
       : `Un galón pesa ${fGramos(d * ML_GALON)} · ${media.nombre}: ${fGramos(d * media.fraccion * ML_GALON)}`;
+    mostrarPresentaciones();
+  }
+
+  // Lo que la caja va a sugerir para cada presentación del producto elegido
+  function mostrarPresentaciones() {
+    const ul = $('#lqPresentaciones');
+    const id = productos.get($('#lqProducto').value.trim());
+    const d = densidadEscrita();
+    const pres = id ? catalogo.filter((p) => p.producto_id === id) : [];
+    ul.hidden = !pres.length;
+    if (!pres.length) return;
+    // Completas de mayor a menor y, debajo de cada una, sus partes
+    const g = (p) => galonesDe(p, catalogo, medidas);
+    const orden = pres.filter((p) => !p.madre_id).sort((a, b) => (g(b) ?? 0) - (g(a) ?? 0))
+      .flatMap((c) => [c, ...pres.filter((p) => p.madre_id === c.id).sort((a, b) => b.fraccion - a.fraccion)]);
+    ul.innerHTML = orden.map((p) => {
+      const gal = g(p);
+      return `<li><span>${p.madre_id ? '· ' : ''}${esc(p.presentacion)}</span>${gal
+        ? `<span>${d > 0 ? fGramos(gal * ML_GALON * d) : fMl(gal * ML_GALON)}</span>`
+        : '<span class="sin">no es una medida de volumen</span>'}</li>`;
+    }).join('');
   }
 
   function abrirLiquido(l) {
@@ -543,6 +636,9 @@
     $('#lqNombre').value = l?.nombre ?? '';
     $('#lqNotas').value = l?.notas ?? '';
     $('#lqActivo').checked = l ? l.activo : true;
+    $('#lqProductoCampo').hidden = !conProducto;
+    $('#lqSin16').hidden = conProducto;
+    $('#lqProducto').value = l?.producto_id ? textoProducto(l.producto_id) : '';
     $('#lqValor').value = '';
     ponerForma('galon');
     if (l) $('#lqValor').value = nf(0).format(l.densidad * ML_GALON);
@@ -563,6 +659,7 @@
     if (b && b.dataset.forma !== forma) ponerForma(b.dataset.forma);
   });
   $('#lqValor').addEventListener('input', mostrarCalculado);
+  $('#lqProducto').addEventListener('input', mostrarPresentaciones);
   $('#lqCancelar').addEventListener('click', () => dlgL.close());
 
   $('#frmLiquido').addEventListener('submit', async (e) => {
@@ -579,6 +676,11 @@
       return $('#lqValor').focus();
     }
     const fila = { nombre, densidad: Math.round(d * 10000) / 10000, notas: $('#lqNotas').value.trim() || null, activo: $('#lqActivo').checked };
+    if (conProducto) {
+      const texto = $('#lqProducto').value.trim();
+      fila.producto_id = texto ? productos.get(texto) ?? null : null;
+      if (texto && !fila.producto_id) { err.textContent = 'Elige el producto de la lista (o deja el campo vacío).'; return $('#lqProducto').focus(); }
+    }
     const btn = $('#lqGuardar');
     btn.disabled = true;
     const { error } = editLiquido

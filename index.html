@@ -170,6 +170,10 @@
   .cat-pill svg { color: var(--acento); flex: none; }
   .btn-mezcla { border: 0; background: none; color: var(--acento); font-weight: 600; padding: .3rem .25rem; min-height: 2.2rem; }
   .btn-mezcla.punteado { border: 1px dashed var(--linea); border-radius: var(--radio); padding: .3rem .7rem; }
+  /* Sugerencia de peso para líquidos (conversiones.html) */
+  .linea .peso { display: flex; flex-wrap: wrap; align-items: center; gap: .1rem .4rem; margin-top: .35rem; color: var(--suave); font-size: .875rem; }
+  .linea .peso b { color: var(--tinta); }
+  .linea .peso svg { color: var(--acento); flex: none; }
   .paso {
     grid-area: paso; display: inline-flex; align-items: center;
     border: 1px solid var(--linea); border-radius: 8px; background: var(--fondo);
@@ -379,6 +383,7 @@
     .linea .meta .cod, .linea .valor { display: none; }
     .linea .sub-movil { display: inline; color: var(--tinta); font-weight: 600; }
     .linea .mezcla { margin-top: .3rem; gap: .25rem .4rem; font-size: .8rem; }
+    .linea .peso { margin-top: .25rem; font-size: .8rem; }
     .cat-pill { padding: .1rem .4rem; }
     .btn-mezcla { min-height: 1.9rem; padding: .15rem .2rem; font-size: .8rem; }
     .btn-mezcla.punteado { padding: .15rem .5rem; }
@@ -684,7 +689,8 @@
   let catalogoEn = null;
   let mezclas = [];          // venta completa: { presentacion_id, catalizador_id, proporcion }
   let fotos = {};            // { presentacion_id: url } (fotos.js)
-  const CAMPOS = 'id, etiqueta, codigo_barras, sku, precio_venta, stock, madre_id, fraccion';
+  let conversion = { liquidos: [], medidas: [] };   // conversiones.html: { producto_id, densidad } y medidas en galones
+  const CAMPOS = 'id, etiqueta, codigo_barras, sku, precio_venta, stock, madre_id, fraccion, producto_id, presentacion';
 
   document.title = `Caja de ventas | ${NOMBRE_TIENDA}`;
   $('#nombreTienda').textContent = NOMBRE_TIENDA;
@@ -849,6 +855,12 @@
     // Si 10_fotos_productos.sql aún no se ejecutó, la caja sigue sin fotos
     const f = await window.fotosProductos?.porPresentacion(db);
     if (f) { fotos = f; await almacen.set('fotos', fotos); }
+    // Si 15 y 16 (conversiones) aún no se ejecutaron, la caja sigue sin sugerir pesos
+    const [lq, md] = await Promise.all([
+      conLimite(db.from('liquidos').select('producto_id, densidad').eq('activo', true).not('producto_id', 'is', null), 8000),
+      conLimite(db.from('medidas_liquido').select('nombre, fraccion'), 8000)
+    ]);
+    if (!lq.error && !md.error) { conversion = { liquidos: lq.data, medidas: md.data }; await almacen.set('conversion', conversion); }
   }
 
   async function cargarCatalogoLocal() {
@@ -856,6 +868,7 @@
     if (c) { catalogo = c.filas; catalogoEn = c.en; }
     mezclas = (await almacen.get('mezclas')) || [];
     fotos = (await almacen.get('fotos')) || {};
+    conversion = (await almacen.get('conversion')) || conversion;
   }
 
   function descontarLocal(items) {
@@ -1150,6 +1163,47 @@
     return `<div class="mezcla">${texto} <button type="button" class="btn-mezcla" data-accion="completo">Sin catalizador</button></div>`;
   }
 
+  // ---------- Líquidos que se despachan pesando (conversiones.html) ----------
+  const ML_GALON = 3785.411784;   // galón de EE. UU.
+  const nf = (dec) => new Intl.NumberFormat('es-CO', { maximumFractionDigits: dec });
+
+  // Igual que en conversiones.html: galones de una presentación por su nombre ("Galón", "Media", "1/4",
+  // "1/4 de galón", "500 ml", "1 litro"); null si el nombre no es una medida (ej. "Unidad")
+  const sinTildes = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
+  function galonesDeNombre(nombre, medidas) {
+    const t = sinTildes(nombre);
+    const m = medidas.find((x) => sinTildes(x.nombre) === t);
+    if (m) return Number(m.fraccion);
+    const num = (s) => Number(s.replace(',', '.'));
+    let r;
+    if (/^gal(on)?$/.test(t)) return 1;
+    if ((r = t.match(/^(\d+) ?\/ ?(\d+)( de)?( gal(on|ones)?)?$/))) return +r[1] / +r[2];
+    if ((r = t.match(/^(\d+(?:[.,]\d+)?) ?gal(on|ones)?$/))) return num(r[1]);
+    if ((r = t.match(/^(\d+(?:[.,]\d+)?) ?(ml|cc)$/))) return num(r[1]) / ML_GALON;
+    if ((r = t.match(/^(\d+(?:[.,]\d+)?) ?(l|lt|lts|litro|litros)$/))) return num(r[1]) * 1000 / ML_GALON;
+    return null;
+  }
+  // Igual que en conversiones.html: una parte es su fracción de la madre
+  function galonesDe(p, catalogo, medidas) {
+    if (p.madre_id) {
+      const madre = catalogo.find((x) => x.id === p.madre_id);
+      const g = madre && galonesDeNombre(madre.presentacion, medidas);
+      return g ? g * Number(p.fraccion) : null;
+    }
+    return galonesDeNombre(p.presentacion, medidas);
+  }
+
+  // "Pesar 329 g" en la línea, si el producto es un líquido con densidad y la presentación es una medida
+  function lineaPeso(i) {
+    const l = i.producto_id && conversion.liquidos.find((x) => x.producto_id === i.producto_id);
+    const gal = l && galonesDe(i, catalogo, conversion.medidas);
+    if (!gal) return '';
+    const ml = gal * ML_GALON, g = ml * Number(l.densidad);
+    const fG = (v) => nf(v < 10 ? 1 : 0).format(v) + ' g', fMl = (v) => nf(v < 100 ? 1 : 0).format(v) + ' ml';
+    const balanza = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v17M8 20h8M5 6h14"/><path d="M5 6l-3 7a3 3 0 0 0 6 0zM19 6l-3 7a3 3 0 0 0 6 0z"/></svg>';
+    return `<div class="peso num">${balanza}<span>Pesar <b>${fG(g * i.cantidad)}</b>${i.cantidad > 1 ? ` (${fG(g)} c/u)` : ''}</span><span>· ${fMl(ml * i.cantidad)}, con el envase en tara</span></div>`;
+  }
+
   // ---------- Carrito ----------
   function agregar(p) {
     uuidVenta = null;
@@ -1160,7 +1214,8 @@
       const item = {
         id: p.id, etiqueta: p.etiqueta, codigo: p.codigo_barras || p.sku || '',
         precio: Number(p.precio_venta), cantidad: 1, stock: Number(p.stock),
-        madre_id: p.madre_id ?? null, fraccion: p.fraccion ?? null
+        madre_id: p.madre_id ?? null, fraccion: p.fraccion ?? null,
+        producto_id: p.producto_id ?? null, presentacion: p.presentacion ?? ''
       };
       // Si lleva catalizador, se vende completo de una vez (se puede quitar en la línea)
       item.regla = reglaDe(item);
@@ -1200,6 +1255,7 @@
             <div class="nombre">${esc(i.etiqueta)}</div>
             <div class="meta num"><span class="cod">${esc(i.codigo)} · </span>${cop.format(i.precio)} c/u<span class="sub-movil"> · ${cop.format(valorLinea(i))}</span></div>
             ${i.cantidad > i.stock ? `<div class="falta">Stock disponible: ${i.stock}</div>` : ''}
+            ${lineaPeso(i)}
             ${lineaCatalizador(i)}
           </div>
         </div>
