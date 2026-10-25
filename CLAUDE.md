@@ -27,6 +27,7 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 | `pedidos.html` | Pedidos de clientes: estados, entrega (registra la venta), cancelación. |
 | `inventario.html` | Catálogo (productos y presentaciones, **venta por partes**, **% de ganancia**), entradas de mercancía (compra, inicial, ajuste), **importación** (pegar de Excel o CSV: reconoce lo existente por código/SKU, crea lo nuevo con marca y categoría, registra compra o inicial; avisa si la factura ya se cargó), filtro **Sin existencias** y **exportar para pedido** (CSV por último proveedor), clientes, etiquetas de código de barras y **etiquetas personalizadas** (título, texto y código libres, sin producto; botón en el encabezado). |
 | `cartera.html` | Saldos por cliente, facturas con mora, abonos, recordatorio por WhatsApp (`wa.me`, antepone 57 a números de 10 dígitos). |
+| `conversiones.html` | **Conversiones de líquidos** (volumen → gramos para despachar pesando en la balanza): líquidos con densidad (se escribe la de la ficha o el peso neto de un galón), medidas tradicionales como fracción de galón (Galón, Media = 1/10, Cuarto, Octavo, 1/16, 1/32; editables), calculadora en los dos sentidos y tabla imprimible para pegar junto a la balanza. Solo consulta. Galón = 3.785,41 ml. |
 | `cierre.html` | **Cierre de caja.** Cubre desde el último cierre (uno o varios días acumulados): calcula lo que debería haber (base + ventas y abonos en efectivo − gastos y movimientos de socios de la caja, con correcciones si algo se anuló después de cerrar), conteo por total o por billetes y monedas, sobrante o faltante con nota obligatoria, base que queda y destino de lo retirado (cuenta, lo guarda un socio, caja fuerte, otro). Comprobante en la térmica. Historial; solo un socio anula, y solo el último. |
 | `gastos.html` | Gastos (caja/cuenta/socio), gastos fijos del mes, foto de factura, retiros y reembolsos de socios. |
 | `tablero.html` | Indicadores por período, ventas, margen, gastos y utilidad, top productos, reimpresión y anulación. |
@@ -41,10 +42,10 @@ Tienda de **pintura automotriz y accesorios** en Medellín, con tres socios. Ant
 | `etiquetas.js` | Códigos internos EAN-13 (`20` + id a 10 dígitos + dígito de control), SVG de etiquetas, impresión por driver. |
 | `impresora-directa.js` | Impresión de etiquetas sin driver: Web Serial (puerto COM) o Web Bluetooth, ESC/POS raster. |
 | `fotos.js` | Fotos de productos (10): URL pública, mapas `porProducto` / `porPresentacion`, `reducir` (800 px, WebP o JPEG), `subir`, `borrar`. Lo usan inventario, caja y cotizaciones. |
-| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v18`). Guarda también las fotos de productos (guardado primero). El nombre debe ser `sw.js` en minúscula. |
+| `sw.js` | Service worker. **Al cambiar archivos que precachea, subir `VERSION`** (hoy `rebas-v19`). Guarda también las fotos de productos (guardado primero). El nombre debe ser `sw.js` en minúscula. |
 | `config.js` | Configuración compartida (ver abajo). |
 | `logo.svg`, `marca-rb.png`, `favicon-32.png`, `favicon-48.png`, `apple-touch-icon.png` | Marca. `marca-rb.png`: pistola blanca sobre negro, para piezas impresas. El logo cambia de color con el tema (estilo dentro del SVG). |
-| `09_…sql` a `14_…sql` | Scripts de base de datos, en orden (ver abajo). Los 01 a 08 ya no están en el repo: 01–03 se recuperan del historial de git; 04–08 solo existen en Supabase. |
+| `09_…sql` a `15_…sql` | Scripts de base de datos, en orden (ver abajo). Los 01 a 08 ya no están en el repo: 01–03 se recuperan del historial de git; 04–08 solo existen en Supabase. |
 | `98_borrar_datos_prueba.sql`, `99_datos_prueba.sql`, `99_borrar_productos_por_codigo.sql` | Datos de prueba y limpieza. |
 | `CONTEXTO_PROYECTO_Pinturas_Rebas.md` | Contexto antiguo (antes de 04). **Este `CLAUDE.md` lo reemplaza.** |
 
@@ -82,6 +83,7 @@ Define `window.APP_CONFIG` con `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `NOMBRE_TIEN
 12. `12_catalogo_publico.sql`: `productos.publicado` (por defecto no) y `catalogo_publico()` (`security definer`, ejecutable por `anon`): solo datos de vitrina, nunca precios, costos ni stock exacto. Se marca en el diálogo del producto en Inventario.
 13. `13_ajuste_venta.sql`: **ajuste al total en la caja**: `ventas.recargo` y `ventas.ajuste_motivo`, y `registrar_venta_ajustada(p_venta, p_recargo, p_motivo)`, que llama a `registrar_venta_caja` (sin reemplazarla) y en la misma transacción guarda el motivo y suma el recargo al total. La caja la usa solo cuando hay descuento o recargo (motivo obligatorio, sale en el recibo).
 14. `14_cierre_caja.sql`: **cierre de caja** (`cierre.html`): `cierres_caja`, `cierre_caja_detalle` (qué movimiento entró en qué cierre y por cuánto; así el siguiente toma solo lo que falta, incluidas ventas sin conexión que llegan tarde y anulaciones posteriores), `v_cierres_caja`, `caja_pendiente(p_desde)`, `registrar_cierre_caja(...)` (rechaza si entraron movimientos mientras se contaba) y `anular_cierre_caja` (solo socios, solo el último). El primer cierre empieza en una fecha elegida, con base conocida o "tomar lo contado como correcto". Lee `v_gastos` y `v_movimientos_socios` (07). No reemplaza funciones.
+15. `15_conversiones.sql`: **conversiones de líquidos** (`conversiones.html`): maestros `liquidos` (`densidad` en g/ml, 0,3–3) y `medidas_liquido` (`fraccion` de galón; trae Galón, Cuarto, Octavo, Media, 1/16 y 1/32 si está vacía). Solo consulta: no toca ventas ni inventario. No reemplaza funciones.
 
 **Cambios de base de datos:** siempre en un **script nuevo numerado** (`09_…sql`), sin tocar los anteriores, con un encabezado que diga qué hace y después de cuál se ejecuta. Si un script reemplaza una función, copia la versión **más reciente** (hoy `registrar_venta*` y `registrar_movimiento` viven en `08`). Al reemplazar una vista, conserva las columnas en el mismo orden y agrega las nuevas al final.
 
@@ -117,7 +119,7 @@ No se guarda en la base de datos: se deduce de precio y costo. Precio = costo ×
 
 ## Convenciones de código
 
-- Antes de cambiar una pantalla, léela: todas comparten estilos, el patrón de login, la barra de navegación y el encabezado con logo. La barra la dibuja `nav.js` (`<nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=7"></script>`); una pantalla nueva se agrega en `SECCIONES` de `nav.js` y cada pantalla llama `navPendientes(db)` al iniciar sesión.
+- Antes de cambiar una pantalla, léela: todas comparten estilos, el patrón de login, la barra de navegación y el encabezado con logo. La barra la dibuja `nav.js` (`<nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=8"></script>`); una pantalla nueva se agrega en `SECCIONES` de `nav.js` y cada pantalla llama `navPendientes(db)` al iniciar sesión.
 - Estados con un solo código: `.estado` + `.estado-pendiente` (`--aviso`), `.estado-confirmado` (`--acento`), `.estado-ok` (`--ok`), `.estado-mal` (`--alerta`), `.estado-neutro` (`--suave`); siempre con la palabra, y en alertas con ícono. Un solo botón primario por panel, alto mínimo 2.75rem.
 - Barras de desplazamiento: todas (diálogos, listas, tablas) con el mismo estilo que la de la ventana, según el tema. Cada página declara `color-scheme: light dark` en `:root`; no poner barras con colores propios.
 - `esc()` para todo lo que se inserte en HTML. Nada de `innerHTML` con datos sin escapar.

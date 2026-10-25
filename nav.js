@@ -1,5 +1,5 @@
 // Barra de navegación común a todas las pantallas.
-// Uso: <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=7"></script>
+// Uso: <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=8"></script>
 // justo en la cabecera (se ejecuta en el momento y llena la barra).
 // En el celular (≤ 700 px) la barra pasa abajo: Caja, Pedidos, Inventario, Cartera y "Más".
 // Después de iniciar sesión, cada pantalla llama navPendientes(db) para el contador de pedidos
@@ -12,6 +12,7 @@
     inventario: '<rect x="5" y="7" width="14" height="14" rx="2"/><path d="M5 11h14M9 7V3h6v4"/>',
     cartera: '<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/>',
     cierre: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
+    conversiones: '<path d="M12 3v17M8 20h8M5 6h14"/><path d="M5 6l-3 7a3 3 0 0 0 6 0zM19 6l-3 7a3 3 0 0 0 6 0z"/>',
     gastos: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
     tablero: '<path d="M4 20V10M10 20V4M16 20v-7M2 20h20"/>',
     usuarios: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.8a3.5 3.5 0 0 1 0 6.4M18.5 14.8c1.6.8 2.7 2.5 3 5.2"/>',
@@ -24,6 +25,7 @@
     ['pedidos.html', 'Pedidos', 'pedidos', true],
     ['inventario.html', 'Inventario', 'inventario', true],
     ['cartera.html', 'Cartera', 'cartera', true],
+    ['conversiones.html', 'Conversiones', 'conversiones', false],
     ['cierre.html', 'Cierre', 'cierre', false],
     ['gastos.html', 'Gastos', 'gastos', false],
     ['tablero.html', 'Tablero', 'tablero', false],

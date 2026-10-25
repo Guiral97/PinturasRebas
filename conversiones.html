@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversiones</title>
+<link rel="icon" href="favicon-48.png" type="image/png" sizes="48x48">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  :root {
+    color-scheme: light dark;   /* barras de desplazamiento y controles según el tema */
+    --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
+    --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
+    --alerta: #A1281F; --ok: #2F6B3A; --aviso: #8A6410; --radio: 6px;
+    font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
+      --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
+      --alerta: #E57B72; --ok: #7FC08A; --aviso: #E3B94F;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font-size: 16px; line-height: 1.45; }
+  [hidden] { display: none !important; }
+  .num { font-variant-numeric: tabular-nums; }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  input, select, textarea { font: inherit; color: var(--tinta); background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: .5rem .65rem; width: 100%; min-height: 2.75rem; }
+  label, legend { font-weight: 600; }
+  .campo { display: grid; gap: .3rem; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.75rem;
+    border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .45rem .9rem;
+    border-radius: 8px; white-space: nowrap; text-decoration: none; font-weight: 600;
+  }
+  .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
+  .btn-primario:disabled, .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-texto { border: 0; background: none; color: var(--acento); padding: .2rem .3rem; font-weight: 600; min-height: 2.75rem; }
+  .btn-peligro { color: var(--alerta); }
+  h1, h2 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; margin: 0; }
+  h2 { font-size: 1.5rem; }
+  .ayuda { color: var(--suave); font-size: .9rem; margin: 0; }
+
+  .estado { display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; font-weight: 700; line-height: 1.4; padding: .05rem .55rem; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+  .estado-neutro { color: var(--suave); border-color: var(--linea); background: color-mix(in srgb, var(--suave) 12%, transparent); }
+
+  .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
+  .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; margin-right: auto; }
+  #usuario { color: var(--suave); }
+
+  #login { max-width: 22rem; margin: 12vh auto 0; padding: 1.5rem; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: 1rem; }
+  #login h1 { font-size: 1.8rem; }
+  #loginError { color: var(--alerta); margin: 0; min-height: 1.4em; }
+
+  main { max-width: 72rem; margin: 0 auto; padding: 1.4rem 1.5rem 3rem; display: grid; gap: 1.15rem; }
+  .cab-pagina { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; }
+  .cab-pagina h1 { font-size: 2.1rem; margin-right: auto; }
+  .nota-caja { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; padding: 1rem 1.15rem; margin: 0; }
+
+  .cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) 22rem; gap: 1.25rem; align-items: start; }
+  .lateral { display: grid; gap: 1.25rem; }
+  .panel { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
+  .panel-cab { padding: .85rem 1rem; border-bottom: 1px solid var(--linea); display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
+  .panel-cab > div { margin-right: auto; }
+  .vacio { color: var(--suave); padding: 1.25rem 1rem; margin: 0; }
+
+  /* Calculadora */
+  #calc { display: grid; gap: 1rem; padding: 1rem; }
+  .segmentos { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; }
+  .segmentos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
+  .fila-calc { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: .75rem; align-items: end; }
+  .fila-calc.gramos { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+  .resultado { border-top: 1px solid var(--linea); padding-top: .9rem; display: grid; gap: .3rem; }
+  .resultado .grande { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 3rem; line-height: 1; }
+  .resultado .grande small { font-size: 1.4rem; color: var(--suave); }
+  .equivale { display: flex; flex-wrap: wrap; gap: .3rem .9rem; margin: .3rem 0 0; padding: 0; list-style: none; color: var(--suave); }
+  .equivale b { color: var(--tinta); }
+  .nota-agua { color: var(--aviso); font-size: .9rem; margin: 0; }
+
+  /* Tabla para la balanza */
+  .tabla-cont { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { padding: .55rem .75rem; border-bottom: 1px solid var(--linea); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; white-space: normal; }
+  thead th { font-size: .85rem; color: var(--suave); font-weight: 600; vertical-align: bottom; }
+  thead th b { display: block; color: var(--tinta); font-size: 1rem; }
+  tbody td { font-size: 1.1rem; font-weight: 600; }
+  tbody td:first-child { font-size: 1rem; }
+  tbody td:first-child small { display: block; font-weight: 400; color: var(--suave); font-size: .8rem; }
+  tbody tr.agua td { color: var(--suave); font-weight: 500; }
+  .pie-tabla { padding: .75rem 1rem; }
+  #impTitulo { display: none; }
+
+  /* Listas */
+  .lista { list-style: none; margin: 0; padding: 0; }
+  .lista li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .2rem 1rem; align-items: center; padding: .55rem 1rem; border-bottom: 1px solid var(--linea); }
+  .lista li:last-child { border-bottom: 0; }
+  .lista .nom { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .55rem; }
+  .lista .det { color: var(--suave); font-size: .875rem; }
+  .lista li.inactivo .nom { color: var(--suave); }
+
+  /* Diálogos */
+  dialog { border: 1px solid var(--linea); border-radius: 10px; background: var(--panel); color: var(--tinta); padding: 0; width: min(28rem, calc(100% - 2rem)); }
+  dialog::backdrop { background: rgba(10, 14, 18, .45); }
+  dialog form { display: grid; gap: 1rem; padding: 1.25rem; }
+  fieldset { border: 0; margin: 0; padding: 0; }
+  legend { padding: 0; margin-bottom: .35rem; }
+  .check { display: flex; align-items: center; gap: .5rem; font-weight: 600; min-height: 2.75rem; }
+  .check input { width: 1.15rem; height: 1.15rem; min-height: 0; }
+  .dlg-pie { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
+  .dlg-pie .btn-peligro { margin-right: auto; }
+  .error-dlg { color: var(--alerta); font-weight: 600; margin: 0; min-height: 1.4em; }
+  .calculado { margin: 0; font-size: .95rem; }
+
+  #aviso { position: fixed; top: auto; right: auto; width: auto; margin: 0; border: 0; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: 8px; z-index: 50; }
+  #aviso.error { background: var(--alerta); color: #fff; }
+
+  /* ===================== Responsivo (común a todas las pantallas) ===================== */
+  html { -webkit-text-size-adjust: 100%; }
+  main > *, .cuerpo > *, dialog form > * { min-width: 0; }
+  @media (max-width: 1180px) {
+    .barra { flex-wrap: wrap; row-gap: .55rem; }
+  }
+  @media (max-width: 900px) {
+    .cuerpo { grid-template-columns: 1fr; }
+  }
+  /* Celular */
+  @media (max-width: 700px) {
+    .barra { padding: .6rem 1rem; gap: .5rem .6rem; }
+    .tienda { font-size: 1.25rem; }
+    #usuario { display: none; }
+    #salir { padding: .4rem .7rem; font-size: .9rem; }
+    main { padding: 1rem; gap: .9rem; }
+    .cab-pagina h1 { font-size: 1.8rem; }
+    #aviso { left: .75rem; right: .75rem; transform: none; max-width: none; bottom: .75rem; }
+    #login { margin: 6vh 1rem 0; }
+    .fila-calc, .fila-calc.gramos { grid-template-columns: 1fr 1fr; }
+    .fila-calc > .campo:first-child { grid-column: 1 / -1; }
+    .resultado .grande { font-size: 2.5rem; }
+    th, td { padding: .45rem .5rem; }
+  }
+
+  /* Logo junto al nombre */
+  .marca { display: flex; align-items: center; gap: .55rem; margin-right: auto; color: inherit; text-decoration: none; min-width: 0; }
+  .marca .tienda { margin-right: 0; }
+  .logo { height: 3.3rem; width: auto; display: block; flex: none; margin: -.45rem 0; }
+  @media (max-width: 700px) { .logo { height: 2.9rem; margin: -.3rem 0; } }
+
+  /* Impresión: solo la tabla, grande, para pegar junto a la balanza */
+  @media print {
+    :root { --tinta: #000; --suave: #333; --linea: #888; --panel: #fff; --fondo: #fff; color-scheme: light; }
+    body { background: #fff; }
+    .barra, .cab-pagina, #panelCalc, .lateral, .pie-tabla, #panelTabla .panel-cab, #aviso, dialog { display: none !important; }
+    main { padding: 0; max-width: none; display: block; }
+    .cuerpo { display: block; }
+    .panel { border: 0; }
+    #impTitulo { display: block; font-size: 1.6rem; margin: 0 0 .6rem; }
+    table { font-size: 1.15rem; }
+    th, td { border-bottom: 1px solid #888; padding: .5rem .6rem; }
+    tbody td { font-size: 1.35rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=8"></script>
+  <span id="usuario"></span>
+  <button class="btn" id="salir" hidden>Cerrar sesión</button>
+</header>
+
+<form id="login" hidden>
+  <h1>Iniciar sesión</h1>
+  <div class="campo"><label for="email">Correo</label><input id="email" type="email" autocomplete="username" required></div>
+  <div class="campo"><label for="clave">Contraseña</label><input id="clave" type="password" autocomplete="current-password" required></div>
+  <p id="loginError" role="alert"></p>
+  <button class="btn btn-primario" type="submit">Entrar</button>
+  <a class="olvide" href="clave.html">¿Olvidaste tu contraseña?</a>
+</form>
+
+<main id="app" hidden>
+  <div class="cab-pagina">
+    <h1>Conversiones de líquidos</h1>
+    <button type="button" class="btn" id="btnImprimir">Imprimir tabla</button>
+  </div>
+
+  <p class="nota-caja" id="faltaScript" hidden>Falta ejecutar <b>15_conversiones.sql</b> en Supabase. Antes de ejecutarlo, verifica que estás en el proyecto de la tienda.</p>
+
+  <div class="cuerpo" id="contenido" hidden>
+    <div style="display:grid;gap:1.25rem">
+      <section class="panel" id="panelCalc" aria-labelledby="tituloCalc">
+        <div class="panel-cab"><div>
+          <h2 id="tituloCalc">¿Cuánto pesar?</h2>
+          <p class="ayuda">Los líquidos livianos (ajustador, thinner) pesan menos que el agua: un ml no es un gramo.</p>
+        </div></div>
+        <form id="calc" novalidate>
+          <div class="segmentos" id="modo" role="group" aria-label="Qué calcular">
+            <button type="button" class="btn" data-modo="peso" aria-pressed="true">De medida a gramos</button>
+            <button type="button" class="btn" data-modo="volumen" aria-pressed="false">De gramos a medida</button>
+          </div>
+          <div class="fila-calc" id="filaCalc">
+            <div class="campo"><label for="cLiquido">Líquido</label><select id="cLiquido"></select></div>
+            <div class="campo" data-solo="peso"><label for="cCantidad">Cantidad</label><input id="cCantidad" class="num" inputmode="decimal" value="1" autocomplete="off"></div>
+            <div class="campo" data-solo="peso"><label for="cMedida">Medida</label><select id="cMedida"></select></div>
+            <div class="campo" data-solo="volumen" hidden><label for="cGramos">Gramos en la balanza</label><input id="cGramos" class="num" inputmode="decimal" autocomplete="off"></div>
+          </div>
+          <div class="resultado" id="resultado" aria-live="polite"></div>
+        </form>
+      </section>
+
+      <section class="panel" id="panelTabla" aria-labelledby="tituloTabla">
+        <div class="panel-cab"><div>
+          <h2 id="tituloTabla">Tabla para la balanza</h2>
+          <p class="ayuda">Gramos netos de cada medida. Pon el envase vacío en la balanza y oprime tara (o cero) antes de servir.</p>
+        </div></div>
+        <h2 id="impTitulo">Gramos por medida (envase en tara)</h2>
+        <div class="tabla-cont" id="tabla"></div>
+        <p class="ayuda pie-tabla">Galón = 3.785 ml. Pesos redondeados al gramo.</p>
+      </section>
+    </div>
+
+    <div class="lateral">
+      <section class="panel" aria-labelledby="tituloLiquidos">
+        <div class="panel-cab">
+          <div><h2 id="tituloLiquidos">Líquidos</h2></div>
+          <button type="button" class="btn btn-primario" id="btnNuevoLiquido">Nuevo líquido</button>
+        </div>
+        <ul class="lista" id="listaLiquidos"></ul>
+      </section>
+
+      <section class="panel" aria-labelledby="tituloMedidas">
+        <div class="panel-cab">
+          <div><h2 id="tituloMedidas">Medidas</h2></div>
+          <button type="button" class="btn" id="btnNuevaMedida">Nueva medida</button>
+        </div>
+        <ul class="lista" id="listaMedidas"></ul>
+      </section>
+    </div>
+  </div>
+</main>
+
+<dialog id="dlgLiquido" aria-labelledby="lqTitulo">
+  <form id="frmLiquido" method="dialog" novalidate>
+    <h2 id="lqTitulo">Nuevo líquido</h2>
+    <div class="campo"><label for="lqNombre">Nombre</label><input id="lqNombre" autocomplete="off" placeholder="Ej.: Ajustador poliuretano" required></div>
+    <fieldset>
+      <legend>¿Qué dato tienes?</legend>
+      <div class="segmentos" id="lqForma" role="group">
+        <button type="button" class="btn" data-forma="galon" aria-pressed="true">Peso de un galón</button>
+        <button type="button" class="btn" data-forma="densidad" aria-pressed="false">Densidad (g/ml)</button>
+      </div>
+    </fieldset>
+    <div class="campo">
+      <label for="lqValor" id="lqValorEtq">Peso neto de un galón (gramos)</label>
+      <input id="lqValor" class="num" inputmode="decimal" autocomplete="off">
+      <p class="ayuda" id="lqValorAyuda">Pesa un galón lleno y réstale lo que pesa un envase vacío igual.</p>
+    </div>
+    <p class="calculado num" id="lqCalculado"></p>
+    <div class="campo"><label for="lqNotas">Notas (opcional)</label><input id="lqNotas" autocomplete="off" placeholder="Ej.: dato de la ficha técnica, marca…"></div>
+    <label class="check"><input type="checkbox" id="lqActivo" checked> Mostrar en la calculadora y en la tabla</label>
+    <p class="error-dlg" id="lqError" role="alert"></p>
+    <div class="dlg-pie">
+      <button type="button" class="btn btn-texto btn-peligro" id="lqBorrar" hidden>Eliminar</button>
+      <button type="button" class="btn" id="lqCancelar">Cancelar</button>
+      <button type="submit" class="btn btn-primario" id="lqGuardar">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgMedida" aria-labelledby="mdTitulo">
+  <form id="frmMedida" method="dialog" novalidate>
+    <h2 id="mdTitulo">Nueva medida</h2>
+    <div class="campo"><label for="mdNombre">Nombre</label><input id="mdNombre" autocomplete="off" placeholder="Ej.: Media" required></div>
+    <div class="campo">
+      <label for="mdFraccion">Parte del galón</label>
+      <input id="mdFraccion" class="num" inputmode="decimal" autocomplete="off" placeholder="Ej.: 1/10">
+      <p class="ayuda">Como fracción (1/10, 1/4) o en decimales (0,1). Un galón es 1.</p>
+    </div>
+    <p class="calculado num" id="mdCalculado"></p>
+    <p class="error-dlg" id="mdError" role="alert"></p>
+    <div class="dlg-pie">
+      <button type="button" class="btn btn-texto btn-peligro" id="mdBorrar" hidden>Eliminar</button>
+      <button type="button" class="btn" id="mdCancelar">Cancelar</button>
+      <button type="submit" class="btn btn-primario" id="mdGuardar">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="aviso" role="status" popover="manual" hidden></div>
+
+<script>
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, NOMBRE_TIENDA } = window.APP_CONFIG;
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const $ = (s) => document.querySelector(s);
+
+  document.title = `Conversiones | ${NOMBRE_TIENDA}`;
+  $('#nombreTienda').textContent = NOMBRE_TIENDA;
+
+  const ML_GALON = 3785.411784;   // galón de EE. UU.
+  let liquidos = [];              // tabla liquidos
+  let medidas = [];               // tabla medidas_liquido, de mayor a menor
+  let modo = 'peso';              // 'peso': medida -> gramos · 'volumen': gramos -> medida
+  let editLiquido = null, editMedida = null;
+  let forma = 'galon';            // cómo se escribe la densidad en el diálogo
+
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const nf = (dec) => new Intl.NumberFormat('es-CO', { maximumFractionDigits: dec, minimumFractionDigits: 0 });
+  const fGramos = (g) => (g < 10 ? nf(1) : nf(0)).format(g) + ' g';
+  const fMl = (ml) => (ml < 100 ? nf(1) : nf(0)).format(ml) + ' ml';
+  const fDens = (d) => new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(d);
+
+  // Números escritos a mano: "0,87", "0.87", "3.290" (miles) o "1/10"
+  function leerNumero(texto) {
+    let t = String(texto ?? '').trim().replace(/\s/g, '');
+    if (!t) return NaN;
+    const frac = t.match(/^(\d+(?:[.,]\d+)?)\/(\d+(?:[.,]\d+)?)$/);
+    if (frac) return leerNumero(frac[1]) / leerNumero(frac[2]);
+    if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+    else if (/^[1-9]\d{0,2}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');   // "0.870" sigue siendo decimal
+    return /^\d*\.?\d+$/.test(t) ? Number(t) : NaN;
+  }
+
+  // Fracción legible: 0.1 -> "1/10", 0.25 -> "1/4"; si no es 1/n, en decimales
+  function fFraccion(f) {
+    if (Math.abs(f - Math.round(f)) < 1e-6) return nf(0).format(f) + (Math.round(f) === 1 ? ' galón' : ' galones');
+    const n = Math.round(1 / f);
+    if (Math.abs(1 / n - f) < 1e-6) return `1/${n} de galón`;
+    return `${nf(4).format(f)} de galón`;
+  }
+
+  let tAviso;
+  function aviso(texto, tipo = 'info') {
+    const a = $('#aviso');
+    a.textContent = texto;
+    a.className = tipo === 'error' ? 'error' : '';
+    a.hidden = false;
+    if (a.showPopover) { if (a.matches(':popover-open')) a.hidePopover(); a.showPopover(); }   // encima de los diálogos abiertos
+    clearTimeout(tAviso);
+    tAviso = setTimeout(() => { a.hidden = true; if (a.hidePopover && a.matches(':popover-open')) a.hidePopover(); }, tipo === 'error' ? 7000 : 4000);
+  }
+
+  // Mensaje entendible si la tabla no existe (script sin ejecutar o proyecto equivocado)
+  const faltaTabla = (error) => /liquido|medidas_liquido/.test(error?.message || '') && /does not exist|schema cache|not find/i.test(error.message);
+  function errorGuardar(error) {
+    if (error.code === '23505') return 'Ya hay uno con ese nombre.';
+    if (error.code === '23514') return 'El valor está fuera de lo posible. Revisa el número.';
+    return error.message;
+  }
+
+  // ---------- Sesión ----------
+  async function mostrarSesion(session) {
+    const con = !!session;
+    $('#login').hidden = con;
+    $('#app').hidden = !con;
+    $('#salir').hidden = !con;
+    if (!con) return;
+    const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
+    if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
+    $('#usuario').textContent = perfil?.nombre ?? session.user.email;
+    navPendientes(db);
+    cargar();
+  }
+
+  $('#login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('#loginError').textContent = '';
+    const { error } = await db.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#clave').value });
+    if (error) $('#loginError').textContent = 'Correo o contraseña incorrectos.';
+  });
+  $('#salir').addEventListener('click', () => db.auth.signOut());
+
+  // ---------- Datos ----------
+  async function cargar() {
+    const [rl, rm] = await Promise.all([
+      db.from('liquidos').select('id, nombre, densidad, notas, activo').order('nombre'),
+      db.from('medidas_liquido').select('id, nombre, fraccion').order('fraccion', { ascending: false })
+    ]);
+    const error = rl.error || rm.error;
+    if (error) {
+      if (faltaTabla(error)) { $('#faltaScript').hidden = false; $('#contenido').hidden = true; return; }
+      return aviso('No se pudieron cargar las conversiones: ' + error.message, 'error');
+    }
+    $('#faltaScript').hidden = true;
+    $('#contenido').hidden = false;
+    liquidos = rl.data.map((l) => ({ ...l, densidad: Number(l.densidad) }));
+    medidas = rm.data.map((m) => ({ ...m, fraccion: Number(m.fraccion) }));
+    pintarTodo();
+  }
+
+  const activos = () => liquidos.filter((l) => l.activo);
+
+  function pintarTodo() {
+    pintarSelects();
+    pintarListas();
+    pintarTabla();
+    calcular();
+  }
+
+  function pintarSelects() {
+    const selL = $('#cLiquido'), antesL = selL.value;
+    selL.innerHTML = activos().length
+      ? activos().map((l) => `<option value="${l.id}">${esc(l.nombre)}</option>`).join('')
+      : '<option value="">Agrega un líquido</option>';
+    if (activos().some((l) => String(l.id) === antesL)) selL.value = antesL;
+
+    const selM = $('#cMedida'), antesM = selM.value;
+    selM.innerHTML = medidas.map((m) => `<option value="${m.id}">${esc(m.nombre)}</option>`).join('')
+      + '<option value="ml">Mililitros (ml)</option>';
+    if ([...selM.options].some((o) => o.value === antesM)) selM.value = antesM;
+    else { const media = medidas.find((m) => Math.abs(m.fraccion - 0.1) < 1e-6); if (media) selM.value = media.id; }
+  }
+
+  function pintarListas() {
+    $('#listaLiquidos').innerHTML = liquidos.length ? liquidos.map((l) => `
+      <li class="${l.activo ? '' : 'inactivo'}">
+        <div>
+          <div class="nom">${esc(l.nombre)}${l.activo ? '' : ' <span class="estado estado-neutro">Oculto</span>'}</div>
+          <div class="det num">${fDens(l.densidad)} g/ml · galón ${fGramos(l.densidad * ML_GALON)}${l.notas ? ' · ' + esc(l.notas) : ''}</div>
+        </div>
+        <button type="button" class="btn-texto" data-liquido="${l.id}">Editar</button>
+      </li>`).join('') : '<li class="vacio">Todavía no hay líquidos. Agrega el ajustador con el peso de un galón.</li>';
+
+    $('#listaMedidas').innerHTML = medidas.length ? medidas.map((m) => `
+      <li>
+        <div>
+          <div class="nom">${esc(m.nombre)}</div>
+          <div class="det num">${fFraccion(m.fraccion)} · ${fMl(m.fraccion * ML_GALON)}</div>
+        </div>
+        <button type="button" class="btn-texto" data-medida="${m.id}">Editar</button>
+      </li>`).join('') : '<li class="vacio">Sin medidas.</li>';
+  }
+
+  function pintarTabla() {
+    if (!activos().length || !medidas.length) {
+      $('#tabla').innerHTML = '<p class="vacio">Agrega al menos un líquido para ver la tabla.</p>';
+      $('#btnImprimir').disabled = true;
+      return;
+    }
+    $('#btnImprimir').disabled = false;
+    $('#tabla').innerHTML = `
+      <table class="num">
+        <thead><tr><th scope="col">Líquido</th>${medidas.map((m) =>
+          `<th scope="col"><b>${esc(m.nombre)}</b>${fMl(m.fraccion * ML_GALON)}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${activos().map((l) => `<tr><td>${esc(l.nombre)}<small>${fDens(l.densidad)} g/ml</small></td>${medidas.map((m) =>
+            `<td>${fGramos(m.fraccion * ML_GALON * l.densidad)}</td>`).join('')}</tr>`).join('')}
+          <tr class="agua"><td>Agua (referencia)<small>1,00 g/ml</small></td>${medidas.map((m) =>
+            `<td>${fGramos(m.fraccion * ML_GALON)}</td>`).join('')}</tr>
+        </tbody>
+      </table>`;
+  }
+
+  // ---------- Calculadora ----------
+  $('#modo').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-modo]');
+    if (!b) return;
+    modo = b.dataset.modo;
+    $('#modo').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    document.querySelectorAll('[data-solo]').forEach((c) => (c.hidden = c.dataset.solo !== modo));
+    $('#filaCalc').classList.toggle('gramos', modo === 'volumen');
+    calcular();
+    (modo === 'volumen' ? $('#cGramos') : $('#cCantidad')).focus();
+  });
+  $('#calc').addEventListener('input', calcular);
+  $('#calc').addEventListener('submit', (e) => e.preventDefault());
+
+  function calcular() {
+    const res = $('#resultado');
+    const l = liquidos.find((x) => String(x.id) === $('#cLiquido').value);
+    if (!l) { res.innerHTML = '<p class="ayuda">Agrega un líquido en la lista de la derecha para empezar.</p>'; return; }
+
+    if (modo === 'peso') {
+      const cant = leerNumero($('#cCantidad').value);
+      const medId = $('#cMedida').value;
+      const med = medidas.find((m) => String(m.id) === medId);
+      if (!(cant > 0)) { res.innerHTML = '<p class="ayuda">Escribe la cantidad.</p>'; return; }
+      const ml = medId === 'ml' ? cant : cant * med.fraccion * ML_GALON;
+      const g = ml * l.densidad;
+      res.innerHTML = `
+        <div class="grande num">${fGramos(g)}</div>
+        <p class="ayuda num">${medId === 'ml' ? '' : `${nf(2).format(cant)} × ${esc(med.nombre)} = `}${fMl(ml)} × ${fDens(l.densidad)} g/ml</p>
+        ${Math.abs(l.densidad - 1) > 0.005 ? `<p class="nota-agua num">Si se pesara como agua serían ${fGramos(ml)}: ${g < ml ? 'sobrarían' : 'faltarían'} ${fMl(Math.abs(ml - g) / l.densidad)} de ${esc(l.nombre.toLowerCase())}.</p>` : ''}`;
+    } else {
+      const g = leerNumero($('#cGramos').value);
+      if (!(g > 0)) { res.innerHTML = '<p class="ayuda">Escribe lo que marca la balanza (sin el envase).</p>'; return; }
+      const ml = g / l.densidad;
+      res.innerHTML = `
+        <div class="grande num">${fMl(ml)}</div>
+        <p class="ayuda num">${fGramos(g)} ÷ ${fDens(l.densidad)} g/ml</p>
+        <ul class="equivale num">${medidas.map((m) =>
+          `<li><b>${nf(2).format(ml / (m.fraccion * ML_GALON))}</b> ${esc(m.nombre)}</li>`).join('')}</ul>`;
+    }
+  }
+
+  $('#btnImprimir').addEventListener('click', () => window.print());
+
+  // ---------- Líquidos ----------
+  const dlgL = $('#dlgLiquido');
+
+  function ponerForma(f) {
+    // Al cambiar de forma se conserva el dato ya escrito, convertido
+    const d = densidadEscrita();
+    forma = f;
+    $('#lqForma').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.forma === f)));
+    $('#lqValorEtq').textContent = f === 'galon' ? 'Peso neto de un galón (gramos)' : 'Densidad (gramos por ml)';
+    $('#lqValorAyuda').textContent = f === 'galon'
+      ? 'Pesa un galón lleno y réstale lo que pesa un envase vacío igual.'
+      : 'Viene en la ficha técnica como densidad o peso específico (agua = 1).';
+    if (d > 0) $('#lqValor').value = f === 'galon' ? nf(0).format(d * ML_GALON) : fDens(d);
+    mostrarCalculado();
+  }
+
+  function densidadEscrita() {
+    const v = leerNumero($('#lqValor').value);
+    if (!(v > 0)) return NaN;
+    return forma === 'galon' ? v / ML_GALON : v;
+  }
+
+  function mostrarCalculado() {
+    const d = densidadEscrita();
+    const p = $('#lqCalculado');
+    if (!(d > 0)) { p.textContent = ''; return; }
+    const media = medidas.find((m) => Math.abs(m.fraccion - 0.1) < 1e-6) || { nombre: '1/10', fraccion: 0.1 };
+    p.textContent = forma === 'galon'
+      ? `Densidad: ${fDens(d)} g/ml · ${media.nombre}: ${fGramos(d * media.fraccion * ML_GALON)}`
+      : `Un galón pesa ${fGramos(d * ML_GALON)} · ${media.nombre}: ${fGramos(d * media.fraccion * ML_GALON)}`;
+  }
+
+  function abrirLiquido(l) {
+    editLiquido = l || null;
+    $('#lqTitulo').textContent = l ? `Editar ${l.nombre}` : 'Nuevo líquido';
+    $('#lqNombre').value = l?.nombre ?? '';
+    $('#lqNotas').value = l?.notas ?? '';
+    $('#lqActivo').checked = l ? l.activo : true;
+    $('#lqValor').value = '';
+    ponerForma('galon');
+    if (l) $('#lqValor').value = nf(0).format(l.densidad * ML_GALON);
+    mostrarCalculado();
+    $('#lqBorrar').hidden = !l;
+    $('#lqError').textContent = '';
+    dlgL.showModal();
+    $('#lqNombre').focus();
+  }
+
+  $('#btnNuevoLiquido').addEventListener('click', () => abrirLiquido(null));
+  $('#listaLiquidos').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-liquido]');
+    if (b) abrirLiquido(liquidos.find((l) => String(l.id) === b.dataset.liquido));
+  });
+  $('#lqForma').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-forma]');
+    if (b && b.dataset.forma !== forma) ponerForma(b.dataset.forma);
+  });
+  $('#lqValor').addEventListener('input', mostrarCalculado);
+  $('#lqCancelar').addEventListener('click', () => dlgL.close());
+
+  $('#frmLiquido').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nombre = $('#lqNombre').value.trim();
+    const d = densidadEscrita();
+    const err = $('#lqError');
+    if (!nombre) { err.textContent = 'Escribe el nombre del líquido.'; return $('#lqNombre').focus(); }
+    if (!(d > 0)) { err.textContent = forma === 'galon' ? 'Escribe cuántos gramos pesa un galón sin el envase.' : 'Escribe la densidad.'; return $('#lqValor').focus(); }
+    if (d < 0.3 || d > 3) {
+      err.textContent = forma === 'galon'
+        ? `Un galón de ${nf(0).format(d * ML_GALON)} g no es posible. ¿Escribiste kilos en vez de gramos? Un galón de ajustador pesa unos 3.300 g.`
+        : 'La densidad debe estar entre 0,3 y 3 g/ml (el agua es 1).';
+      return $('#lqValor').focus();
+    }
+    const fila = { nombre, densidad: Math.round(d * 10000) / 10000, notas: $('#lqNotas').value.trim() || null, activo: $('#lqActivo').checked };
+    const btn = $('#lqGuardar');
+    btn.disabled = true;
+    const { error } = editLiquido
+      ? await db.from('liquidos').update(fila).eq('id', editLiquido.id)
+      : await db.from('liquidos').insert(fila);
+    btn.disabled = false;
+    if (error) { err.textContent = errorGuardar(error); return; }
+    dlgL.close();
+    aviso(editLiquido ? 'Líquido actualizado.' : 'Líquido agregado.');
+    await cargar();
+    if (!editLiquido) { const nuevo = liquidos.find((l) => l.nombre === nombre); if (nuevo?.activo) { $('#cLiquido').value = nuevo.id; calcular(); } }
+  });
+
+  $('#lqBorrar').addEventListener('click', async () => {
+    if (!confirm(`¿Eliminar "${editLiquido.nombre}"? Si solo no lo quieres ver, desmarca "Mostrar en la calculadora".`)) return;
+    const { error } = await db.from('liquidos').delete().eq('id', editLiquido.id);
+    if (error) { $('#lqError').textContent = error.message; return; }
+    dlgL.close();
+    aviso('Líquido eliminado.');
+    cargar();
+  });
+
+  // ---------- Medidas ----------
+  const dlgM = $('#dlgMedida');
+
+  function abrirMedida(m) {
+    editMedida = m || null;
+    $('#mdTitulo').textContent = m ? `Editar ${m.nombre}` : 'Nueva medida';
+    $('#mdNombre').value = m?.nombre ?? '';
+    $('#mdFraccion').value = m ? (fFraccion(m.fraccion).match(/^1\/\d+/)?.[0] ?? nf(6).format(m.fraccion)) : '';
+    $('#mdBorrar').hidden = !m;
+    $('#mdError').textContent = '';
+    mostrarMedida();
+    dlgM.showModal();
+    $('#mdNombre').focus();
+  }
+
+  function mostrarMedida() {
+    const f = leerNumero($('#mdFraccion').value);
+    $('#mdCalculado').textContent = f > 0 ? `${fFraccion(f)} = ${fMl(f * ML_GALON)}` : '';
+  }
+
+  $('#btnNuevaMedida').addEventListener('click', () => abrirMedida(null));
+  $('#listaMedidas').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-medida]');
+    if (b) abrirMedida(medidas.find((m) => String(m.id) === b.dataset.medida));
+  });
+  $('#mdFraccion').addEventListener('input', mostrarMedida);
+  $('#mdCancelar').addEventListener('click', () => dlgM.close());
+
+  $('#frmMedida').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nombre = $('#mdNombre').value.trim();
+    const f = leerNumero($('#mdFraccion').value);
+    const err = $('#mdError');
+    if (!nombre) { err.textContent = 'Escribe el nombre de la medida.'; return $('#mdNombre').focus(); }
+    if (!(f > 0) || f > 100) { err.textContent = 'Escribe qué parte del galón es, por ejemplo 1/10.'; return $('#mdFraccion').focus(); }
+    const fila = { nombre, fraccion: Math.round(f * 1e8) / 1e8 };
+    const btn = $('#mdGuardar');
+    btn.disabled = true;
+    const { error } = editMedida
+      ? await db.from('medidas_liquido').update(fila).eq('id', editMedida.id)
+      : await db.from('medidas_liquido').insert(fila);
+    btn.disabled = false;
+    if (error) { err.textContent = errorGuardar(error); return; }
+    dlgM.close();
+    aviso(editMedida ? 'Medida actualizada.' : 'Medida agregada.');
+    cargar();
+  });
+
+  $('#mdBorrar').addEventListener('click', async () => {
+    if (!confirm(`¿Eliminar la medida "${editMedida.nombre}"?`)) return;
+    const { error } = await db.from('medidas_liquido').delete().eq('id', editMedida.id);
+    if (error) { $('#mdError').textContent = error.message; return; }
+    dlgM.close();
+    aviso('Medida eliminada.');
+    cargar();
+  });
+
+  // ---------- Inicio ----------
+  db.auth.onAuthStateChange((evento, s) => {
+    if (evento === 'TOKEN_REFRESHED') return;
+    setTimeout(() => mostrarSesion(s), 0);
+  });
+</script>
+</body>
+</html>

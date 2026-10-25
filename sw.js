@@ -3,9 +3,9 @@
 // (la caja maneja su propio catálogo y su cola de ventas en IndexedDB); solo
 // las fotos de productos, que no cambian.
 // Al cambiar archivos de la app, sube este número para forzar la actualización.
-const VERSION = 'rebas-v18';
+const VERSION = 'rebas-v19';
 
-const APP = ['./', 'index.html', 'config.js', 'recibo.js', 'fotos.js?v=1', 'nav.js?v=7', 'logo.svg', 'favicon-32.png', 'favicon-48.png'];
+const APP = ['./', 'index.html', 'config.js', 'recibo.js', 'fotos.js?v=1', 'nav.js?v=8', 'logo.svg', 'favicon-32.png', 'favicon-48.png'];
 // Fotos de productos (bucket público): cada foto nueva tiene otro nombre, así que la guardada nunca queda vieja.
 // Las páginas las piden con crossorigin="anonymous": así la copia guardada sirve en todas.
 const FOTOS = '/storage/v1/object/public/productos/';
