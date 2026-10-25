@@ -2484,6 +2484,15 @@
     nota.textContent = (etPres.codigo_barras || !partesElegidas().codigo)
       ? ''
       : 'Este producto no tiene código. Al imprimir se le asigna este y queda guardado.';
+    // Con el corrimiento, ¿algo queda fuera del papel? (getBBox da 0 mientras el diálogo está cerrado)
+    const caja = svg?.getBBox?.();
+    if (caja?.width) {
+      const arriba = 1.5 + m.dy + caja.y, izq = (m.ancho - r.ancho) / 2 + m.dx + caja.x;
+      if (arriba < -0.1 || arriba + caja.height > m.alto + 0.1 || izq < -0.1 || izq + caja.width > m.ancho + 0.1) {
+        nota.textContent = 'Con ese corrimiento una parte queda fuera de la etiqueta y no se imprime. Muévela menos.';
+        nota.className = 'et-nota error';
+      }
+    }
     habilitarImpresion(true);
   }
 
@@ -2516,6 +2525,7 @@
     document.querySelectorAll('#etContenido [data-c]').forEach((x) => (x.checked = !!guardado[x.dataset.c]));
     pintarVistaEtiqueta();
     dlgEt.showModal();
+    pintarVistaEtiqueta();   // otra vez ya abierto: así se puede medir si algo queda fuera del papel
     $('#etCantidad').select();
   }
 
