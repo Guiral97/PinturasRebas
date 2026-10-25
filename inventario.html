@@ -14,7 +14,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="config.js"></script>
-<script src="etiquetas.js?v=20261024a"></script>
+<script src="etiquetas.js?v=20261025a"></script>
 <script src="impresora-directa.js?v=20261024a"></script>
 <script src="fotos.js?v=1"></script>
 <style>
@@ -510,6 +510,8 @@
   .et-nota.error { color: var(--alerta); font-weight: 600; }
   .et-contenido { border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: .45rem 1rem; }
   .et-contenido legend { font-weight: 500; padding: 0; margin-bottom: .4rem; }
+  .et-personal { display: grid; gap: .7rem; }
+  .et-personal textarea { font-family: inherit; resize: vertical; }
   @media (max-width: 420px) { .et-contenido { grid-template-columns: 1fr; } }
   .et-directo { display: grid; gap: .5rem; padding-top: .9rem; border-top: 1px dashed var(--linea); }
   .et-directo .fila { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
@@ -827,6 +829,7 @@
       <div class="cab-mas" id="cabMas">
         <a class="btn" href="catalogo.html" target="_blank" rel="noopener">Ver catálogo público</a>
         <a class="btn" href="tarjeta-catalogo.html" target="_blank" rel="noopener">Tarjeta con QR</a>
+        <button class="btn" id="etiquetaPersonal" type="button">Etiqueta personalizada</button>
         <button class="btn" id="irEntrada" type="button">Registrar entrada</button>
       </div>
       <button class="btn btn-primario" id="nuevoProducto" type="button"><span class="txt-largo">+ Nuevo producto</span><span class="txt-corto">+ Producto</span></button>
@@ -1312,7 +1315,7 @@
   <form id="frmEtiquetas">
     <div class="dlg-cuerpo">
       <h2 id="tituloEtiquetas">Imprimir etiquetas</h2>
-      <div class="et-prod"><strong id="etNombre"></strong><span id="etCodigo"></span></div>
+      <div class="et-prod" id="etProd"><strong id="etNombre"></strong><span id="etCodigo"></span></div>
       <div class="et-vista" id="etVista" aria-label="Vista previa de la etiqueta"></div>
       <p class="et-nota" id="etNota" role="status"></p>
       <div class="et-campos">
@@ -1344,6 +1347,12 @@
         </div>
         <button type="button" class="btn" id="etAjusteCero">Sin corrimiento</button>
       </details>
+      <div class="et-personal" id="etPersonal" hidden>
+        <div class="campo"><label for="etTitulo">Título</label><input id="etTitulo" maxlength="60" autocomplete="off"></div>
+        <div class="campo"><label for="etTexto">Texto</label><textarea id="etTexto" rows="3" maxlength="300"></textarea><small>Cada renglón va en una línea de la etiqueta.</small></div>
+        <div class="campo"><label for="etCodigoLibre">Código de barras (opcional)</label><input id="etCodigoLibre" maxlength="40" autocomplete="off" spellcheck="false"><small>Números o letras sin tildes. Se puede escanear aquí.</small></div>
+        <label class="check"><input type="checkbox" id="etTiendaLibre"> Nombre de la tienda arriba</label>
+      </div>
       <fieldset class="et-contenido" id="etContenido">
         <legend>Qué lleva la etiqueta</legend>
         <label class="check"><input type="checkbox" data-c="codigo"> Código de barras</label>
@@ -2429,6 +2438,14 @@
   }
   // Textos que van impresos, según lo elegido
   function contenidoEtiqueta() {
+    if (!etPres) {   // etiqueta personalizada
+      return {
+        conCodigo: !!codigoEtiqueta(),
+        tienda: $('#etTiendaLibre').checked ? (window.APP_CONFIG?.NOMBRE_TIENDA || '') : '',
+        nombre: $('#etTitulo').value.trim(),
+        texto: $('#etTexto').value
+      };
+    }
     const p = partesElegidas();
     const detalle = [etPres.codigo_color ? `Color ${etPres.codigo_color}` : '', etPres.sku ? `SKU ${etPres.sku}` : '']
       .filter(Boolean).join(' · ');
@@ -2442,6 +2459,7 @@
   }
 
   function codigoEtiqueta() {
+    if (!etPres) return $('#etCodigoLibre').value.trim();
     return etPres.codigo_barras || codigoInterno(etPres.id);
   }
 
@@ -2464,7 +2482,16 @@
       habilitarImpresion(false);
       return;
     }
-    const r = svgEtiqueta(codigo, { anchoMm: anchoUtil(m.ancho), altoMm: m.alto - 3, ...contenidoEtiqueta() });
+    let r;
+    try {
+      r = svgEtiqueta(codigo, { anchoMm: anchoUtil(m.ancho), altoMm: m.alto - 3, ...contenidoEtiqueta() });
+    } catch (err) {   // código personalizado con letras que no se pueden imprimir (tildes, ñ…)
+      $('#etVista').innerHTML = '';
+      nota.textContent = 'El código de barras solo puede llevar números, letras sin tildes y signos comunes.';
+      nota.className = 'et-nota error';
+      habilitarImpresion(false);
+      return;
+    }
     $('#etVista').innerHTML = `<div class="papel" style="width:${m.ancho}mm;height:${m.alto}mm">${r.svg}</div>`;
     const svg = $('#etVista svg');
     if (svg) { svg.style.left = `${m.dx}mm`; svg.style.top = `${m.dy}mm`; }
@@ -2472,16 +2499,16 @@
     $('#etAjusteResumen').textContent = mov.some(Boolean) ? `(${mov.filter(Boolean).join(', ')})` : '';
     if (!r.cabe) {
       nota.textContent = r.motivo === 'vacia'
-        ? 'Elige al menos una cosa para imprimir en la etiqueta.'
+        ? (etPres ? 'Elige al menos una cosa para imprimir en la etiqueta.' : 'Escribe el título, el texto o el código de la etiqueta.')
         : r.motivo === 'alto'
-        ? `No cabe todo en ${m.alto} mm de alto. Quita alguna opción o usa una etiqueta más alta.`
+        ? `No cabe todo en ${m.alto} mm de alto. ${etPres ? 'Quita alguna opción' : 'Acorta el texto'} o usa una etiqueta más alta.`
         : `El código no cabe en ${m.ancho} mm de ancho sin perder lectura. Usa una etiqueta más ancha.`;
       nota.className = 'et-nota error';
       habilitarImpresion(false);
       return;
     }
     nota.className = 'et-nota';
-    nota.textContent = (etPres.codigo_barras || !partesElegidas().codigo)
+    nota.textContent = (!etPres || etPres.codigo_barras || !partesElegidas().codigo)
       ? ''
       : 'Este producto no tiene código. Al imprimir se le asigna este y queda guardado.';
     // Con el corrimiento, ¿algo queda fuera del papel? (getBBox da 0 mientras el diálogo está cerrado)
@@ -2500,17 +2527,25 @@
     document.querySelectorAll('#imprimirEtiquetas, [data-directo]').forEach((x) => (x.disabled = !si));
   }
 
+  // presId vacío: etiqueta personalizada (texto y código libres, sin producto)
   function abrirEtiquetas(presId) {
     if (!window.codigoInterno) return aviso('Falta subir el archivo etiquetas.js al repositorio.', 'error');
-    etPres = catalogo.find((c) => c.id === presId);
-    if (!etPres) return;
+    etPres = presId == null ? null : catalogo.find((c) => c.id === presId);
+    if (presId != null && !etPres) return;
+    $('#etProd').hidden = $('#etContenido').hidden = !etPres;
+    $('#etPersonal').hidden = !!etPres;
     const cd = window.impresoraDirecta?.conectada();
     estadoDirecto(cd ? `Conectada: ${cd.nombre}` : '');
     pintarOtroCanal();
+    if (!etPres) {
+      $('#tituloEtiquetas').textContent = 'Etiqueta personalizada';
+      $('#imprimirEtiquetas').textContent = 'Imprimir';
+    } else {
     $('#etNombre').textContent = etPres.etiqueta;
     $('#etCodigo').textContent = etPres.codigo_barras || `Código nuevo: ${codigoInterno(etPres.id)}`;
     $('#tituloEtiquetas').textContent = etPres.codigo_barras ? 'Imprimir etiquetas' : 'Crear código e imprimir';
     $('#imprimirEtiquetas').textContent = etPres.codigo_barras ? 'Imprimir' : 'Crear código e imprimir';
+    }
     $('#etCantidad').value = 1;
 
     const g = leerMedidaGuardada();
@@ -2526,8 +2561,17 @@
     pintarVistaEtiqueta();
     dlgEt.showModal();
     pintarVistaEtiqueta();   // otra vez ya abierto: así se puede medir si algo queda fuera del papel
-    $('#etCantidad').select();
+    if (etPres) $('#etCantidad').select();
+    else $('#etTitulo').focus();
   }
+
+  $('#etiquetaPersonal').addEventListener('click', () => abrirEtiquetas(null));
+  $('#etPersonal').addEventListener('input', pintarVistaEtiqueta);
+  $('#etPersonal').addEventListener('change', pintarVistaEtiqueta);
+  // El Enter del lector (o al escribir) no imprime; en el texto sí hace salto de línea
+  $('#etPersonal').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.preventDefault();
+  });
 
   ['#etMedida', '#etAncho', '#etAlto'].forEach((s) => $(s).addEventListener('input', pintarVistaEtiqueta));
   ['#etDx', '#etDy'].forEach((s) => $(s).addEventListener('input', () => { guardarAjuste(); pintarVistaEtiqueta(); }));
@@ -2542,7 +2586,7 @@
 
   // Asigna el código propio si el producto no tiene. Devuelve false si no se pudo.
   async function asegurarCodigo() {
-    if (etPres.codigo_barras) return true;
+    if (!etPres || etPres.codigo_barras) return true;
     if (!partesElegidas().codigo) return true;   // sin código de barras en la etiqueta no hace falta crearlo
     const nuevo = codigoInterno(etPres.id);
     // Solo si sigue sin código (otro equipo pudo asignarle uno mientras tanto)
@@ -2576,7 +2620,7 @@
     try {
       if (!(await asegurarCodigo())) return;
       guardarMedida(m);
-      imprimirEtiquetas(etPres.codigo_barras || codigoEtiqueta(), cantidad, m, contenidoEtiqueta());
+      imprimirEtiquetas(codigoEtiqueta(), cantidad, m, contenidoEtiqueta());
       dlgEt.close();
     } finally {
       boton.disabled = false;
@@ -2631,7 +2675,7 @@
       estadoDirecto(`Conectada: ${c.nombre}. Preparando…`);
       if (!(await asegurarCodigo())) return;
       guardarMedida(m);
-      const nombre = await ID.imprimirDirecto(tipo, etPres.codigo_barras || codigoEtiqueta(), cantidad, m,
+      const nombre = await ID.imprimirDirecto(tipo, codigoEtiqueta(), cantidad, m,
         (f) => estadoDirecto(`Enviando a ${c.nombre}… ${Math.round(f * 100)} %`), contenidoEtiqueta());
       estadoDirecto(`Listo: ${cantidad} ${cantidad === 1 ? 'etiqueta enviada' : 'etiquetas enviadas'} a ${nombre}.`);
       aviso('Etiquetas enviadas a la impresora.');

@@ -157,17 +157,20 @@
   }
 
   // Etiqueta completa. De arriba hacia abajo: nombre de la tienda, nombre del
-  // producto, detalle (código de color / SKU), código de barras y precio.
+  // producto, detalle (código de color / SKU), texto libre, código de barras y precio.
   // Cada parte es opcional; sin código de barras el texto se centra y se agranda.
-  // contenido: { conCodigo, tienda, nombre, detalle, precio }
-  function svgEtiqueta(codigo, { anchoMm, altoMm, conCodigo = true, tienda = '', nombre = '', detalle = '', precio = null }) {
+  // contenido: { conCodigo, tienda, nombre, detalle, texto, precio }
+  // texto: renglones separados por salto de línea (etiquetas personalizadas)
+  function svgEtiqueta(codigo, { anchoMm, altoMm, conCodigo = true, tienda = '', nombre = '', detalle = '', texto = '', precio = null }) {
     const W = anchoMm, H = altoMm;
     const hay = (t) => !!String(t ?? '').trim();
+    const renglones = String(texto ?? '').split(/\r?\n/).map((t) => t.trim()).filter(Boolean);
     const conPrecio = precio != null && precio !== '' && !Number.isNaN(Number(precio));
-    if (conCodigo && !hay(tienda) && !hay(nombre) && !hay(detalle) && !conPrecio) {
+    const sinTextos = !hay(tienda) && !hay(nombre) && !hay(detalle) && !renglones.length && !conPrecio;
+    if (conCodigo && sinTextos) {
       return svgCodigo(codigo, { anchoMm, altoMm });
     }
-    if (!conCodigo && !hay(tienda) && !hay(nombre) && !hay(detalle) && !conPrecio) {
+    if (!conCodigo && sinTextos) {
       return { ancho: W, cabe: false, motivo: 'vacia', svg: '' };
     }
     const sinCod = !conCodigo;
@@ -181,6 +184,7 @@
     const fsT = Math.max(1.6, limitar(H * (sinCod ? 0.12 : 0.09), 1.9, sinCod ? 3.4 : 2.8) * k);
     const fsN = Math.max(1.8, limitar(H * (sinCod ? 0.16 : 0.12), 2.2, sinCod ? 5 : 3.4) * k);
     const fsD = Math.max(1.6, limitar(H * (sinCod ? 0.11 : 0.09), 1.8, sinCod ? 3.2 : 2.6) * k);
+    const fsX = Math.max(1.6, limitar(H * (sinCod ? 0.13 : 0.1), 2, sinCod ? 4 : 3) * k);
     const fsP = Math.max(2.4, limitar(H * (sinCod ? 0.26 : 0.17), 3, sinCod ? 9 : 5.5) * k);
 
     // Si una línea queda más ancha que la etiqueta (letras anchas), se comprime para que quepa
@@ -190,6 +194,7 @@
     if (hay(tienda)) partirNombre(tienda, W, fsT, 1).forEach((t) => lineas.push({ txt: t, fs: fsT, peso: 900 }));
     if (hay(nombre)) partirNombre(nombre, W, fsN, sinCod ? 3 : 2).forEach((t) => lineas.push({ txt: t, fs: fsN, peso: 700 }));
     if (hay(detalle)) partirNombre(detalle, W, fsD, 1).forEach((t) => lineas.push({ txt: t, fs: fsD, peso: 600 }));
+    renglones.forEach((r) => partirNombre(r, W, fsX, 3).forEach((t) => lineas.push({ txt: t, fs: fsX, peso: 600 })));
     const altoArriba = lineas.reduce((a, l) => a + l.fs * 1.18, 0) + (lineas.length ? 0.5 : 0);
     const altoPrecio = conPrecio ? fsP * 1.05 + 0.5 : 0;
 
@@ -239,7 +244,7 @@
     const margen = 1.5;
     const { svg } = svgEtiqueta(codigo, { anchoMm: anchoUtil(ancho), altoMm: alto - 2 * margen, ...contenido });
     const una = `<div class="et">${svg}</div>`;
-    return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Etiquetas ${codigo}</title>
+    return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Etiquetas ${escXml(codigo)}</title>
       <style>
         @page { size: ${ancho}mm ${alto}mm; margin: 0; }
         * { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
