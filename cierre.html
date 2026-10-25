@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cierre de caja</title>
+<link rel="icon" href="favicon-48.png" type="image/png" sizes="48x48">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  :root {
+    color-scheme: light dark;   /* barras de desplazamiento y controles según el tema */
+    --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
+    --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
+    --cinta: #E8D08A; --cinta-borde: #C9AE66; --alerta: #A1281F; --ok: #2F6B3A; --aviso: #8A6410; --radio: 6px;
+    font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
+      --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
+      --cinta: #C4AB68; --cinta-borde: #9E8850; --alerta: #E57B72; --ok: #7FC08A; --aviso: #E3B94F;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font-size: 16px; line-height: 1.45; }
+  [hidden] { display: none !important; }
+  .num { font-variant-numeric: tabular-nums; }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  input, select, textarea { font: inherit; color: var(--tinta); background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: .5rem .65rem; width: 100%; }
+  textarea { resize: vertical; min-height: 4.5rem; }
+  label, legend { font-weight: 500; }
+  .campo { display: grid; gap: .3rem; align-content: start; }
+  .campo small { color: var(--suave); }
+  .btn { border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .5rem .9rem; border-radius: 8px; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; min-height: 2.75rem; }
+  .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-texto { border: 0; background: none; color: var(--acento); padding: .2rem .3rem; font-weight: 600; }
+  .btn-texto.peligro { color: var(--alerta); }
+  h2, h3 { font-family: "Barlow Condensed", sans-serif; font-weight: 600; margin: 0; }
+  h2 { font-size: 1.6rem; } h3 { font-size: 1.25rem; }
+
+  .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
+  .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; margin-right: auto; }
+  #usuario { color: var(--suave); }
+
+  #login { max-width: 22rem; margin: 12vh auto 0; padding: 1.5rem; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: 1rem; }
+  #login h1 { font-family: "Barlow Condensed", sans-serif; font-size: 1.8rem; margin: 0; }
+  #loginError { color: var(--alerta); margin: 0; min-height: 1.4em; }
+
+  main { max-width: 80rem; margin: 0 auto; padding: 1.25rem; }
+
+  .cab-pagina { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; margin-bottom: 1rem; }
+  .cab-pagina h1 { margin: 0; font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 2.1rem; line-height: 1.1; }
+  .total-mes { margin-left: auto; display: flex; align-items: baseline; gap: .6rem; }
+  .total-mes span { color: var(--suave); }
+  .total-mes strong { font-family: "Barlow Condensed", sans-serif; font-size: 1.9rem; font-weight: 700; line-height: 1; }
+
+  .pestanas { display: flex; gap: .25rem; padding: .25rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 10px; overflow-x: auto; }
+  .pestanas button { border: 0; background: none; color: var(--suave); padding: .45rem .9rem; min-height: 2.5rem; font-weight: 500; border-radius: 7px; white-space: nowrap; display: inline-flex; align-items: center; }
+  .pestanas button[aria-selected="true"] { color: var(--acento-tinta); background: var(--acento); font-weight: 600; }
+
+  /* Estados unificados */
+  .estado { display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; font-weight: 700; line-height: 1.4; padding: .05rem .6rem; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+  .estado-pendiente { color: var(--aviso); border-color: color-mix(in srgb, var(--aviso) 45%, transparent); background: color-mix(in srgb, var(--aviso) 14%, transparent); }
+  .estado-confirmado { color: var(--acento); border-color: color-mix(in srgb, var(--acento) 45%, transparent); background: color-mix(in srgb, var(--acento) 14%, transparent); }
+  .estado-ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+  .estado-mal { color: var(--alerta); border-color: color-mix(in srgb, var(--alerta) 45%, transparent); background: color-mix(in srgb, var(--alerta) 14%, transparent); }
+  .estado-neutro { color: var(--suave); border-color: var(--linea); background: color-mix(in srgb, var(--suave) 12%, transparent); }
+
+  .cuerpo { display: grid; grid-template-columns: 26rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .tarjeta { background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: 1.25rem; display: grid; gap: 1rem; }
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+  fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+  legend { padding: 0; margin-bottom: .3rem; }
+  .segmentos { display: grid; grid-template-columns: repeat(2, 1fr); gap: .4rem; }
+  .segmentos button { min-height: 3rem; background: var(--fondo); }
+  .segmentos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
+  .ayuda { color: var(--suave); font-size: .92rem; margin: 0; }
+  .valor-grande { font-family: "Barlow Condensed", sans-serif; font-size: 2rem; font-weight: 700; min-height: 3.4rem; }
+  #frmCierre h2 { font-weight: 700; }
+  #frmCierre h3 { font-weight: 700; padding-top: .5rem; border-top: 1px solid var(--linea); }
+  #btnCierre { min-height: 3.2rem; font-size: 1.1rem; }
+
+  /* Primer cierre */
+  .primer { display: grid; gap: .8rem; padding: .8rem .9rem; background: color-mix(in srgb, var(--cinta) 35%, transparent); border: 1px solid var(--cinta-borde); border-radius: var(--radio); }
+  .primer p { margin: 0; }
+
+  /* Conteo por billetes y monedas */
+  .billetes { display: grid; grid-template-columns: auto minmax(4rem, 6rem) minmax(0, 1fr); gap: .35rem .75rem; align-items: center; }
+  .billetes label { font-weight: 600; text-align: right; }
+  .billetes input { text-align: center; }
+  .billetes .sub { text-align: right; color: var(--suave); }
+  .billetes .tipo { grid-column: 1 / -1; font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); margin-top: .3rem; }
+  .total-conteo { display: flex; justify-content: space-between; align-items: baseline; padding-top: .5rem; border-top: 2px solid var(--tinta); font-weight: 700; }
+  .total-conteo strong { font-family: "Barlow Condensed", sans-serif; font-size: 1.8rem; }
+
+  .cuadre { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+  .cuadre .estado { font-size: .95rem; padding: .2rem .75rem; }
+  .se-retira { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; }
+  .se-retira strong { font-family: "Barlow Condensed", sans-serif; font-size: 1.8rem; }
+  .error-campo { color: var(--alerta); font-weight: 600; margin: 0; }
+
+  /* Cuentas del período */
+  .cuentas { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .35rem 1rem; margin: 0; }
+  .cuentas dt { color: var(--suave); }
+  .cuentas dd { margin: 0; text-align: right; font-weight: 600; }
+  .cuentas .salida { color: var(--alerta); }
+  .cuentas .total { padding-top: .45rem; border-top: 2px solid var(--tinta); color: var(--tinta); font-weight: 700; }
+  .cuentas dd.total { font-family: "Barlow Condensed", sans-serif; font-size: 1.6rem; line-height: 1.1; }
+  .periodo { margin: 0; color: var(--suave); }
+  .periodo b { color: var(--tinta); }
+
+  .tabla-caja { overflow-x: auto; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: .55rem .75rem; border-bottom: 1px solid var(--linea); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  th { font-weight: 600; color: var(--suave); font-size: .9rem; }
+  td.der, th.der { text-align: right; }
+  td small { display: block; color: var(--suave); }
+  tr.dia td { background: color-mix(in srgb, var(--acento) 8%, transparent); font-weight: 700; }
+  tr.anulado td { color: var(--suave); text-decoration: line-through; }
+  tr.anulado td.acc, tr.anulado td small, tr.anulado td .estado { text-decoration: none; }
+  td.salida { color: var(--alerta); }
+  .acc { white-space: nowrap; text-align: right; }
+  .vacio { color: var(--suave); padding: 1.25rem .9rem; margin: 0; }
+  #movimientos { display: grid; gap: 1rem; }
+
+  dialog { border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); color: var(--tinta); padding: 1.4rem; width: min(30rem, calc(100% - 1.5rem)); }
+  dialog::backdrop { background: rgba(10, 14, 18, .45); }
+  dialog form { display: grid; gap: 1rem; }
+  .dlg-acciones { display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
+
+  #aviso { position: fixed; top: auto; right: auto; width: auto; margin: 0; border: 0; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: var(--radio); z-index: 10; }
+  #aviso.error { background: var(--alerta); color: #fff; }
+
+  @media (max-width: 1000px) {
+    .cuerpo { grid-template-columns: 1fr; }
+  }
+
+  /* ===================== Responsivo (común a todas las pantallas) ===================== */
+  html { -webkit-text-size-adjust: 100%; }
+  img, canvas, svg, video { max-width: 100%; }
+  input, select, textarea { max-width: 100%; }
+  main > *, .cuerpo > *, dialog form > *, .tarjeta > *, .dos > *, section > * { min-width: 0; }
+  .segmentos button { white-space: normal; line-height: 1.2; }
+  .tabla-caja { position: relative; max-width: 100%; -webkit-overflow-scrolling: touch; }
+  td.num, th, td.der { white-space: nowrap; }
+  @media (max-width: 1180px) {
+    .barra { flex-wrap: wrap; row-gap: .55rem; }
+  }
+  @media (max-width: 700px) {
+    .barra { padding: .6rem 1rem; gap: .5rem .6rem; }
+    .tienda { font-size: 1.25rem; }
+    #usuario { display: none; }
+    #salir { padding: .4rem .7rem; font-size: .9rem; min-height: 2.5rem; }
+    main { padding: 1rem; }
+    dialog { width: calc(100% - 1.25rem); max-width: 34rem; padding: 1.15rem; }
+    .dlg-acciones > * { flex: 1 1 auto; text-align: center; }
+    #aviso { left: .75rem; right: .75rem; transform: none; max-width: none; bottom: .75rem; }
+    #login { margin: 6vh 1rem 0; }
+  }
+  .marca { display: flex; align-items: center; gap: .55rem; margin-right: auto; color: inherit; text-decoration: none; min-width: 0; }
+  .marca .tienda { margin-right: 0; }
+  .logo { height: 3.3rem; width: auto; display: block; flex: none; margin: -.45rem 0; }
+  @media (max-width: 700px) { .logo { height: 2.9rem; margin: -.3rem 0; } }
+
+  .solo-movil { display: none; }
+  .tabla-caja table { min-width: 34rem; }
+  @media (max-width: 700px) {
+    .cab-pagina { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "titulo total" "pestanas pestanas"; gap: .4rem .75rem; align-items: baseline; margin-bottom: .5rem; }
+    .cab-pagina > * { min-width: 0; }
+    .cab-pagina h1 { grid-area: titulo; }
+    .total-mes { grid-area: total; justify-self: end; gap: .4rem; }
+    .total-mes span { font-size: .8rem; }
+    .total-mes strong { font-size: 1.35rem; }
+    .pestanas { grid-area: pestanas; padding: .2rem; gap: .2rem; }
+    .pestanas button { flex: 1 0 auto; justify-content: center; min-height: 2.125rem; padding: 0 .75rem; font-size: .9rem; }
+    .cuerpo { gap: .9rem; }
+    h2 { font-size: 1.25rem; } h3 { font-size: 1.15rem; }
+    .tarjeta { padding: .75rem; gap: .6rem; }
+    .campo { gap: .2rem; }
+    .campo label, legend { font-size: .9rem; }
+    .segmentos { gap: .35rem; }
+    .segmentos button { min-height: 2.5rem; padding: .25rem .4rem; }
+    .tarjeta .valor-grande { font-size: 1.5rem; min-height: 2.5rem; padding-top: .15rem; padding-bottom: .15rem; }
+    .tarjeta > .btn, #btnCierre { width: 100%; }
+    #btnCierre { min-height: 2.75rem; font-size: 1rem; }
+    .ayuda { font-size: .85rem; }
+    .billetes { gap: .3rem .6rem; }
+    .total-conteo strong, .se-retira strong { font-size: 1.45rem; }
+
+    /* Tablas como filas de 2 renglones: texto a la izquierda; valor y acciones a la derecha */
+    .tabla-caja table { min-width: 0; }
+    .ocultar-movil { display: none; }
+    .solo-movil { display: block; }
+    .tabla-caja table, .tabla-caja tbody { display: block; }
+    .tabla-caja thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .tabla-caja tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .15rem .6rem; align-items: start; padding: .5rem .6rem; border-bottom: 1px solid var(--linea); }
+    .tabla-caja tbody tr:last-child { border-bottom: 0; }
+    .tabla-caja tbody td { display: block; padding: 0; border: 0; }
+    .tabla-caja tbody td.ocultar-movil { display: none; }
+    .tabla-caja tbody td:not(.der, .acc) { grid-column: 1; grid-row: 1 / span 2; }
+    .tabla-caja tbody td.der { grid-column: 2; grid-row: 1; }
+    .tabla-caja tbody td.acc { grid-column: 2; grid-row: 2; align-self: end; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0 .35rem; }
+    .tabla-caja tbody td.vacio { grid-column: 1 / -1; padding: .75rem 0; }
+    .tabla-caja tbody td small { font-size: .8rem; line-height: 1.35; }
+    .tabla-caja tbody tr.dia { padding: .4rem .6rem; }
+    td.acc .btn-texto { display: inline-flex; align-items: center; min-height: 2rem; margin: 0; padding: 0 .35rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=7"></script>
+  <span id="usuario"></span>
+  <button class="btn" id="salir" hidden>Cerrar sesión</button>
+</header>
+
+<form id="login" hidden>
+  <h1>Iniciar sesión</h1>
+  <div class="campo"><label for="email">Correo</label><input id="email" type="email" autocomplete="username" required></div>
+  <div class="campo"><label for="clave">Contraseña</label><input id="clave" type="password" autocomplete="current-password" required></div>
+  <p id="loginError" role="alert"></p>
+  <button class="btn btn-primario" type="submit">Entrar</button>
+  <a class="olvide" href="clave.html">¿Olvidaste tu contraseña?</a>
+</form>
+
+<main id="app" hidden>
+  <div class="cab-pagina">
+    <h1>Cierre de caja</h1>
+    <div class="pestanas" role="tablist">
+      <button role="tab" id="t-cerrar" aria-controls="p-cerrar" aria-selected="true">Cerrar caja</button>
+      <button role="tab" id="t-historial" aria-controls="p-historial" aria-selected="false">Historial</button>
+    </div>
+    <div class="total-mes num"><span>Debería haber</span><strong id="cabEsperado">—</strong></div>
+  </div>
+
+  <!-- ============ CERRAR ============ -->
+  <section id="p-cerrar" role="tabpanel" aria-labelledby="t-cerrar">
+    <div class="cuerpo">
+      <form class="tarjeta" id="frmCierre" novalidate>
+        <h2>Contar la caja</h2>
+
+        <div class="primer" id="primerCierre" hidden>
+          <p><b>Es el primer cierre.</b> Elige desde qué día se viene acumulando el efectivo que hay en la caja (la última vez que se sacó todo o que se empezó con una base conocida).</p>
+          <div class="campo"><label for="cDesde">Desde el día</label><input id="cDesde" type="date"></div>
+          <fieldset>
+            <legend>¿Con cuánto se empezó ese día?</legend>
+            <div class="segmentos" id="cModoBase">
+              <button type="button" class="btn" data-base="se" aria-pressed="true">Sé cuánto había</button>
+              <button type="button" class="btn" data-base="nose" aria-pressed="false">No sé: tomar lo contado</button>
+            </div>
+          </fieldset>
+          <div class="campo" id="campoBase"><label for="cBase">Había en la caja al empezar</label><input id="cBase" type="number" min="0" step="1" inputmode="numeric" class="num" placeholder="$ 0"></div>
+          <p class="ayuda" id="ayudaNose" hidden>Se da por bueno lo que cuentes hoy y la app deduce con cuánto se empezó. Desde este cierre en adelante ya sí se compara.</p>
+        </div>
+
+        <fieldset>
+          <legend>¿Cómo vas a contar?</legend>
+          <div class="segmentos" id="cModoConteo">
+            <button type="button" class="btn" data-conteo="total" aria-pressed="true">El total</button>
+            <button type="button" class="btn" data-conteo="billetes" aria-pressed="false">Billetes y monedas</button>
+          </div>
+        </fieldset>
+
+        <div class="campo" id="modoTotal">
+          <label for="cContado">Efectivo contado</label>
+          <input id="cContado" type="number" min="0" step="1" inputmode="numeric" class="num valor-grande" placeholder="$ 0">
+        </div>
+        <div id="modoBilletes" hidden>
+          <div class="billetes num" id="billetes"></div>
+          <div class="total-conteo num"><span>Total contado</span><strong id="totBilletes">$ 0</strong></div>
+        </div>
+
+        <div class="cuadre" id="cuadre" aria-live="polite" hidden></div>
+
+        <h3>Retiro</h3>
+        <div class="dos">
+          <div class="campo">
+            <label for="cDeja">Dejar en la caja (base)</label>
+            <input id="cDeja" type="number" min="0" step="1" inputmode="numeric" class="num" placeholder="$ 0">
+          </div>
+          <div class="campo">
+            <span>&nbsp;</span>
+            <button type="button" class="btn" id="cRetirarTodo">Retirar todo</button>
+          </div>
+        </div>
+        <div class="se-retira num"><span>Se retira</span><strong id="cRetira">$ 0</strong></div>
+        <p class="error-campo" id="errorRetiro" hidden></p>
+
+        <fieldset id="campoDestino" hidden>
+          <legend>¿A dónde va lo retirado?</legend>
+          <div class="segmentos" id="cDestino">
+            <button type="button" class="btn" data-destino="cuenta" aria-pressed="false">Consignar en la cuenta</button>
+            <button type="button" class="btn" data-destino="socio" aria-pressed="false">Lo guarda un socio</button>
+            <button type="button" class="btn" data-destino="caja_fuerte" aria-pressed="false">Caja fuerte</button>
+            <button type="button" class="btn" data-destino="otro" aria-pressed="false">Otro</button>
+          </div>
+        </fieldset>
+        <div class="campo" id="campoSocio" hidden>
+          <label for="cSocio">¿Qué socio lo guarda?</label>
+          <select id="cSocio"></select>
+          <small>Sigue siendo dinero del negocio. Si el socio se lo queda como retiro, regístralo en Gastos › Socios antes de cerrar.</small>
+        </div>
+        <div class="campo" id="campoDestinoNota" hidden>
+          <label for="cDestinoNota" id="lblDestinoNota">Referencia</label>
+          <input id="cDestinoNota" maxlength="200">
+        </div>
+
+        <div class="campo">
+          <label for="cNota" id="lblNota">Nota</label>
+          <textarea id="cNota" maxlength="300" placeholder="Opcional"></textarea>
+        </div>
+
+        <button class="btn btn-primario" type="submit" id="btnCierre">Registrar cierre</button>
+        <p class="ayuda">Para un retiro de un socio (su parte de las ganancias) o un gasto pagado con efectivo, regístralo en Gastos: la app lo descuenta de lo esperado.</p>
+      </form>
+
+      <section id="movimientos" aria-label="Movimientos desde el último cierre">
+        <div class="tarjeta">
+          <h2 style="font-weight:700">Desde el último cierre</h2>
+          <p class="periodo" id="periodo"></p>
+          <dl class="cuentas num" id="cuentas"></dl>
+          <button type="button" class="btn-texto" id="actualizar" style="justify-self:start">Actualizar</button>
+        </div>
+        <div class="tabla-caja">
+          <table>
+            <thead><tr><th class="ocultar-movil">Hora</th><th>Movimiento</th><th class="der">Valor</th></tr></thead>
+            <tbody id="tbMovs"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ============ HISTORIAL ============ -->
+  <section id="p-historial" role="tabpanel" aria-labelledby="t-historial" hidden>
+    <div class="tabla-caja">
+      <table>
+        <thead><tr><th>Cierre</th><th class="der ocultar-movil">Esperado</th><th class="der ocultar-movil">Contado</th><th class="ocultar-movil">Cuadre</th><th class="der">Retirado</th><th class="der ocultar-movil">Base que quedó</th><th class="acc"><span class="visually-hidden">Acciones</span></th></tr></thead>
+        <tbody id="tbCierres"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<!-- ============ LISTO ============ -->
+<dialog id="dlgListo" aria-labelledby="lsTitulo">
+  <form method="dialog">
+    <h2 id="lsTitulo">Cierre registrado</h2>
+    <dl class="cuentas num" id="lsResumen"></dl>
+    <div class="dlg-acciones">
+      <button type="submit" class="btn" value="listo">Listo</button>
+      <button type="button" class="btn btn-primario" id="lsImprimir">Imprimir comprobante</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ ANULAR ============ -->
+<dialog id="dlgAnular" aria-labelledby="anTitulo">
+  <form id="frmAnular">
+    <h2 id="anTitulo">Anular cierre</h2>
+    <p class="ayuda" id="anDetalle"></p>
+    <div class="campo"><label for="anMotivo">Motivo</label><textarea id="anMotivo" required maxlength="300" placeholder="Ej: se contó mal el efectivo"></textarea></div>
+    <div class="dlg-acciones">
+      <button type="button" class="btn" id="anCancelar">Cancelar</button>
+      <button type="submit" class="btn btn-primario" id="anConfirmar">Anular</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="aviso" role="status" popover="manual" hidden></div>
+<style>.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;left:0;top:0}</style>
+
+<script>
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, NOMBRE_TIENDA } = window.APP_CONFIG;
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => [...document.querySelectorAll(s)];
+  const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+  const ZONA = 'America/Bogota';
+  const fHora = new Intl.DateTimeFormat('es-CO', { timeStyle: 'short', timeZone: ZONA });
+  const fFechaHora = new Intl.DateTimeFormat('es-CO', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: ZONA });
+  const fDia = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long', timeZone: ZONA });
+  const fClave = new Intl.DateTimeFormat('en-CA', { timeZone: ZONA });   // 'AAAA-MM-DD' en Colombia
+  const BILLETES = [100000, 50000, 20000, 10000, 5000, 2000];
+  const MONEDAS = [1000, 500, 200, 100, 50];
+  const DESTINOS = { cuenta: 'Consignado en la cuenta', socio: 'Lo guarda', caja_fuerte: 'Caja fuerte', otro: 'Otro' };
+  const TIPOS = { venta: 'Ventas en efectivo', abono: 'Abonos en efectivo', gasto: 'Gastos pagados de la caja', socio: 'Retiros y reembolsos a socios' };
+
+  document.title = `Cierre de caja | ${NOMBRE_TIENDA}`;
+  $('#nombreTienda').textContent = NOMBRE_TIENDA;
+
+  // ---------- Estado ----------
+  let pend = null;              // respuesta de caja_pendiente()
+  let socios = [], cierres = [], esSocio = false;
+  let modoConteo = 'total', modoBase = 'se', destino = null;
+  let dejaTocado = false;       // si ya escribieron la base a dejar, no se cambia sola
+  let anulando = null, registrado = null;
+
+  // ---------- Utilidades ----------
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const hoy = () => fClave.format(new Date());
+  const errorLegible = (e) => (e?.message || String(e)).replace(/^.*?ERROR:\s*/, '');
+  // Número de un campo, o null si está vacío
+  const valor = (sel) => { const v = $(sel).value.trim(); return v === '' ? null : Math.round(Number(v)); };
+  const conSigno = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + cop.format(Math.abs(v));
+  const leer = (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } };
+  const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch (_) { /* sin almacenamiento */ } };
+
+  let tAviso;
+  function aviso(texto, tipo = 'info') {
+    const a = $('#aviso');
+    a.textContent = texto;
+    a.className = tipo === 'error' ? 'error' : '';
+    a.hidden = false;
+    if (a.showPopover) { if (a.matches(':popover-open')) a.hidePopover(); a.showPopover(); }   // encima de los diálogos abiertos
+    clearTimeout(tAviso);
+    tAviso = setTimeout(() => { a.hidden = true; if (a.hidePopover && a.matches(':popover-open')) a.hidePopover(); }, tipo === 'error' ? 7000 : 3500);
+  }
+
+  function segmentos(contenedor, attr, alElegir) {
+    $(contenedor).addEventListener('click', (e) => {
+      const b = e.target.closest(`[data-${attr}]`);
+      if (!b) return;
+      $$(`${contenedor} [data-${attr}]`).forEach((x) => x.setAttribute('aria-pressed', x === b));
+      alElegir(b.dataset[attr]);
+    });
+  }
+  function marcarSegmento(contenedor, attr, valor) {
+    $$(`${contenedor} [data-${attr}]`).forEach((x) => x.setAttribute('aria-pressed', x.dataset[attr] === valor));
+  }
+
+  // ---------- Sesión ----------
+  async function mostrarSesion(session) {
+    const con = !!session;
+    $('#login').hidden = con;
+    $('#app').hidden = !con;
+    $('#salir').hidden = !con;
+    if (!con) return;
+    const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
+    if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
+    $('#usuario').textContent = perfil?.nombre ?? session.user.email;
+    navPendientes(db);
+    const [s, r] = await Promise.all([
+      db.from('perfiles').select('id, nombre').eq('rol', 'socio').eq('activo', true).order('nombre'),
+      db.rpc('es_socio')
+    ]);
+    socios = s.data || [];
+    esSocio = !r.error && !!r.data;
+    $('#cSocio').innerHTML = socios.length
+      ? '<option value="">Elige el socio</option>' + socios.map((x) => `<option value="${esc(x.id)}">${esc(x.nombre)}</option>`).join('')
+      : '<option value="">No hay socios activos</option>';
+    await Promise.all([cargarPendiente(), cargarCierres()]);
+  }
+
+  $('#login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('#loginError').textContent = '';
+    const { error } = await db.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#clave').value });
+    if (error) $('#loginError').textContent = 'Correo o contraseña incorrectos.';
+  });
+  $('#salir').addEventListener('click', () => db.auth.signOut());
+
+  // ---------- Pestañas ----------
+  const tabs = ['cerrar', 'historial'];
+  function abrirPestana(nombre) {
+    tabs.forEach((t) => {
+      $(`#t-${t}`).setAttribute('aria-selected', t === nombre);
+      $(`#p-${t}`).hidden = t !== nombre;
+    });
+  }
+  tabs.forEach((t) => $(`#t-${t}`).addEventListener('click', () => abrirPestana(t)));
+
+  // ---------- Lo pendiente desde el último cierre ----------
+  async function cargarPendiente() {
+    const { data, error } = await db.rpc('caja_pendiente', { p_desde: $('#cDesde').value || null });
+    if (error) {
+      aviso(/caja_pendiente/.test(error.message) ? 'Falta ejecutar 14_cierre_caja.sql en Supabase.' : errorLegible(error), 'error');
+      return;
+    }
+    pend = data;
+    $('#primerCierre').hidden = !pend.primer;
+    if (!pend.primer && !dejaTocado) $('#cDeja').value = Math.round(pend.base_inicial ?? 0) || '';
+    pintarMovimientos();
+    recalcular();
+  }
+
+  const sumaMovs = () => (pend?.movimientos ?? []).reduce((t, m) => t + Number(m.valor), 0);
+
+  // Base con la que se empezó; null en el primer cierre si no se sabe
+  function baseInicial() {
+    if (!pend) return null;
+    if (!pend.primer) return Number(pend.base_inicial) || 0;
+    return modoBase === 'se' ? valor('#cBase') : null;
+  }
+
+  function contado() {
+    if (modoConteo === 'total') return valor('#cContado');
+    const campos = $$('#billetes input');
+    if (campos.every((c) => c.value.trim() === '')) return null;
+    return campos.reduce((t, c) => t + Number(c.dataset.d) * (Math.round(Number(c.value)) || 0), 0);
+  }
+
+  function conteoBilletes() {
+    if (modoConteo !== 'billetes') return null;
+    const o = {};
+    $$('#billetes input').forEach((c) => { const n = Math.round(Number(c.value)) || 0; if (n > 0) o[c.dataset.d] = n; });
+    return o;
+  }
+
+  function esperado() {
+    const b = baseInicial();
+    if (b != null) return b + sumaMovs();
+    return pend?.primer && modoBase === 'nose' ? contado() : null;
+  }
+
+  function pintarMovimientos() {
+    const movs = pend.movimientos;
+    const desde = new Date(pend.desde);
+    const dias = Math.round((new Date(hoy()) - new Date(fClave.format(desde))) / 86400000) + 1;
+    $('#periodo').innerHTML = pend.primer
+      ? `Primer cierre: desde el <b>${esc(fDia.format(desde))}</b>${dias > 1 ? ` (${dias} días)` : ''}.`
+      : `Desde el cierre del <b>${esc(fFechaHora.format(desde))}</b>${dias > 1 ? `. Acumulado de <b>${dias} días</b>.` : '.'}`;
+
+    if (!movs.length) {
+      $('#tbMovs').innerHTML = '<tr><td colspan="3" class="vacio">No hay movimientos de efectivo desde el último cierre.</td></tr>';
+      return;
+    }
+    // Agrupados por día (hora de Colombia), con el neto de cada día
+    const grupos = new Map();
+    movs.forEach((m) => {
+      const k = fClave.format(new Date(m.fecha));
+      if (!grupos.has(k)) grupos.set(k, []);
+      grupos.get(k).push(m);
+    });
+    $('#tbMovs').innerHTML = [...grupos].map(([, lista]) => {
+      const neto = lista.reduce((t, m) => t + Number(m.valor), 0);
+      const dia = fDia.format(new Date(lista[0].fecha));
+      return `<tr class="dia"><td colspan="2">${esc(dia[0].toUpperCase() + dia.slice(1))}</td><td class="der num">${conSigno(neto)}</td></tr>` +
+        lista.map((m) => {
+          const hora = m.tipo === 'venta' || m.tipo === 'abono' ? fHora.format(new Date(m.fecha)) : '';
+          const corr = m.correccion ? ' <span class="estado estado-pendiente">Corrección: cambió después de un cierre</span>' : '';
+          return `<tr>
+            <td class="num ocultar-movil">${hora}</td>
+            <td>${esc(m.descripcion)}${corr}<small>${TIPOS[m.tipo]}${hora ? `<span class="solo-movil">${hora}</span>` : ''}</small></td>
+            <td class="der num${m.valor < 0 ? ' salida' : ''}">${conSigno(Number(m.valor))}</td>
+          </tr>`;
+        }).join('');
+    }).join('');
+  }
+
+  function recalcular() {
+    if (!pend) return;
+    const movs = pend.movimientos;
+    const porTipo = (t) => movs.filter((m) => m.tipo === t).reduce((s, m) => s + Number(m.valor), 0);
+    const b = baseInicial(), c = contado(), e = esperado();
+    const nose = pend.primer && modoBase === 'nose';
+    const baseDeducida = nose && c != null ? c - sumaMovs() : null;
+
+    $('#cabEsperado').textContent = e != null ? cop.format(e) : '—';
+    const fila = (t, v, clase = '') => `<dt class="${clase}">${t}</dt><dd class="${clase}">${v}</dd>`;
+    $('#cuentas').innerHTML = [
+      fila(pend.primer ? 'Había al empezar' : 'Base que quedó en el último cierre',
+        nose ? (baseDeducida != null ? `${cop.format(baseDeducida)} (deducida)` : 'Se deduce al contar') : b != null ? cop.format(b) : '—'),
+      ...Object.keys(TIPOS).map((t) => { const v = porTipo(t); return fila(TIPOS[t], conSigno(v), v < 0 ? 'salida' : ''); }),
+      fila('Debería haber', e != null ? cop.format(e) : '—', 'total')
+    ].join('');
+
+    // Cuadre
+    const cuadre = $('#cuadre');
+    cuadre.hidden = c == null;
+    let dif = 0;
+    if (c != null) {
+      if (nose) {
+        cuadre.innerHTML = baseDeducida < 0
+          ? '<span class="estado estado-mal">⚠ Lo contado es menor que lo que entró desde esa fecha</span><span class="ayuda">Elige una fecha más reciente o escribe con cuánto se empezó.</span>'
+          : `<span class="estado estado-neutro">Se toma lo contado como correcto</span>`;
+      } else if (e != null) {
+        dif = c - e;
+        cuadre.innerHTML = dif === 0 ? '<span class="estado estado-ok">✓ Cuadra</span>'
+          : dif > 0 ? `<span class="estado estado-pendiente">Sobran ${cop.format(dif)}</span>`
+          : `<span class="estado estado-mal">⚠ Faltan ${cop.format(-dif)}</span>`;
+      } else {
+        cuadre.hidden = true;
+      }
+    }
+    $('#totBilletes').textContent = cop.format(modoConteo === 'billetes' ? (c ?? 0) : 0);
+    $('#lblNota').textContent = dif !== 0 ? '¿Qué pudo pasar? (obligatorio si no cuadra)' : 'Nota';
+    $('#cNota').placeholder = dif !== 0 ? 'Ej: se dio mal un cambio, una venta se cobró por transferencia…' : 'Opcional';
+
+    // Retiro
+    const deja = valor('#cDeja');
+    const retira = c != null && deja != null ? c - deja : c != null ? c : 0;
+    $('#cRetira').textContent = cop.format(Math.max(retira, 0));
+    const err = $('#errorRetiro');
+    err.hidden = !(c != null && deja != null && deja > c);
+    err.textContent = 'La base que queda no puede ser mayor que lo contado.';
+    $('#campoDestino').hidden = !(retira > 0);
+    $('#campoSocio').hidden = !(retira > 0 && destino === 'socio');
+    $('#campoDestinoNota').hidden = !(retira > 0 && destino);
+    $('#lblDestinoNota').textContent = destino === 'cuenta' ? 'Referencia de la consignación (opcional)'
+      : destino === 'otro' ? '¿A dónde va? (obligatorio)' : 'Nota (opcional)';
+  }
+
+  // ---------- Formulario ----------
+  function pintarBilletes() {
+    const fila = (d) => `<label for="b${d}">${cop.format(d)}</label><input id="b${d}" data-d="${d}" type="number" min="0" step="1" inputmode="numeric" placeholder="0"><span class="sub" id="s${d}">$ 0</span>`;
+    $('#billetes').innerHTML = `<span class="tipo">Billetes</span>${BILLETES.map(fila).join('')}<span class="tipo">Monedas (y billete de $ 1.000)</span>${MONEDAS.map(fila).join('')}`;
+  }
+  $('#billetes').addEventListener('input', (e) => {
+    const c = e.target.closest('input');
+    if (!c) return;
+    $(`#s${c.dataset.d}`).textContent = cop.format(Number(c.dataset.d) * (Math.round(Number(c.value)) || 0));
+    recalcular();
+  });
+
+  function ponerModoConteo(m) {
+    modoConteo = m;
+    marcarSegmento('#cModoConteo', 'conteo', m);
+    $('#modoTotal').hidden = m !== 'total';
+    $('#modoBilletes').hidden = m !== 'billetes';
+    guardar('rebas-cierre-conteo', m);
+    recalcular();
+  }
+  segmentos('#cModoConteo', 'conteo', ponerModoConteo);
+
+  segmentos('#cModoBase', 'base', (m) => {
+    modoBase = m;
+    $('#campoBase').hidden = m !== 'se';
+    $('#ayudaNose').hidden = m !== 'nose';
+    recalcular();
+  });
+  segmentos('#cDestino', 'destino', (d) => {
+    destino = d;
+    recalcular();
+    if (d === 'socio') $('#cSocio').focus();
+    else if (d === 'otro') $('#cDestinoNota').focus();
+  });
+
+  $('#cDesde').addEventListener('change', cargarPendiente);
+  ['#cBase', '#cContado', '#cDeja'].forEach((s) => $(s).addEventListener('input', recalcular));
+  $('#cDeja').addEventListener('input', () => { dejaTocado = true; });
+  $('#cRetirarTodo').addEventListener('click', () => { $('#cDeja').value = 0; dejaTocado = true; recalcular(); });
+  $('#actualizar').addEventListener('click', cargarPendiente);
+  // Al volver a la pestaña, puede haber ventas nuevas
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && pend && !$('#app').hidden) cargarPendiente(); });
+
+  function limpiar() {
+    $('#cContado').value = '';
+    $$('#billetes input').forEach((c) => { c.value = ''; $(`#s${c.dataset.d}`).textContent = '$ 0'; });
+    $('#cDeja').value = '';
+    $('#cNota').value = '';
+    $('#cDestinoNota').value = '';
+    $('#cSocio').value = '';
+    $('#cBase').value = '';
+    dejaTocado = false;
+    destino = null;
+    marcarSegmento('#cDestino', 'destino', '');
+  }
+
+  $('#frmCierre').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!pend) return;
+    const c = contado();
+    if (c == null || c < 0) return aviso('Escribe cuánto efectivo contaste.', 'error');
+    if (pend.primer) {
+      if (!$('#cDesde').value) return aviso('Elige desde qué día se acumula el efectivo.', 'error');
+      if (modoBase === 'se' && valor('#cBase') == null) return aviso('Escribe con cuánto se empezó, o elige "No sé: tomar lo contado".', 'error');
+    }
+    const deja = valor('#cDeja') ?? 0;
+    if (deja < 0 || deja > c) return aviso('La base que queda no puede ser mayor que lo contado.', 'error');
+    const retira = c - deja;
+    if (retira > 0) {
+      if (!destino) return aviso('Elige a dónde va lo retirado.', 'error');
+      if (destino === 'socio' && !$('#cSocio').value) return aviso('Elige qué socio guarda el dinero.', 'error');
+      if (destino === 'otro' && !$('#cDestinoNota').value.trim()) return aviso('Escribe a dónde va lo retirado.', 'error');
+    }
+    const e2 = esperado();
+    if (e2 != null && c !== e2 && !(pend.primer && modoBase === 'nose') && !$('#cNota').value.trim()) {
+      $('#cNota').focus();
+      return aviso('La caja no cuadra: escribe en la nota qué pudo pasar.', 'error');
+    }
+
+    const btn = $('#btnCierre');
+    btn.disabled = true;
+    const { data: id, error } = await db.rpc('registrar_cierre_caja', {
+      p_movimientos: sumaMovs(),
+      p_contado: c,
+      p_retirado: retira,
+      p_destino: retira > 0 ? destino : null,
+      p_destino_socio_id: retira > 0 && destino === 'socio' ? $('#cSocio').value : null,
+      p_destino_nota: retira > 0 ? $('#cDestinoNota').value.trim() || null : null,
+      p_nota: $('#cNota').value.trim() || null,
+      p_conteo: conteoBilletes(),
+      p_desde: pend.primer ? $('#cDesde').value : null,
+      p_base_inicial: pend.primer && modoBase === 'se' ? valor('#cBase') : null
+    });
+    btn.disabled = false;
+    if (error) {
+      aviso(errorLegible(error), 'error');
+      if (/movimientos de caja nuevos/.test(error.message)) await cargarPendiente();
+      return;
+    }
+    limpiar();
+    await Promise.all([cargarPendiente(), cargarCierres()]);
+    registrado = cierres.find((k) => k.id === id);
+    if (registrado) mostrarListo(registrado);
+    else aviso(`Cierre ${id} registrado.`);
+  });
+
+  function destinoTexto(k) {
+    if (!(Number(k.retirado) > 0)) return 'Nada';
+    const t = k.destino === 'socio' ? `Lo guarda ${k.destino_socio ?? 'un socio'}` : DESTINOS[k.destino];
+    return k.destino_nota ? `${t} (${k.destino_nota})` : t;
+  }
+
+  function mostrarListo(k) {
+    const dif = Number(k.diferencia);
+    $('#lsTitulo').textContent = `Cierre N.° ${k.id} registrado`;
+    $('#lsResumen').innerHTML = `
+      <dt>Debería haber</dt><dd>${cop.format(k.esperado)}</dd>
+      <dt>Contado</dt><dd>${cop.format(k.contado)}</dd>
+      <dt>Cuadre</dt><dd>${dif === 0 ? '<span class="estado estado-ok">✓ Cuadra</span>' : dif > 0 ? `<span class="estado estado-pendiente">Sobran ${cop.format(dif)}</span>` : `<span class="estado estado-mal">⚠ Faltan ${cop.format(-dif)}</span>`}</dd>
+      <dt>Retirado</dt><dd>${cop.format(k.retirado)}</dd>
+      <dt>A dónde</dt><dd>${esc(destinoTexto(k))}</dd>
+      <dt class="total">Queda en la caja</dt><dd class="total">${cop.format(k.base_siguiente)}</dd>`;
+    $('#dlgListo').showModal();
+  }
+  $('#lsImprimir').addEventListener('click', () => { if (registrado) imprimirCierre(registrado); $('#dlgListo').close(); });
+
+  // ---------- Historial ----------
+  async function cargarCierres() {
+    const { data, error } = await db.from('v_cierres_caja').select('*').order('id', { ascending: false }).limit(90);
+    if (error) {
+      if (!/v_cierres_caja/.test(error.message)) aviso('No se pudo cargar el historial: ' + error.message, 'error');
+      return;
+    }
+    cierres = data;
+    pintarCierres();
+  }
+
+  function pintarCierres() {
+    if (!cierres.length) {
+      $('#tbCierres').innerHTML = '<tr><td colspan="7" class="vacio">Todavía no hay cierres de caja.</td></tr>';
+      return;
+    }
+    const ultimoActivo = cierres.find((k) => k.estado === 'activo')?.id;
+    $('#tbCierres').innerHTML = cierres.map((k) => {
+      const anulado = k.estado === 'anulado';
+      const dif = Number(k.diferencia);
+      const chip = dif === 0 ? '<span class="estado estado-ok">✓ Cuadra</span>'
+        : dif > 0 ? `<span class="estado estado-pendiente">Sobran ${cop.format(dif)}</span>`
+        : `<span class="estado estado-mal">⚠ Faltan ${cop.format(-dif)}</span>`;
+      const extra = [
+        `${k.usuario ?? 'Sin nombre'} · desde ${fFechaHora.format(new Date(k.desde))}`,
+        k.nota ? `Nota: ${k.nota}` : '',
+        anulado ? `Anulado: ${k.motivo_anulacion}` : ''
+      ].filter(Boolean).map((t) => `<small>${esc(t)}</small>`).join('');
+      return `<tr class="${anulado ? 'anulado' : ''}">
+        <td><strong>N.° ${k.id}</strong> · ${esc(fFechaHora.format(new Date(k.creado_en)))}${extra}
+          <small class="solo-movil">Contado ${cop.format(k.contado)} · ${anulado ? '<span class="estado estado-neutro">Anulado</span>' : chip}</small></td>
+        <td class="der num ocultar-movil">${cop.format(k.esperado)}</td>
+        <td class="der num ocultar-movil">${cop.format(k.contado)}</td>
+        <td class="ocultar-movil">${anulado ? '<span class="estado estado-neutro">Anulado</span>' : chip}</td>
+        <td class="der num">${cop.format(k.retirado)}<small>${esc(destinoTexto(k))}</small></td>
+        <td class="der num ocultar-movil">${cop.format(k.base_siguiente)}</td>
+        <td class="acc">
+          <button type="button" class="btn-texto" data-imprimir="${k.id}">Imprimir</button>
+          ${esSocio && !anulado && k.id === ultimoActivo ? `<button type="button" class="btn-texto peligro" data-anular="${k.id}">Anular</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  $('#tbCierres').addEventListener('click', (e) => {
+    const imp = e.target.closest('[data-imprimir]');
+    if (imp) return imprimirCierre(cierres.find((k) => k.id === +imp.dataset.imprimir));
+    const an = e.target.closest('[data-anular]');
+    if (!an) return;
+    const k = cierres.find((x) => x.id === +an.dataset.anular);
+    anulando = k.id;
+    $('#anDetalle').textContent = `Cierre N.° ${k.id} del ${fFechaHora.format(new Date(k.creado_en))}. Sus movimientos vuelven a quedar pendientes para el próximo cierre. Lo retirado (${cop.format(k.retirado)}) no se devuelve solo: si se contó mal, haz un cierre nuevo.`;
+    $('#anMotivo').value = '';
+    $('#dlgAnular').showModal();
+    $('#anMotivo').focus();
+  });
+  $('#anCancelar').addEventListener('click', () => $('#dlgAnular').close());
+  $('#frmAnular').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const motivo = $('#anMotivo').value.trim();
+    if (!motivo) return;
+    $('#anConfirmar').disabled = true;
+    const { error } = await db.rpc('anular_cierre_caja', { p_id: anulando, p_motivo: motivo });
+    $('#anConfirmar').disabled = false;
+    if (error) return aviso(errorLegible(error), 'error');
+    $('#dlgAnular').close();
+    aviso('Cierre anulado. Queda en el historial con el motivo.');
+    dejaTocado = false;
+    await Promise.all([cargarPendiente(), cargarCierres()]);
+  });
+
+  // ---------- Comprobante (impresora térmica, igual que el recibo) ----------
+  function imprimirCierre(k) {
+    const cfg = window.APP_CONFIG || {};
+    const ancho = cfg.ANCHO_RECIBO || '58mm';
+    const util = cfg.ANCHO_IMPRESION || (ancho === '58mm' ? '48mm' : '72mm');
+    const fila = (t, v, clase = '') => `<tr class="${clase}"><td>${esc(t)}</td><td class="der">${v}</td></tr>`;
+    const dif = Number(k.diferencia);
+    const conteo = k.conteo && Object.keys(k.conteo).length
+      ? '<hr><div>Conteo</div><table>' + Object.entries(k.conteo).sort((a, b) => b[0] - a[0])
+          .map(([d, n]) => fila(`${n} x ${cop.format(d)}`, cop.format(d * n))).join('') + '</table>'
+      : '';
+    const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
+      <title>Cierre ${k.id}</title>
+      <style id="estilo">
+        @page { size: ${ancho} 100mm; margin: 0; }
+        * { box-sizing: border-box; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { margin: 0 auto; padding: 1mm 0 3mm; width: ${util}; background: #fff;
+               font: 700 ${ancho === '58mm' ? 12 : 13.5}px/1.35 Arial, Helvetica, sans-serif; -webkit-font-smoothing: none; }
+        h1 { font-size: ${ancho === '58mm' ? 16 : 19}px; font-weight: 900; text-align: center; margin: 0 0 3px; }
+        .c { text-align: center; }
+        hr { border: 0; border-top: 2px solid #000; margin: 6px 0; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 1px 0; vertical-align: top; font-weight: 700; }
+        .der { text-align: right; white-space: nowrap; padding-left: 6px; }
+        .total td { font-size: ${ancho === '58mm' ? 15 : 18}px; font-weight: 900; padding-top: 4px; }
+        .nota { overflow-wrap: anywhere; margin-top: 4px; }
+        .firma { margin-top: 30px; border-top: 2px solid #000; padding-top: 2px; }
+      </style></head><body>
+      <h1>${esc(cfg.NOMBRE_TIENDA)}</h1>
+      <div class="c">CIERRE DE CAJA N.° ${k.id}${k.estado === 'anulado' ? ' (ANULADO)' : ''}</div>
+      <hr>
+      <div>${esc(fFechaHora.format(new Date(k.creado_en)))}</div>
+      <div>Desde: ${esc(fFechaHora.format(new Date(k.desde)))}</div>
+      <div>Cerró: ${esc(k.usuario ?? '')}</div>
+      <hr>
+      <table>
+        ${fila('Base inicial', cop.format(k.base_inicial))}
+        ${fila('Ventas efectivo', conSigno(Number(k.ventas_efectivo)))}
+        ${fila('Abonos efectivo', conSigno(Number(k.abonos_efectivo)))}
+        ${fila('Gastos de caja', conSigno(Number(k.gastos_caja)))}
+        ${fila('Socios', conSigno(Number(k.socios_caja)))}
+        ${fila('Esperado', cop.format(k.esperado), 'total')}
+        ${fila('Contado', cop.format(k.contado), 'total')}
+        ${fila(dif === 0 ? 'Cuadra' : dif > 0 ? 'Sobrante' : 'Faltante', cop.format(Math.abs(dif)))}
+      </table>
+      ${conteo}
+      <hr>
+      <table>
+        ${fila('Retirado', cop.format(k.retirado), 'total')}
+        ${fila('Queda de base', cop.format(k.base_siguiente))}
+      </table>
+      ${Number(k.retirado) > 0 ? `<div class="nota">Destino: ${esc(destinoTexto(k))}</div>` : ''}
+      ${k.nota ? `<div class="nota">Nota: ${esc(k.nota)}</div>` : ''}
+      ${Number(k.retirado) > 0 ? '<div class="firma">Entrega</div><div class="firma">Recibe</div>' : ''}
+      </body></html>`;
+
+    const marco = document.createElement('iframe');
+    marco.setAttribute('aria-hidden', 'true');
+    marco.style.cssText = 'position:fixed;left:-10000px;top:0;width:420px;height:200px;border:0;visibility:hidden;';
+    document.body.appendChild(marco);
+    const doc = marco.contentDocument;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    marco.contentWindow.addEventListener('afterprint', () => setTimeout(() => marco.remove(), 500));
+    setTimeout(() => {
+      // Papel continuo: la hoja mide lo que mide el contenido
+      const estilo = doc.getElementById('estilo');
+      const mm = Math.ceil(doc.documentElement.scrollHeight * 25.4 / 96) + 3;
+      estilo.textContent = estilo.textContent.replace(/size:\s*(\S+)\s+100mm/, `size: $1 ${mm}mm`);
+      marco.contentWindow.focus();
+      marco.contentWindow.print();
+      setTimeout(() => marco.isConnected && marco.remove(), 60000);   // respaldo si no llega afterprint
+    }, 250);
+  }
+
+  // ---------- Inicio ----------
+  pintarBilletes();
+  ponerModoConteo(leer('rebas-cierre-conteo') === 'billetes' ? 'billetes' : 'total');
+  $('#cDesde').value = hoy();
+  $('#cDesde').max = hoy();
+
+  db.auth.onAuthStateChange((evento, s) => {
+    if (evento === 'TOKEN_REFRESHED') return;
+    setTimeout(() => mostrarSesion(s), 0);
+  });
+</script>
+</body>
+</html>
