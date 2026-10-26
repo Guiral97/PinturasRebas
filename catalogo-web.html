@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catálogo público</title>
+<link rel="icon" href="favicon-48.png" type="image/png" sizes="48x48">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="fotos.js?v=1"></script>
+<style>
+  :root {
+    color-scheme: light dark;   /* barras de desplazamiento y controles según el tema */
+    --fondo: #E3E4E1; --panel: #F6F6F3; --tinta: #1A2127; --suave: #5B646B;
+    --linea: #C6CAC8; --acento: #0E5266; --acento-tinta: #FFFFFF;
+    --alerta: #A1281F; --ok: #2F6B3A; --aviso: #8A6410; --radio: 6px;
+    font-family: "Barlow", system-ui, sans-serif; color: var(--tinta); background: var(--fondo);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #171C20; --panel: #20272D; --tinta: #E8EBEB; --suave: #9AA3A9;
+      --linea: #343E46; --acento: #5AAEC4; --acento-tinta: #0B2530;
+      --alerta: #E57B72; --ok: #7FC08A; --aviso: #E3B94F;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font-size: 16px; line-height: 1.45; }
+  [hidden] { display: none !important; }
+  .num { font-variant-numeric: tabular-nums; }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  input, select { font: inherit; color: var(--tinta); background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: .5rem .65rem; width: 100%; min-height: 2.75rem; }
+  input[type="checkbox"] { width: 1.15rem; height: 1.15rem; min-height: 0; margin: 0; flex: none; accent-color: var(--acento); }
+  label, legend { font-weight: 600; }
+  .campo { display: grid; gap: .3rem; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.75rem;
+    border: 1px solid var(--linea); background: var(--panel); color: var(--tinta); padding: .45rem .9rem;
+    border-radius: 8px; white-space: nowrap; text-decoration: none; font-weight: 600;
+  }
+  .btn-primario { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
+  .btn-primario:disabled, .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-texto { border: 0; background: none; color: var(--acento); padding: .2rem .3rem; font-weight: 600; min-height: 2.75rem; text-decoration: none; display: inline-flex; align-items: center; }
+  h1, h2 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; margin: 0; }
+  h2 { font-size: 1.5rem; }
+  .ayuda { color: var(--suave); font-size: .9rem; margin: 0; }
+
+  /* Estados (iguales en toda la app) */
+  .estado { display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; font-weight: 700; line-height: 1.4; padding: .05rem .55rem; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+  .estado svg { flex: none; }
+  .estado-pendiente { color: var(--aviso); border-color: color-mix(in srgb, var(--aviso) 40%, transparent); background: color-mix(in srgb, var(--aviso) 14%, transparent); }
+  .estado-confirmado { color: var(--acento); border-color: color-mix(in srgb, var(--acento) 40%, transparent); background: color-mix(in srgb, var(--acento) 14%, transparent); }
+  .estado-ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+  .estado-mal { color: var(--alerta); border-color: color-mix(in srgb, var(--alerta) 40%, transparent); background: color-mix(in srgb, var(--alerta) 14%, transparent); }
+  .estado-neutro { color: var(--suave); border-color: var(--linea); background: color-mix(in srgb, var(--suave) 12%, transparent); }
+
+  .barra { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--linea); }
+  .tienda { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 1.45rem; margin-right: auto; }
+  #usuario { color: var(--suave); }
+
+  #login { max-width: 22rem; margin: 12vh auto 0; padding: 1.5rem; background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); display: grid; gap: 1rem; }
+  #login h1 { font-size: 1.8rem; }
+  #loginError { color: var(--alerta); margin: 0; min-height: 1.4em; }
+
+  main { max-width: 72rem; margin: 0 auto; padding: 1.4rem 1.5rem 3rem; display: grid; gap: 1.15rem; }
+  .cab-pagina { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; }
+  .cab-pagina h1 { font-size: 2.1rem; margin-right: auto; }
+  .cab-acciones { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .nota-caja { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; padding: 1rem 1.15rem; margin: 0; }
+
+  /* Resumen */
+  .resumen { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; }
+  .cifra { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; padding: .75rem 1rem; display: grid; gap: .1rem; }
+  .cifra b { font-family: "Barlow Condensed", sans-serif; font-size: 1.9rem; line-height: 1.1; }
+  .cifra span { color: var(--suave); font-size: .9rem; }
+
+  #gestion { display: grid; gap: .9rem; }
+
+  /* Filtros */
+  .filtros { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: .6rem; }
+  .segmentos { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .segmentos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
+  .segmentos .cuenta { font-weight: 500; opacity: .85; }
+
+  /* Lista */
+  .panel { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
+  .panel-cab { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding: .6rem 1rem; border-bottom: 1px solid var(--linea); }
+  .panel-cab .check { margin-right: auto; }
+  .check { display: flex; align-items: center; gap: .6rem; font-weight: 600; min-height: 2.75rem; cursor: pointer; }
+  #lista { list-style: none; margin: 0; padding: 0; }
+  #lista li { display: grid; grid-template-columns: auto 3.5rem minmax(0, 1fr) auto; gap: .35rem .9rem; align-items: center; padding: .6rem 1rem; border-bottom: 1px solid var(--linea); }
+  #lista li:last-child { border-bottom: 0; }
+  #lista li.marcado { background: color-mix(in srgb, var(--acento) 7%, transparent); }
+  #lista .sel { display: flex; align-items: center; justify-content: center; min-width: 2.75rem; min-height: 2.75rem; margin: -.3rem -.4rem; cursor: pointer; }
+  .foto, .foto-vacia { width: 3.5rem; height: 3.5rem; border-radius: 6px; border: 1px solid var(--linea); object-fit: cover; background: #fff; display: block; }
+  .foto-vacia { display: grid; place-items: center; background: color-mix(in srgb, var(--suave) 10%, var(--panel)); }
+  .foto-vacia img { width: 1.4rem; opacity: .35; }
+  #lista .nom { font-weight: 600; }
+  #lista .det { color: var(--suave); font-size: .875rem; overflow-wrap: anywhere; }
+  #lista .etiquetas { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .3rem; }
+  #lista .acciones { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .25rem .5rem; }
+  #lista .acciones .btn { min-width: 7.5rem; }
+  #lista li.apagado .nom, #lista li.apagado .foto { opacity: .6; }
+  .vacio { color: var(--suave); padding: 1.25rem 1rem; margin: 0; }
+  #verMas { margin: .75rem auto; display: flex; }
+
+  #aviso { position: fixed; top: auto; right: auto; width: auto; margin: 0; border: 0; left: 50%; bottom: 1.25rem; transform: translateX(-50%); max-width: min(34rem, calc(100% - 2rem)); background: var(--tinta); color: var(--panel); padding: .75rem 1rem; border-radius: 8px; z-index: 50; }
+  #aviso.error { background: var(--alerta); color: #fff; }
+
+  /* ===================== Responsivo (común a todas las pantallas) ===================== */
+  html { -webkit-text-size-adjust: 100%; }
+  main > * { min-width: 0; }
+  @media (max-width: 1180px) {
+    .barra { flex-wrap: wrap; row-gap: .55rem; }
+  }
+  @media (max-width: 900px) {
+    .resumen { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .filtros { grid-template-columns: 1fr 1fr; }
+    .filtros .campo:first-child { grid-column: 1 / -1; }
+  }
+  /* Celular */
+  @media (max-width: 700px) {
+    .barra { padding: .6rem 1rem; gap: .5rem .6rem; }
+    .tienda { font-size: 1.25rem; }
+    #usuario { display: none; }
+    #salir { padding: .4rem .7rem; font-size: .9rem; }
+    main { padding: 1rem; gap: .9rem; }
+    .cab-pagina h1 { font-size: 1.8rem; }
+    .cab-acciones { width: 100%; }
+    .cab-acciones .btn { flex: 1; }
+    .cifra { padding: .55rem .75rem; }
+    .cifra b { font-size: 1.5rem; }
+    #aviso { left: .75rem; right: .75rem; transform: none; max-width: none; bottom: .75rem; }
+    #login { margin: 6vh 1rem 0; }
+    #lista li { grid-template-columns: auto 3rem minmax(0, 1fr); padding: .6rem .75rem; }
+    .foto, .foto-vacia { width: 3rem; height: 3rem; }
+    #lista .acciones { grid-column: 2 / -1; justify-content: flex-start; }
+    .panel-cab { padding: .5rem .75rem; }
+    .panel-cab .btn { flex: 1; }
+  }
+
+  /* Logo junto al nombre */
+  .marca { display: flex; align-items: center; gap: .55rem; margin-right: auto; color: inherit; text-decoration: none; min-width: 0; }
+  .marca .tienda { margin-right: 0; }
+  .logo { height: 3.3rem; width: auto; display: block; flex: none; margin: -.45rem 0; }
+  @media (max-width: 700px) { .logo { height: 2.9rem; margin: -.3rem 0; } }
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=9"></script>
+  <span id="usuario"></span>
+  <button class="btn" id="salir" hidden>Cerrar sesión</button>
+</header>
+
+<form id="login" hidden>
+  <h1>Iniciar sesión</h1>
+  <div class="campo"><label for="email">Correo</label><input id="email" type="email" autocomplete="username" required></div>
+  <div class="campo"><label for="clave">Contraseña</label><input id="clave" type="password" autocomplete="current-password" required></div>
+  <p id="loginError" role="alert"></p>
+  <button class="btn btn-primario" type="submit">Entrar</button>
+  <a class="olvide" href="clave.html">¿Olvidaste tu contraseña?</a>
+</form>
+
+<main id="app" hidden>
+  <div class="cab-pagina">
+    <h1>Catálogo público</h1>
+    <div class="cab-acciones">
+      <a class="btn" href="catalogo.html" target="_blank" rel="noopener">Ver catálogo</a>
+      <button class="btn" type="button" id="copiar">Copiar enlace</button>
+      <a class="btn" href="tarjeta-catalogo.html" target="_blank" rel="noopener">Tarjeta con QR</a>
+    </div>
+  </div>
+
+  <p class="ayuda">Elige qué productos ven los clientes en el catálogo público. Allí salen con foto, marca, categoría, presentaciones y si hay o no, <strong>nunca con precios</strong>.</p>
+
+  <p class="nota-caja" id="sinScript" hidden>Falta ejecutar <strong>12_catalogo_publico.sql</strong> en Supabase (en el proyecto de la tienda) para poder publicar productos.</p>
+
+  <div id="contenido" hidden>
+    <div class="resumen" aria-live="polite">
+      <div class="cifra"><b class="num" id="cPublicados">0</b><span>Publicados</span></div>
+      <div class="cifra"><b class="num" id="cSinPublicar">0</b><span>Sin publicar</span></div>
+      <div class="cifra"><b class="num" id="cAvisos">0</b><span>Publicados con avisos</span></div>
+      <div class="cifra"><b class="num" id="cSinFoto">0</b><span>Publicados sin foto</span></div>
+    </div>
+  </div>
+
+  <section id="gestion" hidden>
+    <div class="filtros">
+      <div class="campo"><label for="buscar">Buscar</label><input id="buscar" type="search" placeholder="Nombre, marca, color…" autocomplete="off"></div>
+      <div class="campo"><label for="fCategoria">Categoría</label><select id="fCategoria"></select></div>
+      <div class="campo"><label for="fMarca">Marca</label><select id="fMarca"></select></div>
+    </div>
+    <div class="segmentos" id="fEstado" role="group" aria-label="Mostrar">
+      <button type="button" class="btn" data-estado="todos" aria-pressed="true">Todos <span class="cuenta num" data-cuenta="todos"></span></button>
+      <button type="button" class="btn" data-estado="publicados" aria-pressed="false">Publicados <span class="cuenta num" data-cuenta="publicados"></span></button>
+      <button type="button" class="btn" data-estado="sin" aria-pressed="false">Sin publicar <span class="cuenta num" data-cuenta="sin"></span></button>
+      <button type="button" class="btn" data-estado="avisos" aria-pressed="false">Con avisos <span class="cuenta num" data-cuenta="avisos"></span></button>
+    </div>
+
+    <section class="panel" aria-label="Productos">
+      <div class="panel-cab">
+        <label class="check"><input type="checkbox" id="selTodos"> <span id="selTexto">Seleccionar los de la lista</span></label>
+        <button type="button" class="btn" id="quitarSel" disabled>Quitar del catálogo</button>
+        <button type="button" class="btn btn-primario" id="publicarSel" disabled>Publicar</button>
+      </div>
+      <ul id="lista"></ul>
+      <button type="button" class="btn" id="verMas" hidden>Ver más</button>
+    </section>
+  </section>
+</main>
+
+<div id="aviso" role="status" popover="manual" hidden></div>
+
+<script>
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, NOMBRE_TIENDA } = window.APP_CONFIG;
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const $ = (s) => document.querySelector(s);
+  const POR_PAGINA = 100;
+
+  document.title = `Catálogo público | ${NOMBRE_TIENDA}`;
+  $('#nombreTienda').textContent = NOMBRE_TIENDA;
+
+  // Enlace para compartir: la app publicada. Abierta desde un archivo del disco (file://) se usa GitHub Pages.
+  const URL_APP = window.APP_CONFIG.URL_APP || 'https://guiral97.github.io/PinturasRebas/';
+  const urlCatalogo = (id) => new URL(`catalogo.html${id ? `?p=${id}` : ''}`, location.protocol.startsWith('http') ? location.href : URL_APP).href;
+
+  let productos = [];          // productos con sus presentaciones, disponibilidad y avisos
+  let base = [];               // con la búsqueda, la categoría y la marca (antes del filtro por estado)
+  let filtrados = [];
+  let mostrados = 0;
+  let filtroEstado = 'todos';
+  const seleccion = new Set(); // ids marcados
+
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const norm = (t) => String(t ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  const ICONO_AVISO = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20z"/><path d="M12 10v5M12 18h.01"/></svg>';
+
+  let tAviso;
+  function aviso(texto, tipo = 'info') {
+    const a = $('#aviso');
+    a.textContent = texto;
+    a.className = tipo === 'error' ? 'error' : '';
+    a.hidden = false;
+    if (a.showPopover) { if (a.matches(':popover-open')) a.hidePopover(); a.showPopover(); }
+    clearTimeout(tAviso);
+    tAviso = setTimeout(() => { a.hidden = true; if (a.hidePopover && a.matches(':popover-open')) a.hidePopover(); }, tipo === 'error' ? 7000 : 4000);
+  }
+
+  // ---------- Sesión ----------
+  async function mostrarSesion(session) {
+    const con = !!session;
+    $('#login').hidden = con;
+    $('#app').hidden = !con;
+    $('#salir').hidden = !con;
+    if (!con) return;
+    const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
+    if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
+    $('#usuario').textContent = perfil?.nombre ?? session.user.email;
+    navPendientes(db);
+    cargar();
+  }
+
+  $('#login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('#loginError').textContent = '';
+    const { error } = await db.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#clave').value });
+    if (error) $('#loginError').textContent = 'Correo o contraseña incorrectos.';
+  });
+  $('#salir').addEventListener('click', () => db.auth.signOut());
+
+  // ---------- Carga ----------
+  // Trae todas las filas de a 1000 (el límite de Supabase por consulta)
+  async function todas(consulta) {
+    const filas = [];
+    for (let desde = 0; ; desde += 1000) {
+      const { data, error } = await consulta().range(desde, desde + 999);
+      if (error) return { error };
+      filas.push(...data);
+      if (data.length < 1000) return { data: filas };
+    }
+  }
+
+  async function cargar() {
+    const [p, s] = await Promise.all([
+      todas(() => db.from('productos')
+        .select('id, nombre, codigo_color, activo, publicado, imagen, marcas(nombre), categorias(nombre), presentaciones(id, nombre, activo, madre_id, stock_minimo)')
+        .order('nombre').order('id')),
+      todas(() => db.from('v_catalogo').select('id, stock').order('id'))
+    ]);
+    if (p.error) {
+      if (/publicado/.test(p.error.message)) { $('#sinScript').hidden = false; return; }
+      return aviso('No se pudieron cargar los productos: ' + p.error.message, 'error');
+    }
+    if (s.error) return aviso('No se pudieron cargar las existencias: ' + s.error.message, 'error');
+    const stock = new Map(s.data.map((x) => [x.id, Number(x.stock) || 0]));
+
+    productos = p.data
+      .filter((x) => x.activo || x.publicado)   // los inactivos solo interesan si quedaron publicados
+      .map((x) => {
+        const pres = x.presentaciones.filter((r) => r.activo);
+        const disp = pres.map((r) => {
+          const st = stock.get(r.id) ?? 0;
+          return st <= 0 ? 'no' : st <= Number(r.stock_minimo || 0) ? 'pocas' : 'si';
+        });
+        const prod = {
+          id: x.id, nombre: x.nombre, codigo_color: x.codigo_color, activo: x.activo, publicado: x.publicado,
+          foto: window.fotosProductos?.url(x.imagen) || '',
+          marca: x.marcas?.nombre || '', categoria: x.categorias?.nombre || '',
+          completas: pres.filter((r) => !r.madre_id).length, partes: pres.filter((r) => r.madre_id).length,
+          // Igual que el catálogo público: la mejor de sus presentaciones
+          disponible: ['si', 'pocas', 'no'].find((d) => disp.includes(d)) || 'no'
+        };
+        prod.texto = norm([prod.nombre, prod.marca, prod.categoria, prod.codigo_color].join(' '));
+        prod.avisos = avisosDe(prod);
+        return prod;
+      });
+
+    llenarFiltro('#fCategoria', 'categoria', 'Todas');
+    llenarFiltro('#fMarca', 'marca', 'Todas');
+    $('#contenido').hidden = false;
+    $('#gestion').hidden = false;
+    filtrar();
+  }
+
+  // Lo que hace que un producto publicado no se vea, o se vea mal, en el catálogo
+  function avisosDe(p) {
+    const a = [];
+    if (!p.activo) a.push(['No sale: producto inactivo', true]);
+    else if (!p.completas && !p.partes) a.push(['No sale: sin presentaciones activas', true]);
+    else if (p.disponible === 'no') a.push(['Agotado', false]);
+    if (!p.foto) a.push(['Sin foto', false]);
+    return a;
+  }
+
+  function llenarFiltro(sel, campo, todos) {
+    const actual = $(sel).value;
+    const valores = [...new Set(productos.map((p) => p[campo]).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+    $(sel).innerHTML = `<option value="">${todos}</option>` +
+      valores.map((v) => `<option${v === actual ? ' selected' : ''}>${esc(v)}</option>`).join('');
+  }
+
+  // ---------- Resumen, filtros y lista ----------
+  const conAvisos = (p) => p.publicado && p.avisos.length > 0;
+  const PASA_ESTADO = {
+    todos: () => true,
+    publicados: (p) => p.publicado,
+    sin: (p) => !p.publicado,
+    avisos: conAvisos
+  };
+
+  function pintarResumen() {
+    const pub = productos.filter((p) => p.publicado);
+    $('#cPublicados').textContent = pub.length;
+    $('#cSinPublicar').textContent = productos.length - pub.length;
+    $('#cAvisos').textContent = pub.filter((p) => p.avisos.length).length;
+    $('#cSinFoto').textContent = pub.filter((p) => !p.foto).length;
+    // Cuántos hay de cada estado con la búsqueda y los filtros actuales
+    for (const [k, pasa] of Object.entries(PASA_ESTADO)) {
+      $(`[data-cuenta="${k}"]`).textContent = `(${base.filter(pasa).length})`;
+    }
+  }
+
+  function filtrar() {
+    const q = norm($('#buscar').value.trim()).split(/\s+/).filter(Boolean);
+    const cat = $('#fCategoria').value, marca = $('#fMarca').value;
+    base = productos.filter((p) =>
+      (!cat || p.categoria === cat) && (!marca || p.marca === marca) && q.every((t) => p.texto.includes(t)));
+    filtrados = base.filter(PASA_ESTADO[filtroEstado]);
+    pintarResumen();
+    mostrados = 0;
+    $('#lista').innerHTML = filtrados.length ? '' : `<li class="vacio">${productos.length
+      ? 'No hay productos con estos filtros.' : 'Todavía no hay productos. Créalos en Inventario.'}</li>`;
+    pintarMas();
+    pintarSeleccion();
+  }
+
+  function etiquetas(p) {
+    const DISP = { si: ['estado-ok', 'Disponible'], pocas: ['estado-pendiente', 'Pocas unidades'], no: ['estado-mal', 'Agotado'] };
+    const t = [];
+    t.push(p.publicado
+      ? '<span class="estado estado-ok">Publicado</span>'
+      : '<span class="estado estado-neutro">Sin publicar</span>');
+    if (p.activo && (p.completas || p.partes) && p.disponible !== 'no') t.push(`<span class="estado ${DISP[p.disponible][0]}">${DISP[p.disponible][1]}</span>`);
+    // Avisos: en los publicados son alertas; en los demás, solo información
+    for (const [texto, grave] of p.avisos) {
+      t.push(p.publicado
+        ? `<span class="estado ${grave ? 'estado-mal' : 'estado-pendiente'}">${ICONO_AVISO}${esc(texto)}</span>`
+        : `<span class="estado estado-neutro">${esc(texto)}</span>`);
+    }
+    return t.join('');
+  }
+
+  function fila(p) {
+    const det = [p.marca, p.categoria, p.codigo_color && `Color ${p.codigo_color}`,
+      p.completas && plural(p.completas, 'presentación', 'presentaciones'), p.partes && plural(p.partes, 'parte', 'partes')]
+      .filter(Boolean).join(' · ');
+    const marcado = seleccion.has(p.id);
+    return `
+      <li data-id="${p.id}" class="${marcado ? 'marcado' : ''} ${p.publicado ? '' : 'apagado'}">
+        <label class="sel"><input type="checkbox" data-sel="${p.id}"${marcado ? ' checked' : ''} aria-label="Seleccionar ${esc(p.nombre)}"></label>
+        ${p.foto
+          ? `<img class="foto" src="${esc(p.foto)}" alt="" loading="lazy" crossorigin="anonymous">`
+          : '<div class="foto-vacia"><img src="logo.svg" alt=""></div>'}
+        <div>
+          <div class="nom">${esc(p.nombre)}</div>
+          ${det ? `<div class="det">${esc(det)}</div>` : ''}
+          <div class="etiquetas">${etiquetas(p)}</div>
+        </div>
+        <div class="acciones">
+          ${p.publicado && p.activo ? `<a class="btn-texto" href="${esc(urlCatalogo(p.id))}" target="_blank" rel="noopener">Ver</a>` : ''}
+          <a class="btn-texto" href="inventario.html?producto=${p.id}">Editar</a>
+          <button type="button" class="btn" data-cambiar="${p.id}">${p.publicado ? 'Quitar' : 'Publicar'}</button>
+        </div>
+      </li>`;
+  }
+
+  function pintarMas() {
+    const lote = filtrados.slice(mostrados, mostrados + POR_PAGINA);
+    $('#lista').insertAdjacentHTML('beforeend', lote.map(fila).join(''));
+    mostrados += lote.length;
+    $('#verMas').hidden = mostrados >= filtrados.length;
+    $('#verMas').textContent = `Ver más (${filtrados.length - mostrados})`;
+  }
+  $('#verMas').addEventListener('click', pintarMas);
+
+  $('#buscar').addEventListener('input', filtrar);
+  $('#fCategoria').addEventListener('change', filtrar);
+  $('#fMarca').addEventListener('change', filtrar);
+  $('#fEstado').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-estado]');
+    if (!b) return;
+    filtroEstado = b.dataset.estado;
+    $('#fEstado').querySelectorAll('[data-estado]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    filtrar();
+  });
+
+  // ---------- Selección ----------
+  // La selección son los marcados que siguen en la lista (al filtrar, lo que se oculta deja de contar)
+  const seleccionados = () => filtrados.filter((p) => seleccion.has(p.id));
+
+  function pintarSeleccion() {
+    const sel = seleccionados();
+    const n = sel.length;
+    $('#selTodos').checked = n > 0 && n === filtrados.length;
+    $('#selTodos').indeterminate = n > 0 && n < filtrados.length;
+    $('#selTodos').disabled = !filtrados.length;
+    $('#selTexto').textContent = n ? `${plural(n, 'seleccionado', 'seleccionados')}` : `Seleccionar los ${filtrados.length} de la lista`;
+    const porPublicar = sel.filter((p) => !p.publicado).length, porQuitar = sel.filter((p) => p.publicado).length;
+    $('#publicarSel').disabled = !porPublicar;
+    $('#publicarSel').textContent = porPublicar ? `Publicar (${porPublicar})` : 'Publicar';
+    $('#quitarSel').disabled = !porQuitar;
+    $('#quitarSel').textContent = porQuitar ? `Quitar del catálogo (${porQuitar})` : 'Quitar del catálogo';
+  }
+
+  $('#selTodos').addEventListener('change', (e) => {
+    const marcar = e.target.checked;
+    filtrados.forEach((p) => (marcar ? seleccion.add(p.id) : seleccion.delete(p.id)));
+    $('#lista').querySelectorAll('[data-sel]').forEach((c) => {
+      c.checked = marcar;
+      c.closest('li').classList.toggle('marcado', marcar);
+    });
+    pintarSeleccion();
+  });
+
+  $('#lista').addEventListener('change', (e) => {
+    const c = e.target.closest('[data-sel]');
+    if (!c) return;
+    const id = Number(c.dataset.sel);
+    c.checked ? seleccion.add(id) : seleccion.delete(id);
+    c.closest('li').classList.toggle('marcado', c.checked);
+    pintarSeleccion();
+  });
+
+  // ---------- Publicar y quitar ----------
+  // productos es un maestro: los usuarios activos lo escriben directo (RLS)
+  async function cambiar(ids, publicado) {
+    for (let i = 0; i < ids.length; i += 200) {   // de a 200 para no pasar el largo de la dirección
+      const { error } = await db.from('productos').update({ publicado }).in('id', ids.slice(i, i + 200));
+      if (error) { aviso('No se pudo guardar: ' + error.message, 'error'); return false; }
+    }
+    const cambiados = new Set(ids);
+    productos.forEach((p) => { if (cambiados.has(p.id)) p.publicado = publicado; });
+    return true;
+  }
+
+  $('#lista').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-cambiar]');
+    if (!b) return;
+    const p = productos.find((x) => x.id === Number(b.dataset.cambiar));
+    b.disabled = true;
+    const ok = await cambiar([p.id], !p.publicado);
+    b.disabled = false;
+    if (!ok) return;
+    aviso(p.publicado
+      ? `"${p.nombre}" ya está en el catálogo.${p.avisos.length ? ` Ojo: ${p.avisos.map((a) => a[0].toLowerCase()).join(', ')}.` : ''}`
+      : `"${p.nombre}" ya no sale en el catálogo.`);
+    // Se repinta solo esa fila para no perder el lugar en la lista
+    const li = b.closest('li');
+    if (PASA_ESTADO[filtroEstado](p)) li.outerHTML = fila(p);
+    else { li.remove(); filtrados = filtrados.filter((x) => x !== p); mostrados--; }
+    pintarResumen();
+    pintarSeleccion();
+  });
+
+  async function cambiarSeleccion(publicado, btn) {
+    const ids = seleccionados().filter((p) => p.publicado !== publicado).map((p) => p.id);
+    if (!ids.length) return;
+    btn.disabled = true;
+    const ok = await cambiar(ids, publicado);
+    btn.disabled = false;
+    if (!ok) return;
+    seleccion.clear();
+    aviso(publicado
+      ? `${plural(ids.length, 'producto publicado', 'productos publicados')} en el catálogo.`
+      : `${plural(ids.length, 'producto quitado', 'productos quitados')} del catálogo.`);
+    filtrar();
+  }
+  $('#publicarSel').addEventListener('click', (e) => cambiarSeleccion(true, e.currentTarget));
+  $('#quitarSel').addEventListener('click', (e) => cambiarSeleccion(false, e.currentTarget));
+
+  $('#copiar').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(urlCatalogo());
+      aviso('Enlace del catálogo copiado. Pégalo en WhatsApp o en redes.');
+    } catch (_) {
+      prompt('Copia el enlace del catálogo:', urlCatalogo());
+    }
+  });
+
+  // ---------- Inicio ----------
+  db.auth.onAuthStateChange((evento, s) => {
+    if (evento === 'TOKEN_REFRESHED') return;
+    setTimeout(() => mostrarSesion(s), 0);
+  });
+</script>
+</body>
+</html>

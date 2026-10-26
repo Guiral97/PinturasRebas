@@ -1,5 +1,5 @@
 // Barra de navegación común a todas las pantallas.
-// Uso: <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=8"></script>
+// Uso: <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=9"></script>
 // justo en la cabecera (se ejecuta en el momento y llena la barra).
 // En el celular (≤ 700 px) la barra pasa abajo: Caja, Pedidos, Inventario, Cartera y "Más".
 // Después de iniciar sesión, cada pantalla llama navPendientes(db) para el contador de pedidos
@@ -10,6 +10,7 @@
     cotizaciones: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>',
     pedidos: '<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
     inventario: '<rect x="5" y="7" width="14" height="14" rx="2"/><path d="M5 11h14M9 7V3h6v4"/>',
+    catalogo: '<path d="M4 9.5 5.5 4h13L20 9.5"/><path d="M4 9.5c0 1.4 1.2 2.5 2.7 2.5s2.6-1.1 2.6-2.5c0 1.4 1.2 2.5 2.7 2.5s2.7-1.1 2.7-2.5c0 1.4 1.2 2.5 2.6 2.5S20 10.9 20 9.5"/><path d="M5.5 12v8h13v-8M10 20v-4.5h4V20"/>',
     cartera: '<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/>',
     cierre: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
     conversiones: '<path d="M12 3v17M8 20h8M5 6h14"/><path d="M5 6l-3 7a3 3 0 0 0 6 0zM19 6l-3 7a3 3 0 0 0 6 0z"/>',
@@ -24,6 +25,7 @@
     ['cotizaciones.html', 'Cotizaciones', 'cotizaciones', false],
     ['pedidos.html', 'Pedidos', 'pedidos', true],
     ['inventario.html', 'Inventario', 'inventario', true],
+    ['catalogo-web.html', 'Catálogo', 'catalogo', false],
     ['cartera.html', 'Cartera', 'cartera', true],
     ['conversiones.html', 'Conversiones', 'conversiones', false],
     ['cierre.html', 'Cierre', 'cierre', false],
