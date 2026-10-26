@@ -2592,6 +2592,14 @@
     }
     pintarVistaEtiqueta();
   }
+  // SVG que cambia de color con el tema (como logo.svg): sin ese estilo queda negro.
+  // Se le da tamaño propio para que el navegador lo dibuje a su medida.
+  function svgParaEtiqueta(svg) {
+    const vb = (svg.match(/viewBox="([^"]+)"/)?.[1] || '0 0 300 300').split(/[\s,]+/).map(Number);
+    svg = svg.replace(/<style>[\s\S]*?<\/style>/g, (s) => (/prefers-color-scheme/.test(s) ? '' : s));
+    if (!/<svg[^>]*\swidth=/.test(svg)) svg = svg.replace('<svg ', `<svg width="${vb[2]}" height="${vb[3]}" `);
+    return new Blob([svg], { type: 'image/svg+xml' });
+  }
   $('#etImagen').addEventListener('change', async () => {
     const v = $('#etImagen').value;
     if (v === 'archivo') return $('#etImagenArchivo').click();
@@ -2599,23 +2607,22 @@
     etImagenTipo = '';
     if (v !== 'logo') return pintarVistaEtiqueta();
     try {
-      // El logo cambia de color con el tema: sin su estilo queda negro. Se le da
-      // tamaño propio para que el navegador lo dibuje a su medida.
-      let svg = await (await fetch('logo.svg')).text();
-      const vb = (svg.match(/viewBox="([^"]+)"/)?.[1] || '0 0 300 300').split(/\s+/).map(Number);
-      svg = svg.replace(/<style>[\s\S]*?<\/style>/, '').replace('<svg ', `<svg width="${vb[2]}" height="${vb[3]}" `);
-      await ponerImagenEtiqueta(new Blob([svg], { type: 'image/svg+xml' }), 'logo');
+      await ponerImagenEtiqueta(svgParaEtiqueta(await (await fetch('logo.svg')).text()), 'logo');
     } catch (_) {
       $('#etImagen').value = '';
-      aviso('No se pudo cargar el logo. Revisa la conexión.', 'error');
+      // Abierta desde el disco (file://), el navegador no deja leer logo.svg
+      aviso(location.protocol === 'file:'
+        ? 'Abriendo la página desde el disco no se puede leer el logo. Elige "Otra imagen del equipo…" y busca logo.svg en la carpeta, o úsalo en la página publicada.'
+        : 'No se pudo cargar el logo. Revisa la conexión.', 'error');
       pintarVistaEtiqueta();
     }
   });
-  $('#etImagenArchivo').addEventListener('change', () => {
+  $('#etImagenArchivo').addEventListener('change', async () => {
     const f = $('#etImagenArchivo').files[0];
     $('#etImagenArchivo').value = '';
-    if (f) ponerImagenEtiqueta(f, 'archivo');
-    else $('#etImagen').value = etImagenTipo;
+    if (!f) return ($('#etImagen').value = etImagenTipo);
+    const svg = f.type === 'image/svg+xml' || /\.svg$/i.test(f.name);
+    ponerImagenEtiqueta(svg ? svgParaEtiqueta(await f.text()) : f, 'archivo');
   });
   // Si cierra el selector sin elegir, la lista vuelve a lo que había
   $('#etImagenArchivo').addEventListener('cancel', () => ($('#etImagen').value = etImagenTipo));
