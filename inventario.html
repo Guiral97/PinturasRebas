@@ -14,7 +14,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="config.js"></script>
-<script src="etiquetas.js?v=20261025a"></script>
+<script src="etiquetas.js?v=20261026a"></script>
 <script src="impresora-directa.js?v=20261024a"></script>
 <script src="fotos.js?v=1"></script>
 <style>
@@ -1352,6 +1352,16 @@
         <div class="campo"><label for="etTexto">Texto</label><textarea id="etTexto" rows="3" maxlength="300"></textarea><small>Cada renglón va en una línea de la etiqueta.</small></div>
         <div class="campo"><label for="etCodigoLibre">Código de barras (opcional)</label><input id="etCodigoLibre" maxlength="40" autocomplete="off" spellcheck="false"><small>Números o letras sin tildes. Se puede escanear aquí.</small></div>
         <label class="check"><input type="checkbox" id="etTiendaLibre"> Nombre de la tienda arriba</label>
+        <div class="campo">
+          <label for="etImagen">Imagen</label>
+          <select id="etImagen">
+            <option value="">Sin imagen</option>
+            <option value="logo">Logo de la tienda</option>
+            <option value="archivo">Otra imagen del equipo…</option>
+          </select>
+          <small>Sale en blanco y negro, como en la vista previa. Mejor un dibujo oscuro sobre fondo claro.</small>
+          <input type="file" id="etImagenArchivo" accept="image/*" hidden>
+        </div>
       </div>
       <fieldset class="et-contenido" id="etContenido">
         <legend>Qué lleva la etiqueta</legend>
@@ -2443,7 +2453,8 @@
         conCodigo: !!codigoEtiqueta(),
         tienda: $('#etTiendaLibre').checked ? (window.APP_CONFIG?.NOMBRE_TIENDA || '') : '',
         nombre: $('#etTitulo').value.trim(),
-        texto: $('#etTexto').value
+        texto: $('#etTexto').value,
+        imagen: etImagen
       };
     }
     const p = partesElegidas();
@@ -2499,7 +2510,7 @@
     $('#etAjusteResumen').textContent = mov.some(Boolean) ? `(${mov.filter(Boolean).join(', ')})` : '';
     if (!r.cabe) {
       nota.textContent = r.motivo === 'vacia'
-        ? (etPres ? 'Elige al menos una cosa para imprimir en la etiqueta.' : 'Escribe el título, el texto o el código de la etiqueta.')
+        ? (etPres ? 'Elige al menos una cosa para imprimir en la etiqueta.' : 'Escribe el título, el texto o el código de la etiqueta, o elige una imagen.')
         : r.motivo === 'alto'
         ? `No cabe todo en ${m.alto} mm de alto. ${etPres ? 'Quita alguna opción' : 'Acorta el texto'} o usa una etiqueta más alta.`
         : `El código no cabe en ${m.ancho} mm de ancho sin perder lectura. Usa una etiqueta más ancha.`;
@@ -2566,6 +2577,48 @@
   }
 
   $('#etiquetaPersonal').addEventListener('click', () => abrirEtiquetas(null));
+
+  // Imagen de la etiqueta personalizada: el logo o un archivo, ya en blanco y negro
+  let etImagen = null, etImagenTipo = '';   // tipo: lo que muestra la lista cuando hay imagen
+  async function ponerImagenEtiqueta(blob, tipo) {
+    try {
+      etImagen = await imagenEtiqueta(blob);
+      etImagenTipo = tipo;
+    } catch (err) {
+      etImagen = null;
+      etImagenTipo = '';
+      $('#etImagen').value = '';
+      aviso(err.message, 'error');
+    }
+    pintarVistaEtiqueta();
+  }
+  $('#etImagen').addEventListener('change', async () => {
+    const v = $('#etImagen').value;
+    if (v === 'archivo') return $('#etImagenArchivo').click();
+    etImagen = null;
+    etImagenTipo = '';
+    if (v !== 'logo') return pintarVistaEtiqueta();
+    try {
+      // El logo cambia de color con el tema: sin su estilo queda negro. Se le da
+      // tamaño propio para que el navegador lo dibuje a su medida.
+      let svg = await (await fetch('logo.svg')).text();
+      const vb = (svg.match(/viewBox="([^"]+)"/)?.[1] || '0 0 300 300').split(/\s+/).map(Number);
+      svg = svg.replace(/<style>[\s\S]*?<\/style>/, '').replace('<svg ', `<svg width="${vb[2]}" height="${vb[3]}" `);
+      await ponerImagenEtiqueta(new Blob([svg], { type: 'image/svg+xml' }), 'logo');
+    } catch (_) {
+      $('#etImagen').value = '';
+      aviso('No se pudo cargar el logo. Revisa la conexión.', 'error');
+      pintarVistaEtiqueta();
+    }
+  });
+  $('#etImagenArchivo').addEventListener('change', () => {
+    const f = $('#etImagenArchivo').files[0];
+    $('#etImagenArchivo').value = '';
+    if (f) ponerImagenEtiqueta(f, 'archivo');
+    else $('#etImagen').value = etImagenTipo;
+  });
+  // Si cierra el selector sin elegir, la lista vuelve a lo que había
+  $('#etImagenArchivo').addEventListener('cancel', () => ($('#etImagen').value = etImagenTipo));
   $('#etPersonal').addEventListener('input', pintarVistaEtiqueta);
   $('#etPersonal').addEventListener('change', pintarVistaEtiqueta);
   // El Enter del lector (o al escribir) no imprime; en el texto sí hace salto de línea

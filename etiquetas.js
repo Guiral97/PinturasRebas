@@ -159,21 +159,31 @@
   // Etiqueta completa. De arriba hacia abajo: nombre de la tienda, nombre del
   // producto, detalle (código de color / SKU), texto libre, código de barras y precio.
   // Cada parte es opcional; sin código de barras el texto se centra y se agranda.
-  // contenido: { conCodigo, tienda, nombre, detalle, texto, precio }
+  // contenido: { conCodigo, tienda, nombre, detalle, texto, precio, imagen }
   // texto: renglones separados por salto de línea (etiquetas personalizadas)
-  function svgEtiqueta(codigo, { anchoMm, altoMm, conCodigo = true, tienda = '', nombre = '', detalle = '', texto = '', precio = null }) {
+  // imagen: { src (data URL en blanco y negro), aspecto (ancho / alto) }. Va a la
+  // izquierda del texto; arriba si hay código de barras o si es muy ancha.
+  function svgEtiqueta(codigo, { anchoMm, altoMm, conCodigo = true, tienda = '', nombre = '', detalle = '', texto = '', precio = null, imagen = null }) {
     const W = anchoMm, H = altoMm;
     const hay = (t) => !!String(t ?? '').trim();
     const renglones = String(texto ?? '').split(/\r?\n/).map((t) => t.trim()).filter(Boolean);
     const conPrecio = precio != null && precio !== '' && !Number.isNaN(Number(precio));
     const sinTextos = !hay(tienda) && !hay(nombre) && !hay(detalle) && !renglones.length && !conPrecio;
-    if (conCodigo && sinTextos) {
+    const conImg = !!(imagen?.src && imagen.aspecto > 0);
+    const etImg = (x, y, w, h) => `<image href="${escXml(imagen.src)}" x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${w.toFixed(2)}" height="${h.toFixed(2)}"/>`;
+    if (conCodigo && sinTextos && !conImg) {
       return svgCodigo(codigo, { anchoMm, altoMm });
     }
     if (!conCodigo && sinTextos) {
-      return { ancho: W, cabe: false, motivo: 'vacia', svg: '' };
+      if (!conImg) return { ancho: W, cabe: false, motivo: 'vacia', svg: '' };
+      return {   // solo la imagen, lo más grande que quepa
+        ancho: W, cabe: true, motivo: '',
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(3)}mm" height="${H}mm" viewBox="0 0 ${W.toFixed(3)} ${H}">${etImg(0, 0, W, H)}</svg>`
+      };
     }
     const sinCod = !conCodigo;
+    const imgLado = conImg && sinCod && imagen.aspecto <= 1.6;
+    const imgArriba = conImg && !imgLado;
     // Si no cabe todo, se reduce la letra poco a poco (hasta 60 %) antes de rendirse
     for (const escala of [1, 0.9, 0.8, 0.7, 0.6]) {
       const r = armar(escala);
@@ -187,15 +197,29 @@
     const fsX = Math.max(1.6, limitar(H * (sinCod ? 0.13 : 0.1), 2, sinCod ? 4 : 3) * k);
     const fsP = Math.max(2.4, limitar(H * (sinCod ? 0.26 : 0.17), 3, sinCod ? 9 : 5.5) * k);
 
+    // Imagen: a un lado ocupa todo el alto (hasta 40 % del ancho); arriba, hasta un tercio del alto
+    let imgW = 0, imgH = 0;
+    if (imgLado) {
+      imgW = Math.min(H * imagen.aspecto, W * 0.4);
+      imgH = imgW / imagen.aspecto;
+    } else if (imgArriba) {
+      imgH = Math.min(H * (sinCod ? 0.4 : 0.3) * k, W / imagen.aspecto);
+      imgW = imgH * imagen.aspecto;
+    }
+    const corre = imgLado ? imgW + 1.5 : 0;   // espacio que la imagen le quita al texto
+    const Wt = W - corre;                     // ancho para el texto
+    const xt = corre + Wt / 2;                // centro del texto
+    const altoImg = imgArriba ? imgH + 0.5 : 0;
+
     // Si una línea queda más ancha que la etiqueta (letras anchas), se comprime para que quepa
-    const ajuste = (txt, fs) => (txt.length * fs * 0.66 > W * 0.98
-      ? ` textLength="${(W * 0.98).toFixed(2)}" lengthAdjust="spacingAndGlyphs"` : '');
+    const ajuste = (txt, fs) => (txt.length * fs * 0.66 > Wt * 0.98
+      ? ` textLength="${(Wt * 0.98).toFixed(2)}" lengthAdjust="spacingAndGlyphs"` : '');
     const lineas = [];   // { txt, fs, peso }
-    if (hay(tienda)) partirNombre(tienda, W, fsT, 1).forEach((t) => lineas.push({ txt: t, fs: fsT, peso: 900 }));
-    if (hay(nombre)) partirNombre(nombre, W, fsN, sinCod ? 3 : 2).forEach((t) => lineas.push({ txt: t, fs: fsN, peso: 700 }));
-    if (hay(detalle)) partirNombre(detalle, W, fsD, 1).forEach((t) => lineas.push({ txt: t, fs: fsD, peso: 600 }));
-    renglones.forEach((r) => partirNombre(r, W, fsX, 3).forEach((t) => lineas.push({ txt: t, fs: fsX, peso: 600 })));
-    const altoArriba = lineas.reduce((a, l) => a + l.fs * 1.18, 0) + (lineas.length ? 0.5 : 0);
+    if (hay(tienda)) partirNombre(tienda, Wt, fsT, 1).forEach((t) => lineas.push({ txt: t, fs: fsT, peso: 900 }));
+    if (hay(nombre)) partirNombre(nombre, Wt, fsN, sinCod ? 3 : 2).forEach((t) => lineas.push({ txt: t, fs: fsN, peso: 700 }));
+    if (hay(detalle)) partirNombre(detalle, Wt, fsD, 1).forEach((t) => lineas.push({ txt: t, fs: fsD, peso: 600 }));
+    renglones.forEach((r) => partirNombre(r, Wt, fsX, 3).forEach((t) => lineas.push({ txt: t, fs: fsX, peso: 600 })));
+    const altoArriba = altoImg + lineas.reduce((a, l) => a + l.fs * 1.18, 0) + (lineas.length ? 0.5 : 0);
     const altoPrecio = conPrecio ? fsP * 1.05 + 0.5 : 0;
 
     let y0 = 0, altoCod = 0, c = null, cabe, motivo = '';
@@ -211,15 +235,17 @@
       y0 = Math.max(0, (H - total) / 2);   // centrado vertical
     }
 
-    let y = y0, textos = '';
+    const img = imgLado ? etImg(0, (H - imgH) / 2, imgW, imgH)
+      : imgArriba ? etImg((W - imgW) / 2, y0, imgW, imgH) : '';
+    let y = y0 + altoImg, textos = '';
     for (const l of lineas) {
       y += l.fs * 1.18;
-      textos += `<text x="${(W / 2).toFixed(2)}" y="${(y - l.fs * 0.22).toFixed(2)}" font-size="${l.fs.toFixed(2)}" font-weight="${l.peso}" text-anchor="middle"${ajuste(l.txt, l.fs)}>${escXml(l.txt)}</text>`;
+      textos += `<text x="${xt.toFixed(2)}" y="${(y - l.fs * 0.22).toFixed(2)}" font-size="${l.fs.toFixed(2)}" font-weight="${l.peso}" text-anchor="middle"${ajuste(l.txt, l.fs)}>${escXml(l.txt)}</text>`;
     }
     if (lineas.length) y += 0.5;
     if (conPrecio) {
       const yp = conCodigo ? H - 0.3 : y + fsP * 1.05 - fsP * 0.2;
-      textos += `<text x="${(W / 2).toFixed(2)}" y="${yp.toFixed(2)}" font-size="${fsP.toFixed(2)}" font-weight="900" text-anchor="middle">${escXml(pesos.format(Number(precio)))}</text>`;
+      textos += `<text x="${xt.toFixed(2)}" y="${yp.toFixed(2)}" font-size="${fsP.toFixed(2)}" font-weight="900" text-anchor="middle">${escXml(pesos.format(Number(precio)))}</text>`;
     }
     const barras = conCodigo
       ? `<g transform="translate(${Math.max(0, (W - c.ancho) / 2).toFixed(3)} ${altoArriba.toFixed(3)})">${c.interior}</g>`
@@ -230,8 +256,50 @@
       cabe,
       motivo,
       svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(3)}mm" height="${H}mm" viewBox="0 0 ${W.toFixed(3)} ${H}">
-        <g fill="#000" font-family="Arial, Helvetica, sans-serif">${textos}</g>${barras}</svg>`
+        ${img}<g fill="#000" font-family="Arial, Helvetica, sans-serif">${textos}</g>${barras}</svg>`
     };
+    }
+  }
+
+  // Imagen para la etiqueta: se reduce, se pasa a blanco y negro (como la imprime
+  // el cabezal, sin grises) y se recorta el borde blanco. Devuelve { src, aspecto }.
+  async function imagenEtiqueta(blob) {
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await new Promise((ok, mal) => {
+        const i = new Image();
+        i.onload = () => ok(i);
+        i.onerror = () => mal(new Error('No se pudo leer la imagen. Prueba con un PNG o JPG.'));
+        i.src = url;
+      });
+      const w0 = img.naturalWidth || 300, h0 = img.naturalHeight || 300;
+      const k = Math.min(1, 600 / Math.max(w0, h0));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(w0 * k));
+      c.height = Math.max(1, Math.round(h0 * k));
+      const g = c.getContext('2d');
+      g.fillStyle = '#fff';   // lo transparente queda blanco
+      g.fillRect(0, 0, c.width, c.height);
+      g.drawImage(img, 0, 0, c.width, c.height);
+      const d = g.getImageData(0, 0, c.width, c.height);
+      let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+      for (let y = 0; y < c.height; y++) {
+        for (let x = 0; x < c.width; x++) {
+          const i = (y * c.width + x) * 4;
+          const negro = d.data[i] * 0.299 + d.data[i + 1] * 0.587 + d.data[i + 2] * 0.114 < 140;
+          d.data[i] = d.data[i + 1] = d.data[i + 2] = negro ? 0 : 255;
+          if (negro) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+        }
+      }
+      if (x1 < 0) throw new Error('La imagen queda en blanco al pasarla a blanco y negro. Usa una con dibujo oscuro sobre fondo claro.');
+      g.putImageData(d, 0, 0);
+      const r = document.createElement('canvas');
+      r.width = x1 - x0 + 1;
+      r.height = y1 - y0 + 1;
+      r.getContext('2d').drawImage(c, x0, y0, r.width, r.height, 0, 0, r.width, r.height);
+      return { src: r.toDataURL('image/png'), aspecto: r.width / r.height };
+    } finally {
+      URL.revokeObjectURL(url);
     }
   }
 
@@ -275,5 +343,5 @@
     }, 250);
   }
 
-  Object.assign(window, { anchoUtil, codigoInterno, esEan13, esInterno, svgCodigo, svgEtiqueta, htmlEtiquetas, imprimirEtiquetas });
+  Object.assign(window, { anchoUtil, codigoInterno, esEan13, esInterno, svgCodigo, svgEtiqueta, imagenEtiqueta, htmlEtiquetas, imprimirEtiquetas });
 })();
