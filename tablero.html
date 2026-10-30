@@ -134,6 +134,23 @@
   .meta { color: var(--suave); }
   .anular { display: grid; gap: .6rem; padding: 1rem; border: 1px solid var(--alerta); border-radius: var(--radio); }
   .anular input { width: 100%; }
+
+  /* Devoluciones de la venta */
+  select { font: inherit; color: var(--tinta); background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); padding: .45rem .6rem; min-height: 2.75rem; }
+  .devolver { display: grid; gap: .7rem; padding: 1rem; border: 1px solid var(--acento); border-radius: var(--radio); }
+  .devolver input:not([type="checkbox"]), .devolver select { width: 100%; }
+  .lista-dev { list-style: none; margin: 0; padding: 0; display: grid; }
+  .lista-dev li { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .75rem; padding: .55rem 0; border-bottom: 1px solid var(--linea); }
+  .lista-dev li:last-child { border-bottom: 0; }
+  .lista-dev .nombre { flex: 1 1 14rem; min-width: 0; }
+  .lista-dev small { display: block; color: var(--suave); font-size: .85rem; }
+  .lista-dev input[type="number"] { width: 6rem; text-align: right; }
+  .lista-dev .vuelve { display: flex; align-items: center; gap: .35rem; font-weight: 400; font-size: .9rem; }
+  .lista-dev .vuelve input { width: 1.15rem; height: 1.15rem; }
+  .lista-dev .acciones-dev { margin-left: auto; display: flex; gap: .25rem; }
+  .lista-dev .anulada-dev .nombre { color: var(--suave); }
+  #dvDevs { border: 1px solid var(--linea); border-radius: var(--radio); padding: 0 .75rem; }
+  .devolver .acciones { display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
   .acciones { display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
 
   .resultado { width: 100%; border-collapse: collapse; min-width: 0 !important; }
@@ -430,7 +447,7 @@
       <table class="resultado num">
         <tbody>
           <tr><td>Entró en efectivo (ventas y abonos)</td><td class="der" id="eEntradas"></td></tr>
-          <tr><td>− Salió de la caja (gastos y retiros)</td><td class="der" id="eSalidas"></td></tr>
+          <tr><td>− Salió de la caja (gastos, retiros y devoluciones)</td><td class="der" id="eSalidas"></td></tr>
           <tr class="sub"><td>Neto en efectivo</td><td class="der" id="eNeto"></td></tr>
           <tr><td>Retiros de socios</td><td class="der" id="eRetiros"></td></tr>
           <tr><td>Gastos que pagaron socios</td><td class="der" id="eSocios"></td></tr>
@@ -493,10 +510,33 @@
       </table>
     </div>
     <p class="num" id="dvTotales"></p>
+    <ul class="lista-dev num" id="dvDevs" aria-label="Devoluciones de esta venta" hidden></ul>
+    <button type="button" class="btn" id="abrirDevolver" aria-controls="frmDevolver" aria-expanded="false" hidden>Devolver productos…</button>
+    <form class="devolver" id="frmDevolver" hidden>
+      <h3>Devolución</h3>
+      <p class="meta">Escribe cuántas unidades devuelve el cliente. Marca "Vuelve al inventario" solo si está sellado y se puede vender otra vez.</p>
+      <ul class="lista-dev" id="dvLineas"></ul>
+      <div class="campo" id="dvFormaCampo">
+        <label for="dvForma">Cómo se le devuelve el dinero</label>
+        <select id="dvForma">
+          <option value="efectivo">Efectivo de la caja</option>
+          <option value="transferencia">Transferencia</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="dvMotivo">Motivo de la devolución</label>
+        <input id="dvMotivo" required maxlength="200" placeholder="Ej: color equivocado, le sobró, producto defectuoso">
+      </div>
+      <p class="num" id="dvResumen" aria-live="polite"></p>
+      <div class="acciones">
+        <button type="button" class="btn" id="cancelarDevolver">Cancelar</button>
+        <button type="submit" class="btn btn-primario" id="btnDevolver">Registrar devolución</button>
+      </div>
+    </form>
     <form class="anular" id="frmAnular">
       <label for="motivo">Motivo de la anulación</label>
       <input id="motivo" required placeholder="Ej: cliente devolvió la mercancía, venta duplicada">
-      <p class="meta">La mercancía vuelve al inventario. Las ventas a crédito con abonos no se pueden anular.</p>
+      <p class="meta">La mercancía vuelve al inventario. Las ventas a crédito con abonos no se pueden anular: registra una devolución.</p>
       <div class="acciones"><button type="submit" class="btn btn-peligro" id="btnAnular">Anular venta</button></div>
     </form>
     <div class="acciones">
@@ -531,6 +571,7 @@
   let ultimosDias = null;   // para volver a pintar el gráfico si cambia el tema
   let cargaActual = 0;      // descarta respuestas de un período que ya no está en pantalla
   let ventaAbierta = null;
+  let esSocio = false;
 
   const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -629,8 +670,9 @@
     $('#app').hidden = !con;
     $('#salir').hidden = !con;
     if (!con) return;
-    const { data } = await db.from('perfiles').select('id, nombre');
+    const { data } = await db.from('perfiles').select('id, nombre, rol');
     perfiles = Object.fromEntries((data ?? []).map((p) => [p.id, p.nombre]));
+    esSocio = (data ?? []).some((p) => p.id === session.user.id && p.rol === 'socio');
     if (!perfiles[session.user.id]) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
     $('#usuario').textContent = perfiles[session.user.id] ?? session.user.email;
     navPendientes(db);
@@ -654,7 +696,11 @@
     $('#rangoTexto').textContent = textoRango(desde, hasta);
     const [antDesde, antHasta] = periodoAnterior(desde, hasta);
 
-    const [rr, rv, rg, ra] = await Promise.all([
+    // Devoluciones vigentes del período (sin el script 18 llegan con error y no se descuentan)
+    const devolucionesDe = (d, h) => db.from('v_devoluciones')
+      .select('valor, reembolso, forma_reembolso, costo_reintegrado')
+      .eq('estado', 'activa').gte('fecha', d).lte('fecha', h).limit(2000);
+    const [rr, rv, rg, ra, rdv, rda] = await Promise.all([
       db.rpc('resumen_ventas', { p_desde: desde, p_hasta: hasta }),
       db.from('ventas').select('id, creado_en, total, metodo_pago, estado, usuario_id, clientes(nombre)')
         .gte('creado_en', `${desde}T00:00:00-05:00`)
@@ -663,11 +709,15 @@
         .limit(200),
       db.rpc('resumen_gastos', { p_desde: desde, p_hasta: hasta }),
       // Para comparar las ventas con el período anterior (mismo cálculo)
-      db.rpc('resumen_ventas', { p_desde: antDesde, p_hasta: antHasta })
+      db.rpc('resumen_ventas', { p_desde: antDesde, p_hasta: antHasta }),
+      devolucionesDe(desde, hasta),
+      devolucionesDe(antDesde, antHasta)
     ]);
     if (esta !== cargaActual) return;   // llegó tarde: ya se pidió otro período
     if (rr.error) return aviso('No se pudo cargar el resumen: ' + rr.error.message, 'error');
     if (rv.error) return aviso('No se pudieron cargar las ventas: ' + rv.error.message, 'error');
+    restarDevoluciones(rr.data, rdv.data);
+    if (!ra.error) restarDevoluciones(ra.data, rda.data);
 
     pintarKpis(rr.data);
     pintarComparacion(rr.data, ra.error ? null : ra.data, textoRango(antDesde, antHasta));
@@ -710,7 +760,7 @@
     } else {
       $('#porCategoriaGasto').innerHTML = '<li class="vacio">Sin gastos en el período.</li>';
     }
-    const ent = Number(g.efectivo.entradas), sal = Number(g.efectivo.salidas);
+    const ent = Number(g.efectivo.entradas), sal = Number(g.efectivo.salidas) + (r.kpis.devuelto_efectivo || 0);
     $('#eEntradas').textContent = cop.format(ent);
     $('#eSalidas').textContent = cop.format(sal);
     $('#eNeto').textContent = cop.format(ent - sal);
@@ -719,11 +769,26 @@
     $('#eSocios').textContent = cop.format(g.por_origen.socio);
   }
 
+  // Las devoluciones del período bajan las ventas, el costo (solo lo que volvió al
+  // inventario: lo dañado se pierde) y el dinero recibido. Se cuentan el día que se devuelven.
+  function restarDevoluciones(r, devs) {
+    if (!devs?.length) return;
+    const suma = (f) => devs.reduce((s, d) => s + Number(f(d)), 0);
+    const valor = suma((d) => d.valor), costo = suma((d) => d.costo_reintegrado);
+    r.kpis.ventas_netas = Number(r.kpis.ventas_netas) - valor;
+    r.kpis.recaudo = Number(r.kpis.recaudo) - suma((d) => d.reembolso);
+    r.margen.costo = Number(r.margen.costo) - costo;
+    r.margen.margen = Number(r.margen.margen) - (valor - costo);
+    r.kpis.devoluciones = valor;
+    r.kpis.devuelto_efectivo = suma((d) => (d.forma_reembolso === 'efectivo' ? d.reembolso : 0));
+  }
+
   function pintarKpis(r) {
     const k = r.kpis, m = r.margen;
     $('#kVentas').textContent = cop.format(k.ventas_netas);
     $('#kDescuentos').textContent = `${k.num_ventas} ${k.num_ventas === 1 ? 'venta' : 'ventas'}` +
-      (k.descuentos > 0 ? ` · descuentos ${cop.format(k.descuentos)}` : '');
+      (k.descuentos > 0 ? ` · descuentos ${cop.format(k.descuentos)}` : '') +
+      (k.devoluciones > 0 ? ` · devoluciones ${cop.format(k.devoluciones)}` : '');
     $('#kNum').textContent = k.num_ventas;
     $('#kTicket').textContent = k.num_ventas ? `Promedio ${cop.format(k.ticket_promedio)}` : '';
     $('#kMargen').textContent = cop.format(m.margen);
@@ -966,13 +1031,22 @@
   });
 
   async function abrirVenta(id) {
-    const [rv, rd] = await Promise.all([
+    const [rv, rd, rdv, rdd, rc] = await Promise.all([
       db.from('ventas').select('*, clientes(nombre)').eq('id', id).single(),
-      db.from('venta_detalle').select('cantidad, precio_unitario, subtotal, presentaciones(nombre, productos(nombre))').eq('venta_id', id).order('id')
+      db.from('venta_detalle').select('id, cantidad, precio_unitario, subtotal, presentaciones(nombre, madre_id, productos(nombre))').eq('venta_id', id).order('id'),
+      db.from('v_devoluciones').select('*').eq('venta_id', id).order('id'),
+      db.from('devolucion_detalle').select('devolucion_id, venta_detalle_id, cantidad, valor, vuelve_inventario, devoluciones!inner(venta_id)')
+        .eq('devoluciones.venta_id', id),
+      db.from('v_cartera_ventas').select('saldo').eq('id', id).maybeSingle()
     ]);
     if (rv.error || rd.error) return aviso('No se pudo abrir la venta.', 'error');
     const v = rv.data;
-    ventaAbierta = { ...v, detalle: rd.data };
+    ventaAbierta = {
+      ...v, detalle: rd.data,
+      sin18: !!rdv.error,                 // falta ejecutar 18_devoluciones.sql
+      devs: rdv.data ?? [], devDet: rdd.data ?? [],
+      saldo: Math.max(0, Number(rc.data?.saldo) || 0)
+    };
 
     $('#dvTitulo').textContent = `Venta ${v.id}`;
     const meta = [fHora.format(new Date(v.creado_en)), v.clientes?.nombre ?? 'Consumidor final',
@@ -998,10 +1072,182 @@
       $('#dvTotales').textContent += ` · Anulada: ${v.motivo_anulacion ?? ''}`;
     }
 
-    $('#frmAnular').hidden = v.estado === 'anulada';
-    $('#frmAnular').reset();
-    $('#dlgVenta').showModal();
+    pintarDevoluciones();
+    if (!$('#dlgVenta').open) $('#dlgVenta').showModal();   // al registrar o anular una devolución se vuelve a pintar abierto
     $('#cerrarVenta').focus();
+  }
+
+  // ---------- Devoluciones ----------
+  const etiquetaLinea = (d) => `${d.presentaciones?.productos?.nombre ?? ''} ${d.presentaciones?.nombre ?? ''}`.trim();
+  const FORMAS = { efectivo: 'Efectivo', transferencia: 'Transferencia' };
+
+  // Unidades que todavía se pueden devolver de cada línea (vendidas − devueltas en devoluciones vigentes)
+  function porDevolver(v) {
+    const activas = new Set(v.devs.filter((d) => d.estado === 'activa').map((d) => d.id));
+    const devuelto = {};
+    v.devDet.filter((x) => activas.has(x.devolucion_id))
+      .forEach((x) => { devuelto[x.venta_detalle_id] = (devuelto[x.venta_detalle_id] || 0) + Number(x.cantidad); });
+    return Object.fromEntries(v.detalle.map((d) => [d.id, Math.max(0, Number(d.cantidad) - (devuelto[d.id] || 0))]));
+  }
+
+  function pintarDevoluciones() {
+    const v = ventaAbierta;
+    const activas = v.devs.filter((d) => d.estado === 'activa');
+    const queda = porDevolver(v);
+    const algoPorDevolver = Object.values(queda).some((c) => c > 0);
+
+    $('#dvDevs').hidden = !v.devs.length;
+    $('#dvDevs').innerHTML = v.devs.map((d) => {
+      const como = [d.a_deuda > 0 ? `rebajó la deuda ${cop.format(d.a_deuda)}` : '',
+        d.reembolso > 0 ? `${FORMAS[d.forma_reembolso] ?? ''} ${cop.format(d.reembolso)}` : ''].filter(Boolean).join(' · ');
+      const anulada = d.estado === 'anulada';
+      return `<li class="${anulada ? 'anulada-dev' : ''}">
+        <div class="nombre">Devolución ${d.id} · ${cop.format(d.valor)}
+          ${anulada ? ' <span class="estado estado-neutro">Anulada</span>' : ' <span class="estado estado-confirmado">Devuelta</span>'}
+          <small>${esc(fHora.format(new Date(d.creado_en)))}${d.usuario ? ` · ${esc(d.usuario)}` : ''}${como ? ` · ${esc(como)}` : ''}</small>
+          <small>Motivo: ${esc(d.motivo)}${anulada && d.motivo_anulacion ? ` · Anulada: ${esc(d.motivo_anulacion)}` : ''}</small></div>
+        <div class="acciones-dev">
+          <button type="button" class="btn-texto" data-imprimir-dev="${d.id}">Imprimir</button>
+          ${!anulada && esSocio ? `<button type="button" class="btn-texto" data-anular-dev="${d.id}">Anular</button>` : ''}
+        </div>
+      </li>`;
+    }).join('');
+
+    $('#abrirDevolver').hidden = v.estado === 'anulada' || (!v.sin18 && !algoPorDevolver);
+    $('#abrirDevolver').setAttribute('aria-expanded', 'false');
+    $('#frmDevolver').hidden = true;
+    // Con devoluciones vigentes no se anula la venta: la mercancía volvería dos veces
+    $('#frmAnular').hidden = v.estado === 'anulada' || activas.length > 0;
+    $('#frmAnular').reset();
+  }
+
+  $('#abrirDevolver').addEventListener('click', () => {
+    const v = ventaAbierta;
+    if (v.sin18) return aviso('Falta ejecutar 18_devoluciones.sql en Supabase.', 'error');
+    const queda = porDevolver(v);
+    $('#dvLineas').innerHTML = v.detalle.map((d) => {
+      const max = queda[d.id];
+      const parte = !!d.presentaciones?.madre_id;
+      return `<li>
+        <div class="nombre">${esc(etiquetaLinea(d))}
+          <small>Vendidas ${entero.format(d.cantidad)}${max < Number(d.cantidad) ? ` · se pueden devolver ${entero.format(max)}` : ''} · ${cop.format(d.precio_unitario)} c/u</small></div>
+        <input type="number" inputmode="decimal" min="0" max="${max}" step="any" value="0" data-linea="${d.id}"
+          aria-label="Unidades que devuelve de ${esc(etiquetaLinea(d))}" ${max > 0 ? '' : 'disabled'}>
+        <label class="vuelve"><input type="checkbox" data-vuelve="${d.id}" ${parte ? '' : 'checked'} ${max > 0 ? '' : 'disabled'}> Vuelve al inventario</label>
+      </li>`;
+    }).join('');
+    $('#frmDevolver').reset();
+    $('#frmDevolver').hidden = false;
+    $('#abrirDevolver').hidden = true;
+    $('#frmAnular').hidden = true;
+    resumenDevolucion();
+    $('#dvLineas input[data-linea]:not(:disabled)')?.focus();
+  });
+
+  $('#cancelarDevolver').addEventListener('click', pintarDevoluciones);
+
+  // Lo mismo que calcula registrar_devolucion: precio cobrado con el descuento o recargo repartido
+  function calcularDevolucion() {
+    const v = ventaAbierta;
+    const queda = porDevolver(v);
+    const factor = Number(v.subtotal) > 0 ? Number(v.total) / Number(v.subtotal) : 0;
+    const items = [];
+    let valor = 0, error = '';
+    $('#dvLineas').querySelectorAll('input[data-linea]').forEach((inp) => {
+      const id = +inp.dataset.linea, c = Number(inp.value) || 0;
+      if (c <= 0) return;
+      const d = v.detalle.find((x) => x.id === id);
+      if (c > queda[id]) error = `De ${etiquetaLinea(d)} se pueden devolver máximo ${entero.format(queda[id])}.`;
+      valor += Math.round(c * Number(d.precio_unitario) * factor);
+      items.push({ venta_detalle_id: id, cantidad: c, vuelve: $(`[data-vuelve="${id}"]`).checked });
+    });
+    // Si se devuelve todo lo que queda, es exactamente lo que falta del total
+    if (items.length && v.detalle.every((d) => (items.find((i) => i.venta_detalle_id === d.id)?.cantidad || 0) >= queda[d.id])) {
+      valor = Number(v.total) - v.devs.filter((d) => d.estado === 'activa').reduce((s, d) => s + Number(d.valor), 0);
+    }
+    const aDeuda = v.metodo_pago === 'credito' ? Math.min(valor, v.saldo) : 0;
+    return { items, valor, aDeuda, reembolso: valor - aDeuda, error };
+  }
+
+  function resumenDevolucion() {
+    const r = calcularDevolucion();
+    $('#dvFormaCampo').hidden = !(r.reembolso > 0);
+    if (r.error) { $('#dvResumen').textContent = r.error; return; }
+    if (!r.items.length) { $('#dvResumen').textContent = 'Escribe cuántas unidades devuelve.'; return; }
+    const partes = [`Se devuelven ${cop.format(r.valor)}`];
+    if (r.aDeuda > 0) partes.push(`baja la deuda ${cop.format(r.aDeuda)}`);
+    if (r.reembolso > 0) partes.push(`se le entregan ${cop.format(r.reembolso)} al cliente`);
+    $('#dvResumen').textContent = partes.join(': ').replace(/: (.*): /, ': $1 y ') + '.';
+  }
+  $('#dvLineas').addEventListener('input', resumenDevolucion);
+  $('#dvLineas').addEventListener('change', resumenDevolucion);
+
+  $('#frmDevolver').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const v = ventaAbierta;
+    const r = calcularDevolucion();
+    if (r.error) return aviso(r.error, 'error');
+    if (!r.items.length) return aviso('Escribe cuántas unidades devuelve el cliente.', 'error');
+    const motivo = $('#dvMotivo').value.trim();
+    if (!motivo) return;
+    const forma = r.reembolso > 0 ? $('#dvForma').value : null;
+    const texto = r.reembolso > 0
+      ? `¿Registrar la devolución? Se le entregan ${cop.format(r.reembolso)} en ${FORMAS[forma].toLowerCase()}.`
+      : `¿Registrar la devolución? Baja la deuda de la venta ${v.id} en ${cop.format(r.aDeuda)}.`;
+    if (!confirm(texto)) return;
+
+    const btn = $('#btnDevolver');
+    btn.disabled = true;
+    const { data: idDev, error } = await db.rpc('registrar_devolucion', {
+      p_venta_id: v.id, p_items: r.items, p_forma: forma, p_motivo: motivo
+    });
+    btn.disabled = false;
+    if (error) return aviso('No se registró: ' + error.message, 'error');
+
+    aviso(`Devolución ${idDev} registrada.`);
+    await abrirVenta(v.id);
+    imprimirDevolucion(idDev);
+    cargar();
+    cargarCostos();
+  });
+
+  $('#dvDevs').addEventListener('click', async (e) => {
+    const bi = e.target.closest('[data-imprimir-dev]');
+    if (bi) return imprimirDevolucion(+bi.dataset.imprimirDev);
+    const ba = e.target.closest('[data-anular-dev]');
+    if (!ba) return;
+    const id = +ba.dataset.anularDev;
+    const motivo = prompt(`Motivo para anular la devolución ${id}. Lo que volvió al inventario sale otra vez y, si era a crédito, la deuda regresa.`);
+    if (motivo == null) return;
+    if (!motivo.trim()) return aviso('Escribe el motivo de la anulación.', 'error');
+    const { error } = await db.rpc('anular_devolucion', { p_id: id, p_motivo: motivo.trim() });
+    if (error) return aviso('No se anuló: ' + error.message, 'error');
+    aviso(`Devolución ${id} anulada.`);
+    await abrirVenta(ventaAbierta.id);
+    cargar();
+    cargarCostos();
+  });
+
+  function imprimirDevolucion(id) {
+    const v = ventaAbierta;
+    const d = v?.devs.find((x) => x.id === id);
+    if (!d) return;
+    imprimirRecibo({
+      id: v.id,
+      devolucion: d.id,
+      anulada: d.estado === 'anulada',
+      fecha: d.creado_en,
+      cliente: v.clientes?.nombre,
+      vendedor: d.usuario,
+      metodo: d.forma_reembolso,
+      items: v.devDet.filter((x) => x.devolucion_id === id).map((x) => {
+        const linea = v.detalle.find((l) => l.id === x.venta_detalle_id);
+        return { etiqueta: linea ? etiquetaLinea(linea) : '', cantidad: Number(x.cantidad), precio: Number(x.valor) / Number(x.cantidad) };
+      }),
+      total: Number(d.valor),
+      a_deuda: Number(d.a_deuda),
+      motivo: d.motivo
+    });
   }
 
   $('#cerrarVenta').addEventListener('click', () => $('#dlgVenta').close());

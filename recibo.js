@@ -2,6 +2,8 @@
 // Uso: imprimirRecibo({ id, fecha, cliente, vendedor, metodo, estado,
 //        items: [{ etiqueta, cantidad, precio }], subtotal, descuento, recargo, motivo, total,
 //        recibido, copia })
+// Devolución: los mismos campos más devolucion (su número), a_deuda y anulada;
+//   total = valor devuelto, metodo = cómo se entregó el dinero, motivo = el de la devolución.
 (function () {
   const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
   const cant = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
@@ -24,15 +26,23 @@
 
     const filas = [];
     const recargo = Number(v.recargo) || 0;
-    if (v.descuento > 0 || recargo > 0) {
+    if (v.devolucion) {
+      // Comprobante de devolución: lo que vale lo devuelto y cómo se le entregó al cliente
+      filas.push(`<tr class="total"><td>DEVUELTO</td><td class="der">${cop.format(v.total)}</td></tr>`);
+      if (v.a_deuda > 0) filas.push(`<tr><td>Rebaja de la deuda</td><td class="der">${cop.format(v.a_deuda)}</td></tr>`);
+      if (v.total - (v.a_deuda || 0) > 0) filas.push(`<tr><td>Entregado (${METODOS[v.metodo] ?? v.metodo})</td><td class="der">${cop.format(v.total - (v.a_deuda || 0))}</td></tr>`);
+      if (v.motivo) filas.push(`<tr><td colspan="2" class="motivo">Motivo: ${esc(v.motivo)}</td></tr>`);
+    } else if (v.descuento > 0 || recargo > 0) {
       filas.push(`<tr><td>Subtotal</td><td class="der">${cop.format(v.subtotal)}</td></tr>`);
       if (v.descuento > 0) filas.push(`<tr><td>Descuento</td><td class="der">-${cop.format(v.descuento)}</td></tr>`);
       if (recargo > 0) filas.push(`<tr><td>Recargo</td><td class="der">+${cop.format(recargo)}</td></tr>`);
       if (v.motivo) filas.push(`<tr><td colspan="2" class="motivo">Motivo: ${esc(v.motivo)}</td></tr>`);
     }
-    filas.push(`<tr class="total"><td>TOTAL</td><td class="der">${cop.format(v.total)}</td></tr>`);
-    filas.push(`<tr><td>Pago</td><td class="der">${METODOS[v.metodo] ?? v.metodo}</td></tr>`);
-    if (v.metodo === 'efectivo' && v.recibido != null) {
+    if (!v.devolucion) {
+      filas.push(`<tr class="total"><td>TOTAL</td><td class="der">${cop.format(v.total)}</td></tr>`);
+      filas.push(`<tr><td>Pago</td><td class="der">${METODOS[v.metodo] ?? v.metodo}</td></tr>`);
+    }
+    if (!v.devolucion && v.metodo === 'efectivo' && v.recibido != null) {
       filas.push(`<tr><td>Recibido</td><td class="der">${cop.format(v.recibido)}</td></tr>`);
       filas.push(`<tr><td>Cambio</td><td class="der">${cop.format(v.recibido - v.total)}</td></tr>`);
     }
@@ -62,7 +72,7 @@
       ${n.DIRECCION ? `<div class="c">${esc(n.DIRECCION)}</div>` : ''}
       ${n.TELEFONO ? `<div class="c">Tel. ${esc(n.TELEFONO)}</div>` : ''}
       <hr>
-      <div>Recibo N.° ${v.id}${v.copia ? ' (copia)' : ''}</div>
+      <div>${v.devolucion ? `DEVOLUCIÓN N.° ${v.devolucion} · venta ${v.id}${v.anulada ? ' (ANULADA)' : ''}` : `Recibo N.° ${v.id}${v.copia ? ' (copia)' : ''}`}</div>
       ${v.provisional ? '<div><b>PROVISIONAL:</b> registrado sin conexión. Se asienta al volver internet.</div>' : ''}
       <div>${fHora.format(new Date(v.fecha))}</div>
       <div>Cliente: ${esc(v.cliente || 'Consumidor final')}</div>
@@ -71,10 +81,10 @@
       <table>${lineas}</table>
       <hr>
       <table>${filas.join('')}</table>
-      ${v.metodo === 'credito' && v.estado !== 'anulada' ? '<div class="c" style="margin-top:6px">Venta a crédito: saldo pendiente de pago</div>' : ''}
-      ${v.estado === 'anulada' ? '<div class="c" style="margin-top:6px"><b>VENTA ANULADA</b></div>' : ''}
+      ${!v.devolucion && v.metodo === 'credito' && v.estado !== 'anulada' ? '<div class="c" style="margin-top:6px">Venta a crédito: saldo pendiente de pago</div>' : ''}
+      ${!v.devolucion && v.estado === 'anulada' ? '<div class="c" style="margin-top:6px"><b>VENTA ANULADA</b></div>' : ''}
       <hr>
-      <div class="c">${esc(n.PIE || 'Gracias por su compra')}</div>
+      ${v.devolucion ? '<div class="firma" style="margin-top:28px;border-top:2px solid #000;padding-top:2px">Recibe el cliente</div>' : `<div class="c">${esc(n.PIE || 'Gracias por su compra')}</div>`}
       <div class="c nota">Comprobante interno. No es factura electrónica.</div>
       </body></html>`;
 

@@ -638,7 +638,7 @@
       return `
       <li>
         <div class="f-info">Venta ${f.id} ${estado}
-          <small class="num f-largo">${fCorta.format(fechaLocal(f.fecha))} · total ${cop.format(f.total)} · abonado ${cop.format(f.abonado)}</small>
+          <small class="num f-largo">${fCorta.format(fechaLocal(f.fecha))} · total ${cop.format(f.total)} · abonado ${cop.format(f.abonado)}${Number(f.devuelto) > 0 ? ` · devuelto ${cop.format(f.devuelto)}` : ''}</small>
           <small class="num f-corto">${fCorta.format(fechaLocal(f.fecha))}${plazo ? ` · ${plazo}` : ''}</small></div>
         <strong>${cop.format(f.saldo)}</strong>
         <button type="button" class="btn-texto" data-pagar="${f.id}">Abonar</button>
