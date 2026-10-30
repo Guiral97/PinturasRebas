@@ -323,7 +323,7 @@
         </div>
 
         <button class="btn btn-primario" type="submit" id="btnCierre">Registrar cierre</button>
-        <p class="ayuda">Para un retiro de un socio (su parte de las ganancias) o un gasto pagado con efectivo, regístralo en Gastos: la app lo descuenta de lo esperado.</p>
+        <p class="ayuda">Para un retiro de un socio (su parte de las ganancias) o un gasto pagado con efectivo, regístralo en Gastos: la app lo descuenta de lo esperado. Si se trae dinero de la cuenta a la caja (por ejemplo, sencillo para cambio), regístralo con "Traer dinero de la cuenta": se suma a lo esperado.</p>
       </form>
 
       <section id="movimientos" aria-label="Movimientos desde el último cierre">
@@ -331,11 +331,14 @@
           <h2 style="font-weight:700">Desde el último cierre</h2>
           <p class="periodo" id="periodo"></p>
           <dl class="cuentas num" id="cuentas"></dl>
-          <button type="button" class="btn-texto" id="actualizar" style="justify-self:start">Actualizar</button>
+          <div class="dlg-acciones" style="justify-content:space-between">
+            <button type="button" class="btn-texto" id="actualizar">Actualizar</button>
+            <button type="button" class="btn" id="btnTraslado">Traer dinero de la cuenta</button>
+          </div>
         </div>
         <div class="tabla-caja">
           <table>
-            <thead><tr><th class="ocultar-movil">Hora</th><th>Movimiento</th><th class="der">Valor</th></tr></thead>
+            <thead><tr><th class="ocultar-movil">Hora</th><th>Movimiento</th><th class="der">Valor</th><th class="acc"><span class="visually-hidden">Acciones</span></th></tr></thead>
             <tbody id="tbMovs"></tbody>
           </table>
         </div>
@@ -362,6 +365,20 @@
     <div class="dlg-acciones">
       <button type="submit" class="btn" value="listo">Listo</button>
       <button type="button" class="btn btn-primario" id="lsImprimir">Imprimir comprobante</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ TRAER DE LA CUENTA ============ -->
+<dialog id="dlgTraslado" aria-labelledby="trTitulo">
+  <form id="frmTraslado" novalidate>
+    <h2 id="trTitulo">Traer dinero de la cuenta</h2>
+    <p class="ayuda">Dinero que se saca de la cuenta del negocio y se mete en la caja. Se suma a lo que debería haber en el próximo cierre.</p>
+    <div class="campo"><label for="trValor">Valor que entra a la caja</label><input id="trValor" type="number" min="1" step="1" inputmode="numeric" class="num valor-grande" placeholder="$ 0" required></div>
+    <div class="campo"><label for="trNota">Nota</label><input id="trNota" maxlength="200" placeholder="Ej: sencillo para cambio, retiro en cajero"></div>
+    <div class="dlg-acciones">
+      <button type="button" class="btn" id="trCancelar">Cancelar</button>
+      <button type="submit" class="btn btn-primario" id="trGuardar">Registrar</button>
     </div>
   </form>
 </dialog>
@@ -396,7 +413,7 @@
   const BILLETES = [100000, 50000, 20000, 10000, 5000, 2000];
   const MONEDAS = [1000, 500, 200, 100, 50];
   const DESTINOS = { cuenta: 'Consignado en la cuenta', socio: 'Lo guarda', caja_fuerte: 'Caja fuerte', otro: 'Otro' };
-  const TIPOS = { venta: 'Ventas en efectivo', abono: 'Abonos en efectivo', gasto: 'Gastos pagados de la caja', socio: 'Retiros y reembolsos a socios' };
+  const TIPOS = { venta: 'Ventas en efectivo', abono: 'Abonos en efectivo', traslado: 'Traído de la cuenta', gasto: 'Gastos pagados de la caja', socio: 'Retiros y reembolsos a socios' };
 
   document.title = `Cierre de caja | ${NOMBRE_TIENDA}`;
   $('#nombreTienda').textContent = NOMBRE_TIENDA;
@@ -406,7 +423,7 @@
   let socios = [], cierres = [], esSocio = false;
   let modoConteo = 'total', modoBase = 'se', destino = null;
   let dejaTocado = false;       // si ya escribieron la base a dejar, no se cambia sola
-  let anulando = null, registrado = null;
+  let anulando = null, registrado = null;   // anulando: { tipo: 'cierre' | 'traslado', id }
 
   // ---------- Utilidades ----------
   const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
@@ -535,7 +552,7 @@
       : `Desde el cierre del <b>${esc(fFechaHora.format(desde))}</b>${dias > 1 ? `. Acumulado de <b>${dias} días</b>.` : '.'}`;
 
     if (!movs.length) {
-      $('#tbMovs').innerHTML = '<tr><td colspan="3" class="vacio">No hay movimientos de efectivo desde el último cierre.</td></tr>';
+      $('#tbMovs').innerHTML = '<tr><td colspan="4" class="vacio">No hay movimientos de efectivo desde el último cierre.</td></tr>';
       return;
     }
     // Agrupados por día (hora de Colombia), con el neto de cada día
@@ -548,14 +565,17 @@
     $('#tbMovs').innerHTML = [...grupos].map(([, lista]) => {
       const neto = lista.reduce((t, m) => t + Number(m.valor), 0);
       const dia = fDia.format(new Date(lista[0].fecha));
-      return `<tr class="dia"><td colspan="2">${esc(dia[0].toUpperCase() + dia.slice(1))}</td><td class="der num">${conSigno(neto)}</td></tr>` +
+      return `<tr class="dia"><td colspan="2">${esc(dia[0].toUpperCase() + dia.slice(1))}</td><td class="der num">${conSigno(neto)}</td><td class="acc"></td></tr>` +
         lista.map((m) => {
-          const hora = m.tipo === 'venta' || m.tipo === 'abono' ? fHora.format(new Date(m.fecha)) : '';
+          const hora = ['venta', 'abono', 'traslado'].includes(m.tipo) ? fHora.format(new Date(m.fecha)) : '';
+          const anular = m.tipo === 'traslado' && !m.correccion && Number(m.valor) > 0
+            ? `<button type="button" class="btn-texto peligro" data-anular-traslado="${m.ref_id}">Anular</button>` : '';
           const corr = m.correccion ? ' <span class="estado estado-pendiente">Corrección: cambió después de un cierre</span>' : '';
           return `<tr>
             <td class="num ocultar-movil">${hora}</td>
             <td>${esc(m.descripcion)}${corr}<small>${TIPOS[m.tipo]}${hora ? `<span class="solo-movil">${hora}</span>` : ''}</small></td>
             <td class="der num${m.valor < 0 ? ' salida' : ''}">${conSigno(Number(m.valor))}</td>
+            <td class="acc">${anular}</td>
           </tr>`;
         }).join('');
     }).join('');
@@ -790,7 +810,9 @@
     const an = e.target.closest('[data-anular]');
     if (!an) return;
     const k = cierres.find((x) => x.id === +an.dataset.anular);
-    anulando = k.id;
+    anulando = { tipo: 'cierre', id: k.id };
+    $('#anTitulo').textContent = 'Anular cierre';
+    $('#anMotivo').placeholder = 'Ej: se contó mal el efectivo';
     $('#anDetalle').textContent = `Cierre N.° ${k.id} del ${fFechaHora.format(new Date(k.creado_en))}. Sus movimientos vuelven a quedar pendientes para el próximo cierre. Lo retirado (${cop.format(k.retirado)}) no se devuelve solo: si se contó mal, haz un cierre nuevo.`;
     $('#anMotivo').value = '';
     $('#dlgAnular').showModal();
@@ -802,13 +824,55 @@
     const motivo = $('#anMotivo').value.trim();
     if (!motivo) return;
     $('#anConfirmar').disabled = true;
-    const { error } = await db.rpc('anular_cierre_caja', { p_id: anulando, p_motivo: motivo });
+    const { error } = anulando.tipo === 'cierre'
+      ? await db.rpc('anular_cierre_caja', { p_id: anulando.id, p_motivo: motivo })
+      : await db.rpc('anular_traslado_caja', { p_id: anulando.id, p_motivo: motivo });
     $('#anConfirmar').disabled = false;
     if (error) return aviso(errorLegible(error), 'error');
     $('#dlgAnular').close();
+    if (anulando.tipo === 'traslado') {
+      aviso('Traslado anulado: ya no se suma a lo esperado.');
+      return cargarPendiente();
+    }
     aviso('Cierre anulado. Queda en el historial con el motivo.');
     dejaTocado = false;
     await Promise.all([cargarPendiente(), cargarCierres()]);
+  });
+
+  // ---------- Traer dinero de la cuenta ----------
+  $('#btnTraslado').addEventListener('click', () => {
+    $('#trValor').value = '';
+    $('#trNota').value = '';
+    $('#dlgTraslado').showModal();
+    $('#trValor').focus();
+  });
+  $('#trCancelar').addEventListener('click', () => $('#dlgTraslado').close());
+  $('#frmTraslado').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const v = valor('#trValor');
+    if (!(v > 0)) return aviso('Escribe cuánto dinero se trae de la cuenta.', 'error');
+    $('#trGuardar').disabled = true;
+    const { error } = await db.rpc('registrar_traslado_caja', { p_valor: v, p_nota: $('#trNota').value.trim() || null });
+    $('#trGuardar').disabled = false;
+    if (error) {
+      return aviso(/registrar_traslado_caja/.test(error.message) ? 'Falta ejecutar 17_traslados_caja.sql en Supabase.' : errorLegible(error), 'error');
+    }
+    $('#dlgTraslado').close();
+    aviso(`Se sumaron ${cop.format(v)} a la caja.`);
+    await cargarPendiente();
+  });
+
+  $('#tbMovs').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-anular-traslado]');
+    if (!b) return;
+    const m = pend.movimientos.find((x) => x.tipo === 'traslado' && x.ref_id === +b.dataset.anularTraslado);
+    anulando = { tipo: 'traslado', id: m.ref_id };
+    $('#anTitulo').textContent = 'Anular traslado';
+    $('#anMotivo').placeholder = 'Ej: se escribió mal el valor';
+    $('#anDetalle').textContent = `${m.descripcion} por ${cop.format(m.valor)}. Deja de sumarse a lo esperado. Solo un socio o quien lo registró puede anularlo.`;
+    $('#anMotivo').value = '';
+    $('#dlgAnular').showModal();
+    $('#anMotivo').focus();
   });
 
   // ---------- Comprobante (impresora térmica, igual que el recibo) ----------
@@ -850,6 +914,7 @@
         ${fila('Base inicial', cop.format(k.base_inicial))}
         ${fila('Ventas efectivo', conSigno(Number(k.ventas_efectivo)))}
         ${fila('Abonos efectivo', conSigno(Number(k.abonos_efectivo)))}
+        ${Number(k.traslados_caja) ? fila('Traído de la cuenta', conSigno(Number(k.traslados_caja))) : ''}
         ${fila('Gastos de caja', conSigno(Number(k.gastos_caja)))}
         ${fila('Socios', conSigno(Number(k.socios_caja)))}
         ${fila('Esperado', cop.format(k.esperado), 'total')}
