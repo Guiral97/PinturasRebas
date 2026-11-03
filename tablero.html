@@ -678,6 +678,12 @@
     navPendientes(db);
     aplicarPreset('mes');
     cargarCostos();
+    // Desde el historial del cliente (Cartera): tablero.html?venta=119 abre esa venta
+    const venta = +new URLSearchParams(location.search).get('venta');
+    if (venta) {
+      history.replaceState(history.state, '', location.pathname);
+      abrirVenta(venta);
+    }
   }
 
   $('#login').addEventListener('submit', async (e) => {

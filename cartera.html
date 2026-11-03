@@ -13,6 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
+<script src="recibo.js?v=2"></script>
 <style>
   :root {
     color-scheme: light dark;   /* barras de desplazamiento y controles según el tema */
@@ -141,6 +142,18 @@
   .segmentos button { min-height: 2.75rem; }
   .segmentos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
   #btnAbono { font-size: 1.1rem; min-height: 3.25rem; width: 100%; white-space: normal; }
+  .check { display: flex; align-items: center; gap: .5rem; font-weight: 600; min-height: 2.75rem; cursor: pointer; }
+  .check input { width: 1.2rem; height: 1.2rem; margin: 0; accent-color: var(--acento); }
+
+  /* Historial del cliente */
+  .hist-resumen { margin: .2rem 0 .6rem; color: var(--suave); font-size: .9rem; }
+  .hist-filtro { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .3rem; }
+  .hist-filtro button { min-height: 2.25rem; padding: 0 .75rem; font-size: .875rem; }
+  .hist-filtro button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); }
+  #tbHistorial .estado { font-size: .72rem; padding: 0 .45rem; }
+  #tbHistorial .menos { color: var(--suave); }
+  #tbHistorial .btn-texto { min-height: 2.25rem; text-decoration: none; display: inline-flex; align-items: center; }
+  #histMas { margin-top: .5rem; width: 100%; }
   fieldset { border: 0; margin: 0; padding: 0; }
   legend { padding: 0; margin-bottom: .35rem; }
 
@@ -200,6 +213,7 @@
     .lista-cab h2 { display: none; }
     .lista-cab #buscar { flex: 1 1 auto; max-width: none; min-width: 0; min-height: 0; height: 38px; }
     .lista-cab #orden { flex: none; width: 7rem; min-height: 0; height: 38px; padding-right: .3rem; }
+    .lista-cab #ver { flex: none; width: 6rem; min-height: 0; height: 38px; padding-right: .3rem; }
     #listaClientes > li { grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; padding: .3rem .4rem .3rem .65rem; }
     #listaClientes .elegir { grid-template-columns: minmax(0, 1fr) auto; gap: 0 .5rem; padding: .25rem 0; min-height: 2.75rem; }
     #listaClientes .l1 { display: flex; align-items: center; gap: .35rem; min-width: 0; }
@@ -230,7 +244,10 @@
     .det-cab .det-extra { display: block; font-size: .8rem; }
     #detContenido h3 { font-size: 1.1rem; }
     .facturas li, .abonos li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0 .5rem; padding: .35rem 0; }
-    .abonos li { grid-template-columns: minmax(0, 1fr) auto; }
+    .abonos li { grid-template-columns: minmax(0, 1fr) auto auto; }
+    #tbHistorial .btn-texto { min-height: 34px; padding: 0 .2rem; }
+    .hist-filtro { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .hist-filtro button { flex: none; min-height: 0; height: 2rem; border-radius: 999px; font-size: .8rem; }
     .facturas .f-info, .abonos .f-info { font-weight: 600; font-size: .9rem; }
     .facturas .estado { font-size: .7rem; padding: 0 .4rem; }
     .facturas small, .abonos small { font-size: .78rem; font-weight: 400; }
@@ -290,6 +307,10 @@
       <div class="lista-cab">
         <h2 id="tituloClientes">Clientes con saldo</h2>
         <input type="search" id="buscar" placeholder="Buscar cliente" aria-label="Buscar cliente">
+        <select id="ver" aria-label="Qué clientes ver">
+          <option value="saldo">Con saldo</option>
+          <option value="todos">Todos</option>
+        </select>
         <select id="orden" aria-label="Ordenar">
           <option value="mora">Más atrasados primero</option>
           <option value="saldo">Mayor saldo primero</option>
@@ -314,7 +335,7 @@
           <a class="btn btn-wa" id="btnWhatsapp" target="_blank" rel="noopener">Enviar recordatorio por WhatsApp</a>
         </div>
 
-        <div>
+        <div id="bloqueFacturas">
           <h3>Facturas pendientes</h3>
           <ul class="facturas" id="tbFacturas"></ul>
         </div>
@@ -345,12 +366,21 @@
             <label for="abRef">Referencia <span class="ayuda">(opcional)</span></label>
             <input id="abRef" placeholder="Número de transferencia o recibo">
           </div>
+          <label class="check"><input type="checkbox" id="abImprimir" checked> Imprimir comprobante</label>
           <button class="btn btn-primario" type="submit" id="btnAbono">Registrar abono</button>
         </form>
 
         <div>
-          <h3>Abonos recientes</h3>
-          <ul class="abonos" id="tbAbonos"></ul>
+          <h3>Historial</h3>
+          <p class="hist-resumen num" id="histResumen"></p>
+          <div class="hist-filtro" id="histFiltro" role="group" aria-label="Filtrar historial">
+            <button type="button" class="btn" data-filtro="todo" aria-pressed="true">Todo</button>
+            <button type="button" class="btn" data-filtro="venta" aria-pressed="false">Compras</button>
+            <button type="button" class="btn" data-filtro="abono" aria-pressed="false">Abonos</button>
+            <button type="button" class="btn" data-filtro="devolucion" aria-pressed="false">Devoluciones</button>
+          </div>
+          <ul class="abonos" id="tbHistorial"></ul>
+          <button type="button" class="btn" id="histMas" hidden>Ver más</button>
         </div>
       </div>
     </section>
@@ -376,6 +406,16 @@
   let clienteActual = null;   // fila de v_cartera_clientes
   let metodoAbono = 'efectivo';
   let tramoFiltro = null;     // 0..3 o null
+  let clientes = [];          // todos los clientes (para ver también a los que están al día)
+  let perfiles = {};          // id -> nombre
+  let miId = null;
+  let historial = [];         // compras, abonos (agrupados) y devoluciones del cliente abierto
+  let filtroHist = 'todo';
+  const PASO_HIST = 25;
+  let limiteHist = PASO_HIST;
+  const METODOS = { efectivo: 'Efectivo', transferencia: 'Transferencia', tarjeta: 'Tarjeta', credito: 'Crédito' };
+  const ESTADOS_VENTA = { pagada: ['Pagada', 'estado-ok'], pendiente_pago: ['Pendiente de pago', 'estado-pendiente'], anulada: ['Anulada', 'estado-neutro'] };
+  try { $('#abImprimir').checked = localStorage.getItem('rebas-imprimir-abono') !== 'no'; } catch (_) {}
 
   const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -421,11 +461,20 @@
     $('#app').hidden = !con;
     $('#salir').hidden = !con;
     if (!con) { $('#app').classList.remove('ver-detalle'); return; }
-    const { data: perfil } = await db.from('perfiles').select('nombre').eq('id', session.user.id).maybeSingle();
-    if (!perfil) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
-    $('#usuario').textContent = perfil?.nombre ?? session.user.email;
+    const { data: ps } = await db.from('perfiles').select('id, nombre');
+    perfiles = Object.fromEntries((ps ?? []).map((p) => [p.id, p.nombre]));
+    miId = session.user.id;
+    if (!perfiles[miId]) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
+    $('#usuario').textContent = perfiles[miId] ?? session.user.email;
     navPendientes(db);
-    cargarCartera();
+    await cargarCartera();
+    // Desde Inventario › Clientes: cartera.html?cliente=15 abre el historial de ese cliente
+    const pedido = +new URLSearchParams(location.search).get('cliente');
+    if (pedido) {
+      history.replaceState(history.state, '', location.pathname);
+      await abrirCliente(pedido);
+      if (!$('#detContenido').hidden) verDetalle();
+    }
   }
 
   $('#login').addEventListener('submit', async (e) => {
@@ -438,15 +487,17 @@
 
   // ---------- Cartera general ----------
   async function cargarCartera() {
-    const [rc, rv] = await Promise.all([
+    const [rc, rv, rt] = await Promise.all([
       db.from('v_cartera_clientes').select('*')
         .order('saldo_vencido', { ascending: false }).order('saldo', { ascending: false }),
-      db.from('v_cartera_ventas').select('id, cliente_id, vence_en, saldo, dias_vencida').gt('saldo', 0)
+      db.from('v_cartera_ventas').select('id, cliente_id, vence_en, saldo, dias_vencida').gt('saldo', 0),
+      db.from('clientes').select('id, nombre, documento, telefono, cupo_credito, plazo_dias').order('nombre').limit(5000)
     ]);
     if (rc.error) return aviso('No se pudo cargar la cartera: ' + rc.error.message, 'error');
     if (rv.error) return aviso('No se pudieron cargar las facturas pendientes: ' + rv.error.message, 'error');
     cartera = rc.data;
     pendientes = rv.data;
+    clientes = rt.data ?? [];
 
     const total = cartera.reduce((s, c) => s + Number(c.saldo), 0);
     const vencido = cartera.reduce((s, c) => s + Number(c.saldo_vencido), 0);
@@ -483,8 +534,19 @@
   });
 
   // Texto de la línea del cliente: mora de la factura más vieja, o cuándo vence la próxima
+  // Fila de cartera del cliente; si no debe nada, una equivalente con saldo cero
+  function filaCliente(id) {
+    const f = cartera.find((c) => c.cliente_id === id);
+    if (f) return f;
+    const c = clientes.find((x) => x.id === id);
+    return c ? { cliente_id: c.id, nombre: c.nombre, documento: c.documento, telefono: c.telefono,
+      cupo_credito: c.cupo_credito, plazo_dias: c.plazo_dias, saldo: 0, saldo_vencido: 0,
+      facturas_pendientes: 0, max_dias_vencida: 0 } : null;
+  }
+
   function detalleCliente(c) {
-    const n = `${c.facturas_pendientes} ${c.facturas_pendientes === 1 ? 'factura' : 'facturas'}`;
+    if (!(Number(c.saldo) > 0)) return { texto: 'Sin saldo pendiente', tramo: 0, corto: 'Sin saldo', estado: ['Al día', 'estado-ok'] };
+    const n =`${c.facturas_pendientes} ${c.facturas_pendientes === 1 ? 'factura' : 'facturas'}`;
     const dias = Number(c.max_dias_vencida) || 0;
     const dd = (x) => `${x} ${x === 1 ? 'día' : 'días'}`;
     // corto y estado: para la lista compacta del celular
@@ -504,21 +566,26 @@
 
   function pintarLista() {
     const q = norm($('#buscar').value.trim());
-    const filas = cartera.filter((c) =>
+    const todos = $('#ver').value === 'todos';
+    $('#tituloClientes').textContent = todos ? 'Clientes' : 'Clientes con saldo';
+    const base = todos ? clientes.map((c) => filaCliente(c.id)) : cartera;
+    const filas = base.filter((c) =>
       (tramoFiltro == null || pendientes.some((f) => f.cliente_id === c.cliente_id && tramoDe(Number(f.dias_vencida)) === tramoFiltro)) &&
       (!q || norm(`${c.nombre} ${c.documento ?? ''} ${c.telefono ?? ''}`).includes(q)));
-    if ($('#orden').value === 'saldo') filas.sort((a, b) => Number(b.saldo) - Number(a.saldo));
-    else filas.sort((a, b) => (Number(b.max_dias_vencida) || 0) - (Number(a.max_dias_vencida) || 0) || Number(b.saldo) - Number(a.saldo));
+    const porNombre = (a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es');
+    if ($('#orden').value === 'saldo') filas.sort((a, b) => Number(b.saldo) - Number(a.saldo) || porNombre(a, b));
+    else filas.sort((a, b) => (Number(b.max_dias_vencida) || 0) - (Number(a.max_dias_vencida) || 0) || Number(b.saldo) - Number(a.saldo) || porNombre(a, b));
 
     if (!filas.length) {
-      $('#listaClientes').innerHTML = `<li><p class="vacio">${cartera.length
-        ? 'Ningún cliente coincide con el filtro.'
-        : 'Nadie debe nada. Las ventas a crédito aparecerán aquí.'}</p></li>`;
+      $('#listaClientes').innerHTML = `<li><p class="vacio">${base.length
+        ? (!todos && q ? 'Nadie con saldo coincide. Elige "Todos" para buscar entre los clientes al día.' : 'Ningún cliente coincide con el filtro.')
+        : todos ? 'Aún no hay clientes.' : 'Nadie debe nada. Elige "Todos" para ver el historial de cualquier cliente.'}</p></li>`;
       return;
     }
     $('#listaClientes').innerHTML = filas.map((c) => {
       const d = detalleCliente(c);
-      const wa = enlaceWhatsapp(c);
+      const debe = Number(c.saldo) > 0;
+      const wa = debe ? enlaceWhatsapp(c) : null;
       return `
       <li class="${clienteActual?.cliente_id === c.cliente_id ? 'activo' : ''}">
         <button type="button" class="elegir" data-id="${c.cliente_id}" aria-current="${clienteActual?.cliente_id === c.cliente_id}">
@@ -528,7 +595,7 @@
         </button>
         <div class="acciones">
           ${wa ? `<a class="btn btn-wa" href="${esc(wa)}" target="_blank" rel="noopener"><span class="solo-escritorio">WhatsApp</span><span class="solo-celular">Recordar</span></a>` : ''}
-          <button type="button" class="btn btn-primario" data-abonar="${c.cliente_id}">Abonar</button>
+          ${debe ? `<button type="button" class="btn btn-primario" data-abonar="${c.cliente_id}">Abonar</button>` : ''}
         </div>
       </li>`;
     }).join('');
@@ -536,6 +603,7 @@
 
   $('#buscar').addEventListener('input', pintarLista);
   $('#orden').addEventListener('change', pintarLista);
+  $('#ver').addEventListener('change', pintarLista);
   $('#listaClientes').addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-id]');
     if (b) {
@@ -583,24 +651,32 @@
 
   // ---------- Detalle del cliente ----------
   async function abrirCliente(id) {
-    clienteActual = cartera.find((c) => c.cliente_id === id) ?? null;
+    clienteActual = filaCliente(id);
     pintarLista();
     if (!clienteActual) {
       $('#detContenido').hidden = true;
       $('#detVacio').hidden = false;
       return;
     }
+    const pedido = clienteActual;
 
-    const [rf, ra] = await Promise.all([
+    const [rf, rvt, ra, rd] = await Promise.all([
       db.from('v_cartera_ventas').select('*').eq('cliente_id', id).gt('saldo', 0).order('creado_en'),
-      db.from('abonos').select('*').eq('cliente_id', id).order('creado_en', { ascending: false }).limit(20)
+      db.from('ventas').select('id, creado_en, total, metodo_pago, estado, usuario_id')
+        .eq('cliente_id', id).order('creado_en', { ascending: false }).limit(3000),
+      db.from('abonos').select('*').eq('cliente_id', id).order('creado_en', { ascending: false }).limit(5000),
+      // Sin el script 18 esta consulta falla y el historial sigue sin devoluciones
+      db.from('devoluciones').select('id, venta_id, creado_en, valor, a_deuda, reembolso, forma_reembolso, estado, ventas!inner(cliente_id)')
+        .eq('ventas.cliente_id', id).order('creado_en', { ascending: false })
     ]);
-    if (rf.error || ra.error) return aviso('No se pudo cargar el detalle del cliente.', 'error');
+    if (clienteActual !== pedido) return;   // se abrió otro cliente mientras cargaba
+    if (rf.error || rvt.error || ra.error) return aviso('No se pudo cargar el detalle del cliente.', 'error');
     facturas = rf.data;
+    armarHistorial(rvt.data, ra.data, rd.error ? [] : rd.data);
 
     const c = clienteActual;
     $('#detNombre').textContent = c.nombre;
-    const partes = [`<span class="debe">Debe ${cop.format(c.saldo)}</span>`];
+    const partes = [Number(c.saldo) > 0 ? `<span class="debe">Debe ${cop.format(c.saldo)}</span>` : '<span class="debe">Al día, sin saldo</span>'];
     partes.push(c.cupo_credito != null
       ? `cupo ${cop.format(c.cupo_credito)} (libre ${cop.format(Math.max(c.cupo_credito - c.saldo, 0))})`
       : 'sin cupo definido');
@@ -649,22 +725,141 @@
     $('#abAplicar').innerHTML = '<option value="">Facturas más antiguas primero</option>' +
       facturas.map((f) => `<option value="${f.id}">Venta ${f.id}, saldo ${cop.format(f.saldo)}</option>`).join('');
 
-    // Abonos recientes
-    const metodos = { efectivo: 'Efectivo', transferencia: 'Transferencia', tarjeta: 'Tarjeta' };
-    $('#tbAbonos').innerHTML = ra.data.length ? ra.data.map((a) => `
-      <li>
-        <div class="f-info">Venta ${a.venta_id} · ${metodos[a.metodo_pago] ?? esc(a.metodo_pago)}
-          <small class="num">${fHora.format(new Date(a.creado_en))}${a.referencia ? ` · ${esc(a.referencia)}` : ''}</small></div>
-        <strong>${cop.format(a.valor)}</strong>
-      </li>`).join('') : '<li class="vacio">Este cliente todavía no ha hecho abonos.</li>';
+    // Sin saldo: no hay facturas ni abono, solo el historial
+    const debe = Number(c.saldo) > 0;
+    $('#bloqueFacturas').hidden = !debe;
+    $('#frmAbono').hidden = !debe;
+    if (!debe) { btnWa.hidden = true; $('#btnWaTop').hidden = true; }
+
+    limiteHist = PASO_HIST;
+    pintarHistorial();
 
     $('#frmAbono').reset();
+    try { $('#abImprimir').checked = localStorage.getItem('rebas-imprimir-abono') !== 'no'; } catch (_) {}
     metodoAbono = 'efectivo';
     $('#abMetodos').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x.dataset.metodo === metodoAbono));
     textoBotonAbono();
     actualizarAyudaAplicar();
     $('#detVacio').hidden = true;
     $('#detContenido').hidden = false;
+  }
+
+  // ---------- Historial del cliente ----------
+  const ms = (t) => new Date(t).getTime();
+
+  // Un abono que se reparte entre varias facturas queda en varias filas con la misma hora
+  // (la de la transacción): se agrupan en un solo comprobante.
+  function armarHistorial(ventas, abonos, devoluciones) {
+    const grupos = new Map();
+    abonos.forEach((a) => {
+      const k = `${ms(a.creado_en)}|${a.metodo_pago}|${a.usuario_id ?? ''}`;
+      if (!grupos.has(k)) grupos.set(k, { tipo: 'abono', fecha: a.creado_en, metodo: a.metodo_pago,
+        referencia: a.referencia, usuario_id: a.usuario_id, items: [], total: 0, numero: a.id });
+      const g = grupos.get(k);
+      g.items.push(a);
+      g.total += Number(a.valor);
+      g.numero = Math.min(g.numero, a.id);
+    });
+    historial = [
+      ...ventas.map((v) => ({ tipo: 'venta', fecha: v.creado_en, v })),
+      ...grupos.values(),
+      ...devoluciones.map((d) => ({ tipo: 'devolucion', fecha: d.creado_en, d }))
+    ].sort((a, b) => ms(b.fecha) - ms(a.fecha));
+    historial.forEach((g) => { if (g.tipo === 'abono') g.items.sort((a, b) => a.venta_id - b.venta_id); });
+    // Datos para calcular saldos a una fecha
+    historial.ventasCredito = ventas.filter((v) => v.metodo_pago === 'credito' && v.estado !== 'anulada');
+    historial.abonos = abonos;
+    historial.devoluciones = devoluciones.filter((d) => d.estado === 'activa');
+  }
+
+  // Saldo (del cliente, o de una venta) justo después del instante t
+  function saldoEn(t, ventaId = null) {
+    const hasta = ms(t);
+    return historial.ventasCredito
+      .filter((v) => (ventaId == null || v.id === ventaId) && ms(v.creado_en) <= hasta)
+      .reduce((s, v) => s + Number(v.total)
+        - historial.abonos.filter((a) => a.venta_id === v.id && ms(a.creado_en) <= hasta).reduce((x, a) => x + Number(a.valor), 0)
+        - historial.devoluciones.filter((d) => d.venta_id === v.id && ms(d.creado_en) <= hasta).reduce((x, d) => x + Number(d.a_deuda), 0), 0);
+  }
+
+  function pintarHistorial() {
+    const ventas = historial.filter((h) => h.tipo === 'venta' && h.v.estado !== 'anulada');
+    const abonos = historial.filter((h) => h.tipo === 'abono');
+    const resumen = [];
+    resumen.push(ventas.length
+      ? `${ventas.length} ${ventas.length === 1 ? 'compra' : 'compras'} por ${cop.format(ventas.reduce((s, h) => s + Number(h.v.total), 0))}`
+      : 'Sin compras registradas');
+    if (abonos.length) resumen.push(`${abonos.length} ${abonos.length === 1 ? 'abono' : 'abonos'} por ${cop.format(abonos.reduce((s, h) => s + h.total, 0))}`);
+    if (ventas.length) resumen.push(`última compra ${fCorta.format(new Date(ventas[0].fecha))}`);
+    if (abonos.length) resumen.push(`último abono ${fCorta.format(new Date(abonos[0].fecha))}`);
+    $('#histResumen').textContent = resumen.join(' · ');
+
+    $('#histFiltro').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filtro === filtroHist)));
+    const filas = historial.filter((h) => filtroHist === 'todo' || h.tipo === filtroHist);
+    $('#tbHistorial').innerHTML = filas.length ? filas.slice(0, limiteHist).map((h) => {
+      const i = historial.indexOf(h);
+      const quien = perfiles[h.usuario_id ?? h.v?.usuario_id];
+      if (h.tipo === 'venta') {
+        const [txt, cls] = ESTADOS_VENTA[h.v.estado] ?? [h.v.estado, 'estado-neutro'];
+        return `
+        <li>
+          <div class="f-info">Compra · venta ${h.v.id} <span class="estado ${cls}">${esc(txt)}</span>
+            <small class="num">${fHora.format(new Date(h.fecha))} · ${METODOS[h.v.metodo_pago] ?? esc(h.v.metodo_pago)}${quien ? ` · atendió ${esc(quien)}` : ''}</small></div>
+          <strong class="${h.v.estado === 'anulada' ? 'menos' : ''}">${cop.format(h.v.total)}</strong>
+          <a class="btn-texto" href="tablero.html?venta=${h.v.id}" target="_blank" rel="noopener">Ver</a>
+        </li>`;
+      }
+      if (h.tipo === 'abono') {
+        return `
+        <li>
+          <div class="f-info">Abono N.° ${h.numero} · ${METODOS[h.metodo] ?? esc(h.metodo)}
+            <small class="num">${fHora.format(new Date(h.fecha))} · ${h.items.length === 1 ? 'venta' : 'ventas'} ${h.items.map((a) => a.venta_id).join(', ')}${h.referencia ? ` · ref. ${esc(h.referencia)}` : ''}${quien ? ` · recibió ${esc(quien)}` : ''}</small></div>
+          <strong>${cop.format(h.total)}</strong>
+          <button type="button" class="btn-texto" data-imprimir="${i}">Imprimir</button>
+        </li>`;
+      }
+      const d = h.d;
+      return `
+        <li>
+          <div class="f-info">Devolución N.° ${d.id} · venta ${d.venta_id}${d.estado === 'anulada' ? ' <span class="estado estado-neutro">Anulada</span>' : ''}
+            <small class="num">${fHora.format(new Date(h.fecha))}${Number(d.a_deuda) > 0 ? ` · rebajó la deuda ${cop.format(d.a_deuda)}` : ''}${Number(d.reembolso) > 0 ? ` · se le entregaron ${cop.format(d.reembolso)}` : ''}</small></div>
+          <strong class="menos">−${cop.format(d.valor)}</strong>
+          <a class="btn-texto" href="tablero.html?venta=${d.venta_id}" target="_blank" rel="noopener">Ver</a>
+        </li>`;
+    }).join('') : `<li class="vacio">${filtroHist === 'todo' ? 'Este cliente todavía no tiene movimientos.' : 'No hay movimientos de este tipo.'}</li>`;
+    $('#histMas').hidden = filas.length <= limiteHist;
+  }
+
+  $('#histFiltro').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-filtro]');
+    if (!b) return;
+    filtroHist = b.dataset.filtro;
+    limiteHist = PASO_HIST;
+    pintarHistorial();
+  });
+  $('#histMas').addEventListener('click', () => { limiteHist += PASO_HIST; pintarHistorial(); });
+  $('#tbHistorial').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-imprimir]');
+    if (b) imprimirComprobante(historial[+b.dataset.imprimir], true);
+  });
+
+  function imprimirComprobante(g, copia) {
+    if (!g || g.tipo !== 'abono' || !clienteActual) return;
+    const despues = saldoEn(g.fecha);
+    imprimirAbono({
+      numero: g.numero,
+      fecha: g.fecha,
+      cliente: clienteActual.nombre,
+      documento: clienteActual.documento,
+      atendio: perfiles[g.usuario_id],
+      metodo: g.metodo,
+      referencia: g.referencia,
+      total: g.total,
+      aplicaciones: g.items.map((a) => ({ venta_id: a.venta_id, valor: Number(a.valor), saldo: saldoEn(g.fecha, a.venta_id) })),
+      saldo_antes: despues + g.total,
+      saldo_despues: despues,
+      copia
+    });
   }
 
   $('#tbFacturas').addEventListener('click', (e) => {
@@ -730,17 +925,17 @@
 
     const id = clienteActual.cliente_id;
     const nombre = clienteActual.nombre;
+    const imprimir = $('#abImprimir').checked;
+    try { localStorage.setItem('rebas-imprimir-abono', imprimir ? 'si' : 'no'); } catch (_) {}
     await cargarCartera();
-    if (Number(data.saldo_restante) === 0) {
-      aviso(`Abono registrado. ${nombre} quedó al día.`);
-      clienteActual = null;
-      pintarLista();
-      $('#detContenido').hidden = true;
-      $('#detVacio').hidden = false;
-      volverALista();
-    } else {
-      aviso(`Abono registrado. Saldo pendiente: ${cop.format(data.saldo_restante)}.`);
-      abrirCliente(id);
+    await abrirCliente(id);   // si quedó al día sigue abierto: se ve el historial y se puede reimprimir
+    const saldo = Number(clienteActual?.saldo) || 0;
+    aviso(saldo > 0 ? `Abono registrado. Saldo pendiente: ${cop.format(saldo)}.` : `Abono registrado. ${nombre} quedó al día.`);
+    if (imprimir) {
+      // El abono recién hecho: el más reciente registrado por este usuario
+      const g = historial.find((h) => h.tipo === 'abono' && h.usuario_id === miId);
+      if (g) imprimirComprobante(g, false);
+      else aviso('Abono registrado, pero no se encontró para imprimir. Imprímelo desde el historial.', 'error');
     }
   });
 

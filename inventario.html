@@ -342,6 +342,9 @@
 
   /* Clientes */
   .clientes { display: grid; grid-template-columns: 22rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .acc-cli { white-space: nowrap; }
+  .acc-cli a.btn-texto { text-decoration: none; display: inline-flex; align-items: center; }
+  @media (max-width: 700px) { .acc-cli { display: flex; flex-direction: column; align-items: flex-end; } }
   /* Mezclas */
   .mezclas { display: grid; grid-template-columns: minmax(0, 29rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
   .mz-editor { background: var(--panel); border: 1px solid var(--linea); border-radius: var(--radio); }
@@ -3870,7 +3873,7 @@
         <td class="num">${esc(c.documento)}</td>
         <td>${tipos[c.tipo] ?? c.tipo}</td>
         <td class="num">${esc(c.telefono)}</td>
-        <td><button type="button" class="btn-texto" data-cliente="${c.id}">Editar</button></td>
+        <td class="acc-cli"><button type="button" class="btn-texto" data-cliente="${c.id}">Editar</button><a class="btn-texto" href="cartera.html?cliente=${c.id}">Historial</a></td>
       </tr>`).join('')
       : `<tr><td colspan="5" class="vacio">${clientes.length ? 'Ningún cliente coincide con la búsqueda.' : 'Aún no hay clientes. Regístralos con el formulario; los talleres a crédito deben estar aquí.'}</td></tr>`;
   }

@@ -13,11 +13,7 @@
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   window.imprimirRecibo = function (v) {
-    const cfg = window.APP_CONFIG || {};
-    const n = cfg.NEGOCIO || {};
-    const ancho = cfg.ANCHO_RECIBO || '58mm';
-    // Ancho que de verdad imprime el cabezal: 58 mm -> 48 mm útiles, 80 mm -> 72 mm
-    const util = cfg.ANCHO_IMPRESION || (ancho === '58mm' ? '48mm' : '72mm');
+    const n = (window.APP_CONFIG || {}).NEGOCIO || {};
 
     const lineas = v.items.map((i) => `
       <tr><td colspan="2" class="prod">${esc(i.etiqueta)}</td></tr>
@@ -47,8 +43,69 @@
       filas.push(`<tr><td>Cambio</td><td class="der">${cop.format(v.recibido - v.total)}</td></tr>`);
     }
 
-    const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
-      <title>Recibo ${v.id}</title>
+    const html = `${inicio(`Recibo ${v.id}`)}
+      <hr>
+      <div>${v.devolucion ? `DEVOLUCIÓN N.° ${v.devolucion} · venta ${v.id}${v.anulada ? ' (ANULADA)' : ''}` : `Recibo N.° ${v.id}${v.copia ? ' (copia)' : ''}`}</div>
+      ${v.provisional ? '<div><b>PROVISIONAL:</b> registrado sin conexión. Se asienta al volver internet.</div>' : ''}
+      <div>${fHora.format(new Date(v.fecha))}</div>
+      <div>Cliente: ${esc(v.cliente || 'Consumidor final')}</div>
+      ${v.vendedor ? `<div>Atendió: ${esc(v.vendedor)}</div>` : ''}
+      <hr>
+      <table>${lineas}</table>
+      <hr>
+      <table>${filas.join('')}</table>
+      ${!v.devolucion && v.metodo === 'credito' && v.estado !== 'anulada' ? '<div class="c" style="margin-top:6px">Venta a crédito: saldo pendiente de pago</div>' : ''}
+      ${!v.devolucion && v.estado === 'anulada' ? '<div class="c" style="margin-top:6px"><b>VENTA ANULADA</b></div>' : ''}
+      <hr>
+      ${v.devolucion ? '<div class="firma" style="margin-top:28px;border-top:2px solid #000;padding-top:2px">Recibe el cliente</div>' : `<div class="c">${esc(n.PIE || 'Gracias por su compra')}</div>`}
+      <div class="c nota">Comprobante interno. No es factura electrónica.</div>
+      </body></html>`;
+    imprimir(html);
+  };
+
+  // Comprobante de abono a la cartera.
+  // Uso: imprimirAbono({ numero, fecha, cliente, documento, atendio, metodo, referencia, total,
+  //        aplicaciones: [{ venta_id, valor, saldo }], saldo_antes, saldo_despues, copia })
+  window.imprimirAbono = function (a) {
+    const filas = a.aplicaciones.map((x) => `
+      <tr><td colspan="2" class="prod">Venta ${esc(x.venta_id)}</td></tr>
+      <tr><td>Abono</td><td class="der">${cop.format(x.valor)}</td></tr>
+      <tr><td>Queda debiendo</td><td class="der">${x.saldo > 0 ? cop.format(x.saldo) : 'Pagada'}</td></tr>`).join('');
+    const html = `${inicio(`Abono ${a.numero}`)}
+      <hr>
+      <div>ABONO N.° ${esc(a.numero)}${a.copia ? ' (copia)' : ''}</div>
+      <div>${fHora.format(new Date(a.fecha))}</div>
+      <div>Cliente: ${esc(a.cliente)}</div>
+      ${a.documento ? `<div>Doc.: ${esc(a.documento)}</div>` : ''}
+      ${a.atendio ? `<div>Recibió: ${esc(a.atendio)}</div>` : ''}
+      <hr>
+      <table>
+        <tr><td>Saldo anterior</td><td class="der">${cop.format(a.saldo_antes)}</td></tr>
+        <tr class="total"><td>ABONO</td><td class="der">${cop.format(a.total)}</td></tr>
+        <tr><td>Pago</td><td class="der">${METODOS[a.metodo] ?? esc(a.metodo)}</td></tr>
+        ${a.referencia ? `<tr><td colspan="2" class="motivo">Ref.: ${esc(a.referencia)}</td></tr>` : ''}
+        <tr class="total"><td>SALDO</td><td class="der">${cop.format(a.saldo_despues)}</td></tr>
+      </table>
+      <hr>
+      <div>Aplicado a:</div>
+      <table>${filas}</table>
+      <hr>
+      <div class="c">${a.saldo_despues > 0 ? 'Gracias por su pago' : 'Cuenta al día. Gracias por su pago'}</div>
+      <div class="firma" style="margin-top:28px;border-top:2px solid #000;padding-top:2px">Recibió</div>
+      <div class="c nota">Comprobante interno. No es factura electrónica.</div>
+      </body></html>`;
+    imprimir(html);
+  };
+
+  // Cabecera común: estilos de la térmica y datos del negocio
+  function inicio(titulo) {
+    const cfg = window.APP_CONFIG || {};
+    const n = cfg.NEGOCIO || {};
+    const ancho = cfg.ANCHO_RECIBO || '58mm';
+    // Ancho que de verdad imprime el cabezal: 58 mm -> 48 mm útiles, 80 mm -> 72 mm
+    const util = cfg.ANCHO_IMPRESION || (ancho === '58mm' ? '48mm' : '72mm');
+    return `<!doctype html><html lang="es"><head><meta charset="utf-8">
+      <title>${esc(titulo)}</title>
       <style id="estilo">
         @page { size: ${ancho} 100mm; margin: 0; }
         * { box-sizing: border-box; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -70,24 +127,11 @@
       <h1>${esc(cfg.NOMBRE_TIENDA)}</h1>
       ${n.NIT ? `<div class="c">NIT ${esc(n.NIT)}</div>` : ''}
       ${n.DIRECCION ? `<div class="c">${esc(n.DIRECCION)}</div>` : ''}
-      ${n.TELEFONO ? `<div class="c">Tel. ${esc(n.TELEFONO)}</div>` : ''}
-      <hr>
-      <div>${v.devolucion ? `DEVOLUCIÓN N.° ${v.devolucion} · venta ${v.id}${v.anulada ? ' (ANULADA)' : ''}` : `Recibo N.° ${v.id}${v.copia ? ' (copia)' : ''}`}</div>
-      ${v.provisional ? '<div><b>PROVISIONAL:</b> registrado sin conexión. Se asienta al volver internet.</div>' : ''}
-      <div>${fHora.format(new Date(v.fecha))}</div>
-      <div>Cliente: ${esc(v.cliente || 'Consumidor final')}</div>
-      ${v.vendedor ? `<div>Atendió: ${esc(v.vendedor)}</div>` : ''}
-      <hr>
-      <table>${lineas}</table>
-      <hr>
-      <table>${filas.join('')}</table>
-      ${!v.devolucion && v.metodo === 'credito' && v.estado !== 'anulada' ? '<div class="c" style="margin-top:6px">Venta a crédito: saldo pendiente de pago</div>' : ''}
-      ${!v.devolucion && v.estado === 'anulada' ? '<div class="c" style="margin-top:6px"><b>VENTA ANULADA</b></div>' : ''}
-      <hr>
-      ${v.devolucion ? '<div class="firma" style="margin-top:28px;border-top:2px solid #000;padding-top:2px">Recibe el cliente</div>' : `<div class="c">${esc(n.PIE || 'Gracias por su compra')}</div>`}
-      <div class="c nota">Comprobante interno. No es factura electrónica.</div>
-      </body></html>`;
+      ${n.TELEFONO ? `<div class="c">Tel. ${esc(n.TELEFONO)}</div>` : ''}`;
+  }
 
+  // Imprime en un iframe oculto
+  function imprimir(html) {
     const marco = document.createElement('iframe');
     marco.setAttribute('aria-hidden', 'true');
     // Fuera de la vista pero con ancho real: así se puede medir el alto del recibo
@@ -113,5 +157,5 @@
       marco.contentWindow.print();
       setTimeout(() => marco.isConnected && marco.remove(), 60000);   // respaldo si no llega afterprint
     }, 250);
-  };
+  }
 })();
