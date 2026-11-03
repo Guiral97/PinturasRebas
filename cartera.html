@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
-<script src="recibo.js?v=2"></script>
+<script src="recibo.js?v=3"></script>
 <style>
   :root {
     color-scheme: light dark;   /* barras de desplazamiento y controles según el tema */
@@ -142,6 +142,14 @@
   .segmentos button { min-height: 2.75rem; }
   .segmentos button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 700; }
   #btnAbono { font-size: 1.1rem; min-height: 3.25rem; width: 100%; white-space: normal; }
+  dialog { border: 1px solid var(--linea); border-radius: 8px; background: var(--panel); color: var(--tinta); padding: 1.4rem; width: min(30rem, calc(100% - 1.5rem)); }
+  dialog::backdrop { background: rgba(10, 14, 18, .45); }
+  dialog form { display: grid; gap: 1rem; }
+  dialog h2 { margin: 0; }
+  .opciones { display: grid; gap: .1rem; }
+  .check.sub { padding-left: 1.7rem; }
+  .check:has(input:disabled) { color: var(--suave); cursor: default; }
+  .dlg-acciones { display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
   .check { display: flex; align-items: center; gap: .5rem; font-weight: 600; min-height: 2.75rem; cursor: pointer; }
   .check input { width: 1.2rem; height: 1.2rem; margin: 0; accent-color: var(--acento); }
 
@@ -386,6 +394,22 @@
     </section>
   </div>
 </main>
+
+<dialog id="dlgImprimir" aria-labelledby="impTitulo">
+  <form id="frmImprimir">
+    <h2 id="impTitulo">Imprimir comprobante</h2>
+    <p class="ayuda" id="impDetalle"></p>
+    <fieldset class="opciones">
+      <legend>¿Qué incluir?</legend>
+      <label class="check"><input type="checkbox" id="impVentas" checked> Ventas a las que se aplicó el abono</label>
+      <label class="check sub"><input type="checkbox" id="impProductos" checked> Qué se vendió en cada venta (productos, cantidades y precios)</label>
+    </fieldset>
+    <div class="dlg-acciones">
+      <button type="button" class="btn" id="impCancelar">Cancelar</button>
+      <button type="submit" class="btn btn-primario" id="impConfirmar">Imprimir</button>
+    </div>
+  </form>
+</dialog>
 
 <div id="aviso" role="status" popover="manual" hidden></div>
 
@@ -840,11 +864,56 @@
   $('#histMas').addEventListener('click', () => { limiteHist += PASO_HIST; pintarHistorial(); });
   $('#tbHistorial').addEventListener('click', (e) => {
     const b = e.target.closest('[data-imprimir]');
-    if (b) imprimirComprobante(historial[+b.dataset.imprimir], true);
+    if (b) pedirImpresion(historial[+b.dataset.imprimir], true);
   });
 
-  function imprimirComprobante(g, copia) {
-    if (!g || g.tipo !== 'abono' || !clienteActual) return;
+  // ---------- Elegir qué imprimir ----------
+  let porImprimir = null;   // { g, copia }
+  function leerOpciones() {
+    try { return JSON.parse(localStorage.getItem('rebas-abono-opciones')) || {}; } catch (_) { return {}; }
+  }
+  function pedirImpresion(g, copia) {
+    if (!g || g.tipo !== 'abono') return;
+    porImprimir = { g, copia };
+    const o = leerOpciones();
+    $('#impVentas').checked = o.ventas !== false;
+    $('#impProductos').checked = o.productos !== false;
+    $('#impProductos').disabled = !$('#impVentas').checked;
+    $('#impDetalle').textContent = `Abono N.° ${g.numero} por ${cop.format(g.total)} · ${g.items.length === 1 ? 'venta' : 'ventas'} ${g.items.map((a) => a.venta_id).join(', ')}`;
+    $('#impConfirmar').disabled = false;
+    $('#impConfirmar').textContent = 'Imprimir';
+    $('#dlgImprimir').showModal();
+    $('#impConfirmar').focus();
+  }
+  $('#impVentas').addEventListener('change', () => { $('#impProductos').disabled = !$('#impVentas').checked; });
+  $('#impCancelar').addEventListener('click', () => $('#dlgImprimir').close());
+  $('#frmImprimir').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!porImprimir) return;
+    const ventas = $('#impVentas').checked;
+    const productos = ventas && $('#impProductos').checked;
+    try { localStorage.setItem('rebas-abono-opciones', JSON.stringify({ ventas, productos: $('#impProductos').checked })); } catch (_) {}
+    const btn = $('#impConfirmar');
+    btn.disabled = true;
+    btn.textContent = 'Preparando…';
+    const ok = await imprimirComprobante(porImprimir.g, porImprimir.copia, { ventas, productos });
+    btn.disabled = false;
+    btn.textContent = 'Imprimir';
+    if (ok) $('#dlgImprimir').close();
+  });
+
+  async function imprimirComprobante(g, copia, { ventas = true, productos = false } = {}) {
+    if (!g || g.tipo !== 'abono' || !clienteActual) return false;
+    const ids = g.items.map((a) => a.venta_id);
+    let detalle = [];
+    if (productos) {
+      const r = await db.from('venta_detalle')
+        .select('id, venta_id, cantidad, precio_unitario, presentaciones(nombre, productos(nombre))')
+        .in('venta_id', ids).order('id');
+      if (r.error) { aviso('No se pudo cargar lo vendido: ' + r.error.message, 'error'); return false; }
+      detalle = r.data;
+    }
+    const venta = (id) => historial.find((h) => h.tipo === 'venta' && h.v.id === id)?.v;
     const despues = saldoEn(g.fecha);
     imprimirAbono({
       numero: g.numero,
@@ -855,11 +924,23 @@
       metodo: g.metodo,
       referencia: g.referencia,
       total: g.total,
-      aplicaciones: g.items.map((a) => ({ venta_id: a.venta_id, valor: Number(a.valor), saldo: saldoEn(g.fecha, a.venta_id) })),
+      aplicaciones: !ventas ? [] : g.items.map((a) => ({
+        venta_id: a.venta_id,
+        valor: Number(a.valor),
+        saldo: saldoEn(g.fecha, a.venta_id),
+        fecha: venta(a.venta_id)?.creado_en,
+        total: venta(a.venta_id) ? Number(venta(a.venta_id).total) : null,
+        items: productos ? detalle.filter((d) => d.venta_id === a.venta_id).map((d) => ({
+          etiqueta: `${d.presentaciones?.productos?.nombre ?? ''} ${d.presentaciones?.nombre ?? ''}`.trim(),
+          cantidad: Number(d.cantidad),
+          precio: Number(d.precio_unitario)
+        })) : null
+      })),
       saldo_antes: despues + g.total,
       saldo_despues: despues,
       copia
     });
+    return true;
   }
 
   $('#tbFacturas').addEventListener('click', (e) => {
@@ -934,7 +1015,7 @@
     if (imprimir) {
       // El abono recién hecho: el más reciente registrado por este usuario
       const g = historial.find((h) => h.tipo === 'abono' && h.usuario_id === miId);
-      if (g) imprimirComprobante(g, false);
+      if (g) pedirImpresion(g, false);
       else aviso('Abono registrado, pero no se encontró para imprimir. Imprímelo desde el historial.', 'error');
     }
   });

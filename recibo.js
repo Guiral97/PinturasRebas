@@ -8,6 +8,7 @@
   const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
   const cant = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
   const fHora = new Intl.DateTimeFormat('es-CO', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Bogota' });
+  const fFecha = new Intl.DateTimeFormat('es-CO', { dateStyle: 'short', timeZone: 'America/Bogota' });
   const METODOS = { efectivo: 'Efectivo', transferencia: 'Transferencia', tarjeta: 'Tarjeta', credito: 'Crédito' };
   const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -65,12 +66,18 @@
 
   // Comprobante de abono a la cartera.
   // Uso: imprimirAbono({ numero, fecha, cliente, documento, atendio, metodo, referencia, total,
-  //        aplicaciones: [{ venta_id, valor, saldo }], saldo_antes, saldo_despues, copia })
+  //        aplicaciones: [{ venta_id, valor, saldo, fecha?, total?, items?: [{ etiqueta, cantidad, precio }] }],
+  //        saldo_antes, saldo_despues, copia })
+  //   aplicaciones vacío = sin el bloque "Aplicado a"; items = qué se vendió en esa venta.
   window.imprimirAbono = function (a) {
     const filas = a.aplicaciones.map((x) => `
-      <tr><td colspan="2" class="prod">Venta ${esc(x.venta_id)}</td></tr>
+      <tr><td colspan="2" class="prod">Venta ${esc(x.venta_id)}${x.fecha ? ` · ${fFecha.format(new Date(x.fecha))}` : ''}</td></tr>
+      ${x.items?.length ? `${x.items.map((i) => `
+        <tr><td colspan="2" class="item">${esc(i.etiqueta)}</td></tr>
+        <tr><td class="item">${cant.format(i.cantidad)} x ${cop.format(i.precio)}</td><td class="der">${cop.format(i.cantidad * i.precio)}</td></tr>`).join('')}` : ''}
+      ${x.total != null ? `<tr><td>Total venta</td><td class="der">${cop.format(x.total)}</td></tr>` : ''}
       <tr><td>Abono</td><td class="der">${cop.format(x.valor)}</td></tr>
-      <tr><td>Queda debiendo</td><td class="der">${x.saldo > 0 ? cop.format(x.saldo) : 'Pagada'}</td></tr>`).join('');
+      <tr><td>Queda debiendo</td><td class="der">${x.saldo > 0 ? cop.format(x.saldo) : 'Pagada'}</td></tr>`).join('<tr><td colspan="2"><hr class="fina"></td></tr>');
     const html = `${inicio(`Abono ${a.numero}`)}
       <hr>
       <div>ABONO N.° ${esc(a.numero)}${a.copia ? ' (copia)' : ''}</div>
@@ -87,9 +94,9 @@
         <tr class="total"><td>SALDO</td><td class="der">${cop.format(a.saldo_despues)}</td></tr>
       </table>
       <hr>
-      <div>Aplicado a:</div>
+      ${filas ? `<div>Aplicado a:</div>
       <table>${filas}</table>
-      <hr>
+      <hr>` : ''}
       <div class="c">${a.saldo_despues > 0 ? 'Gracias por su pago' : 'Cuenta al día. Gracias por su pago'}</div>
       <div class="firma" style="margin-top:28px;border-top:2px solid #000;padding-top:2px">Recibió</div>
       <div class="c nota">Comprobante interno. No es factura electrónica.</div>
@@ -123,6 +130,8 @@
         .total td { font-size: ${ancho === '58mm' ? 16 : 19}px; font-weight: 900; padding-top: 5px; }
         .motivo { padding-bottom: 3px; overflow-wrap: anywhere; }
         .nota { font-size: ${ancho === '58mm' ? 10.5 : 11.5}px; margin-top: 4px; }
+        .item { padding-left: 6px; overflow-wrap: anywhere; }
+        hr.fina { border-top-width: 1px; border-top-style: dashed; margin: 4px 0; }
       </style></head><body>
       <h1>${esc(cfg.NOMBRE_TIENDA)}</h1>
       ${n.NIT ? `<div class="c">NIT ${esc(n.NIT)}</div>` : ''}
