@@ -68,7 +68,7 @@
   #login h1 { font-size: 1.8rem; }
   #loginError { color: var(--alerta); margin: 0; min-height: 1.4em; }
 
-  main { max-width: 82.5rem; margin: 0 auto; padding: 1.4rem 1.5rem 3rem; display: grid; gap: 1.15rem; }
+  main { max-width: 100rem; margin: 0 auto; padding: 1.4rem 1.75rem 3rem; display: grid; gap: 1.15rem; }
   .titulo-pantalla { font-size: 2.1rem; }
 
   /* Resumen y antigüedad */
@@ -81,6 +81,7 @@
   .res-total strong { font-family: "Barlow Condensed", sans-serif; font-size: 2.5rem; line-height: 1.1; font-weight: 700; }
   .res-total small { color: var(--suave); font-size: .875rem; }
   .res-total .res-mora { color: var(--alerta); font-weight: 600; }
+  .res-total .res-mora.ok { color: var(--ok); }
   .res-tramos { flex: 1 1 32rem; display: grid; gap: .65rem; min-width: 0; }
   .barra-tramos { display: flex; gap: 2px; height: .9rem; border-radius: 4px; overflow: hidden; background: var(--fondo); }
   .barra-tramos span { min-width: 0; }
@@ -93,10 +94,14 @@
   .tramos button i { display: inline-block; width: .65rem; height: .65rem; border-radius: 2px; margin-right: .3rem; vertical-align: baseline; }
   .tramos button strong { font-variant-numeric: tabular-nums; }
   .tramos button[aria-pressed="true"] { border-color: var(--acento); background: color-mix(in srgb, var(--acento) 14%, transparent); }
+  .tramos button:hover { border-color: color-mix(in srgb, var(--acento) 55%, var(--linea)); }
+  /* Tramo sin saldo: se ve, pero apagado, para que salte a la vista dónde está la plata */
+  .tramos button.cero { color: var(--suave); border-style: dashed; }
+  .tramos button.cero strong { font-weight: 600; }
   .t-0 { background: var(--acento); } .t-1 { background: var(--aviso); } .t-2 { background: var(--mora-media); } .t-3 { background: var(--alerta); }
   .c-0 { color: var(--suave); } .c-1 { color: var(--aviso); } .c-2 { color: var(--mora-media); } .c-3 { color: var(--alerta); }
 
-  .cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) 28rem; gap: 1.25rem; align-items: start; }
+  .cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(26rem, 1.2fr); gap: 1.25rem; align-items: start; }
 
   /* Lista de clientes */
   .lista { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; overflow: hidden; }
@@ -155,12 +160,35 @@
 
   /* Historial del cliente */
   .hist-resumen { margin: .2rem 0 .6rem; color: var(--suave); font-size: .9rem; }
-  .hist-filtro { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .3rem; }
-  .hist-filtro button { min-height: 2.25rem; padding: 0 .75rem; font-size: .875rem; }
-  .hist-filtro button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); }
+  /* Filtro del historial: control segmentado, con cuántos movimientos hay de cada tipo */
+  .hist-filtro {
+    display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; margin-bottom: .3rem;
+    background: var(--fondo); border: 1px solid var(--linea); border-radius: 8px;
+  }
+  .hist-filtro button { min-height: 2.25rem; padding: 0 .75rem; font-size: .875rem; border: 0; background: none; color: var(--suave); border-radius: 6px; }
+  .hist-filtro button:hover { color: var(--tinta); }
+  .hist-filtro button[aria-pressed="true"] { background: color-mix(in srgb, var(--acento) 20%, var(--panel)); color: var(--tinta); font-weight: 700; }
+  .hist-filtro .n { color: var(--suave); font-weight: 600; margin-left: .2rem; font-variant-numeric: tabular-nums; }
+  .hist-filtro .n:empty { display: none; }
+  #tbHistorial li.h-fecha {
+    display: block; padding: .9rem 0 .2rem; border-bottom: 0; font-size: .75rem; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--suave);
+  }
+  #tbHistorial li.h-fecha:first-child { padding-top: .3rem; }
+  #tbHistorial li { flex-wrap: nowrap; gap: .3rem .8rem; padding: .6rem 0; }
+  #tbHistorial .h-ico {
+    flex: none; width: 2.25rem; height: 2.25rem; border-radius: 8px; display: grid; place-items: center;
+    background: color-mix(in srgb, var(--suave) 14%, transparent); color: var(--suave);
+  }
+  #tbHistorial .h-ico.abono { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+  #tbHistorial .h-ico.devolucion { background: color-mix(in srgb, var(--aviso) 16%, transparent); color: var(--aviso); }
+  #tbHistorial .f-info { font-weight: 600; }
+  #tbHistorial .f-info small { font-weight: 400; }
+  #tbHistorial strong { white-space: nowrap; }
+  #tbHistorial .abonado { color: var(--ok); }
   #tbHistorial .estado { font-size: .72rem; padding: 0 .45rem; }
   #tbHistorial .menos { color: var(--suave); }
-  #tbHistorial .btn-texto { min-height: 2.25rem; text-decoration: none; display: inline-flex; align-items: center; }
+  #tbHistorial .btn-texto { min-height: 2.25rem; min-width: 4.75rem; justify-content: flex-end; text-decoration: none; display: inline-flex; align-items: center; }
   #histMas { margin-top: .5rem; width: 100%; }
   fieldset { border: 0; margin: 0; padding: 0; }
   legend { padding: 0; margin-bottom: .35rem; }
@@ -185,7 +213,17 @@
     .barra { flex-wrap: wrap; row-gap: .55rem; }
   }
   /* Piezas que solo se ven en celular (van antes del bloque de celular para que este gane) */
-  .det-top, .det-cifras, .det-extra, .facturas small.f-corto { display: none; }
+  .det-top, .det-extra, .facturas small.f-corto { display: none; }
+  /* Cifras del cliente: en escritorio, una franja de tres datos bajo el nombre */
+  .det-cifras {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: .35rem;
+    border: 1px solid var(--linea); border-radius: 8px; overflow: hidden;
+  }
+  .det-cifras div { display: grid; min-width: 0; padding: .55rem .8rem; }
+  .det-cifras div + div { border-left: 1px solid var(--linea); }
+  .det-cifras span { font-size: .78rem; font-weight: 600; color: var(--suave); }
+  .det-cifras strong { font-family: "Barlow Condensed", sans-serif; font-size: 1.45rem; line-height: 1.15; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .det-cifras .mora { color: var(--alerta); }
   .l1 { display: contents; }
   /* Celular */
   @media (max-width: 700px) {
@@ -244,8 +282,10 @@
     #detNombre, .det-cab #btnWhatsapp, #detDatos { display: none; }
     #detContenido > * { padding: .7rem .75rem; }
     .det-cab { gap: .35rem; }
-    .det-cifras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }
-    .det-cifras div { display: grid; min-width: 0; }
+    .det-cifras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; border: 0; border-radius: 0; margin: 0; }
+    .det-cifras div { display: grid; min-width: 0; padding: 0; }
+    .det-cifras div + div { border-left: 0; }
+    .det-cifras strong { font-family: inherit; line-height: 1.3; }
     .det-cifras span { font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--suave); }
     .det-cifras strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .det-cifras .mora { color: var(--alerta); }
@@ -254,7 +294,10 @@
     .facturas li, .abonos li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0 .5rem; padding: .35rem 0; }
     .abonos li { grid-template-columns: minmax(0, 1fr) auto auto; }
     #tbHistorial .btn-texto { min-height: 34px; padding: 0 .2rem; }
-    .hist-filtro { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .hist-filtro { display: flex; max-width: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    #tbHistorial .h-ico { display: none; }
+    #tbHistorial li:not(.h-fecha) { padding: .35rem 0; }
+    #tbHistorial .btn-texto { min-width: 0; }
     .hist-filtro button { flex: none; min-height: 0; height: 2rem; border-radius: 999px; font-size: .8rem; }
     .facturas .f-info, .abonos .f-info { font-weight: 600; font-size: .9rem; }
     .facturas .estado { font-size: .7rem; padding: 0 .4rem; }
@@ -280,7 +323,7 @@
 
 <header class="barra">
   <a class="marca" href="index.html" aria-label="Ir a la caja"><img class="logo" src="logo.svg" alt="" width="24" height="40"><span class="tienda" id="nombreTienda">Pinturas</span></a>
-  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=9"></script>
+  <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=10"></script>
   <span id="usuario"></span>
   <button class="btn" id="salir" hidden>Cerrar sesión</button>
 </header>
@@ -302,7 +345,7 @@
       <span>Por cobrar</span>
       <strong id="totPorCobrar" class="num">$ 0</strong>
       <small class="num"><span id="totClientes">0</span> · <span id="totFacturas">0 facturas</span></small>
-      <small class="res-mora num">En mora <span id="totVencido">$ 0</span></small>
+      <small class="res-mora num" id="totVencido">En mora $ 0</small>
     </div>
     <div class="res-tramos">
       <div class="barra-tramos" id="barraTramos" role="img" aria-label="Sin saldos pendientes"></div>
@@ -382,10 +425,10 @@
           <h3>Historial</h3>
           <p class="hist-resumen num" id="histResumen"></p>
           <div class="hist-filtro" id="histFiltro" role="group" aria-label="Filtrar historial">
-            <button type="button" class="btn" data-filtro="todo" aria-pressed="true">Todo</button>
-            <button type="button" class="btn" data-filtro="venta" aria-pressed="false">Compras</button>
-            <button type="button" class="btn" data-filtro="abono" aria-pressed="false">Abonos</button>
-            <button type="button" class="btn" data-filtro="devolucion" aria-pressed="false">Devoluciones</button>
+            <button type="button" data-filtro="todo" aria-pressed="true">Todo<span class="n"></span></button>
+            <button type="button" data-filtro="venta" aria-pressed="false">Compras<span class="n"></span></button>
+            <button type="button" data-filtro="abono" aria-pressed="false">Abonos<span class="n"></span></button>
+            <button type="button" data-filtro="devolucion" aria-pressed="false">Devoluciones<span class="n"></span></button>
           </div>
           <ul class="abonos" id="tbHistorial"></ul>
           <button type="button" class="btn" id="histMas" hidden>Ver más</button>
@@ -420,6 +463,17 @@
   const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
   const fCorta = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
   const fHora = new Intl.DateTimeFormat('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+  // Historial agrupado por día
+  const fDia = new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const fSoloHora = new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', timeStyle: 'short' });
+  const fClaveDia = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' });
+  const diaBogota = (d) => fClaveDia.format(d);
+  const svgHist = (p) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  const ICO_HIST = {
+    venta: svgHist('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>'),
+    abono: svgHist('<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>'),
+    devolucion: svgHist('<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>')
+  };
 
   document.title = `Cartera | ${NOMBRE_TIENDA}`;
   $('#nombreTienda').textContent = NOMBRE_TIENDA;
@@ -526,7 +580,8 @@
     const total = cartera.reduce((s, c) => s + Number(c.saldo), 0);
     const vencido = cartera.reduce((s, c) => s + Number(c.saldo_vencido), 0);
     $('#totPorCobrar').textContent = cop.format(total);
-    $('#totVencido').textContent = cop.format(vencido);
+    $('#totVencido').textContent = vencido > 0 ? `En mora ${cop.format(vencido)}` : 'Nada en mora';
+    $('#totVencido').classList.toggle('ok', !(vencido > 0));
     $('#totClientes').textContent = `${cartera.length} ${cartera.length === 1 ? 'cliente' : 'clientes'}`;
     $('#totFacturas').textContent = `${pendientes.length} ${pendientes.length === 1 ? 'factura' : 'facturas'}`;
     pintarTramos(total);
@@ -542,7 +597,7 @@
       ? 'Antigüedad de la cartera: ' + TRAMOS.map((t, i) => `${t} ${pct[i]} %`).join(', ')
       : 'Sin saldos pendientes');
     $('#tramos').innerHTML = TRAMOS.map((t, i) => `
-      <button type="button" data-tramo="${i}" aria-pressed="${tramoFiltro === i}">
+      <button type="button" data-tramo="${i}" aria-pressed="${tramoFiltro === i}"${valores[i] > 0 ? '' : ' class="cero"'}>
         <span><i class="t-${i}" aria-hidden="true"></i>${t}</span>
         <strong>${cop.format(valores[i])}</strong>
       </button>`).join('');
@@ -818,37 +873,53 @@
     if (abonos.length) resumen.push(`último abono ${fCorta.format(new Date(abonos[0].fecha))}`);
     $('#histResumen').textContent = resumen.join(' · ');
 
-    $('#histFiltro').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filtro === filtroHist)));
+    const cuantos = { todo: historial.length, venta: 0, abono: 0, devolucion: 0 };
+    historial.forEach((h) => { cuantos[h.tipo]++; });
+    $('#histFiltro').querySelectorAll('button').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset.filtro === filtroHist));
+      b.querySelector('.n').textContent = cuantos[b.dataset.filtro] || '';
+    });
     const filas = historial.filter((h) => filtroHist === 'todo' || h.tipo === filtroHist);
+    // Agrupado por día (en hora de Bogotá): un rótulo por día y, en cada fila, solo la hora
+    const hoy = diaBogota(new Date()), ayer = diaBogota(new Date(Date.now() - 864e5));
+    let diaPrevio = null;
     $('#tbHistorial').innerHTML = filas.length ? filas.slice(0, limiteHist).map((h) => {
       const i = historial.indexOf(h);
       const quien = perfiles[h.usuario_id ?? h.v?.usuario_id];
+      const fecha = new Date(h.fecha), dia = diaBogota(fecha);
+      const rotulo = dia === diaPrevio ? ''
+        : `<li class="h-fecha">${dia === hoy ? 'Hoy' : dia === ayer ? 'Ayer' : esc(fDia.format(fecha))}</li>`;
+      diaPrevio = dia;
+      const hora = fSoloHora.format(fecha);
       if (h.tipo === 'venta') {
         const [txt, cls] = ESTADOS_VENTA[h.v.estado] ?? [h.v.estado, 'estado-neutro'];
-        return `
+        return rotulo + `
         <li>
+          <span class="h-ico" aria-hidden="true">${ICO_HIST.venta}</span>
           <div class="f-info">Compra · venta ${h.v.id} <span class="estado ${cls}">${esc(txt)}</span>
-            <small class="num">${fHora.format(new Date(h.fecha))} · ${METODOS[h.v.metodo_pago] ?? esc(h.v.metodo_pago)}${quien ? ` · atendió ${esc(quien)}` : ''}</small></div>
+            <small class="num">${hora} · ${METODOS[h.v.metodo_pago] ?? esc(h.v.metodo_pago)}${quien ? ` · atendió ${esc(quien)}` : ''}</small></div>
           <strong class="${h.v.estado === 'anulada' ? 'menos' : ''}">${cop.format(h.v.total)}</strong>
-          <a class="btn-texto" href="tablero.html?venta=${h.v.id}" target="_blank" rel="noopener">Ver</a>
+          <a class="btn-texto" href="tablero.html?venta=${h.v.id}" target="_blank" rel="noopener" aria-label="Ver venta ${h.v.id}">Ver</a>
         </li>`;
       }
       if (h.tipo === 'abono') {
-        return `
+        return rotulo + `
         <li>
+          <span class="h-ico abono" aria-hidden="true">${ICO_HIST.abono}</span>
           <div class="f-info">Abono N.° ${h.numero} · ${METODOS[h.metodo] ?? esc(h.metodo)}
-            <small class="num">${fHora.format(new Date(h.fecha))} · ${h.items.length === 1 ? 'venta' : 'ventas'} ${h.items.map((a) => a.venta_id).join(', ')}${h.referencia ? ` · ref. ${esc(h.referencia)}` : ''}${quien ? ` · recibió ${esc(quien)}` : ''}</small></div>
-          <strong>${cop.format(h.total)}</strong>
-          <button type="button" class="btn-texto" data-imprimir="${i}">Imprimir</button>
+            <small class="num">${hora} · ${h.items.length === 1 ? 'venta' : 'ventas'} ${h.items.map((a) => a.venta_id).join(', ')}${h.referencia ? ` · ref. ${esc(h.referencia)}` : ''}${quien ? ` · recibió ${esc(quien)}` : ''}</small></div>
+          <strong class="abonado">${cop.format(h.total)}</strong>
+          <button type="button" class="btn-texto" data-imprimir="${i}" aria-label="Imprimir abono ${h.numero}">Imprimir</button>
         </li>`;
       }
       const d = h.d;
-      return `
+      return rotulo + `
         <li>
+          <span class="h-ico devolucion" aria-hidden="true">${ICO_HIST.devolucion}</span>
           <div class="f-info">Devolución N.° ${d.id} · venta ${d.venta_id}${d.estado === 'anulada' ? ' <span class="estado estado-neutro">Anulada</span>' : ''}
-            <small class="num">${fHora.format(new Date(h.fecha))}${Number(d.a_deuda) > 0 ? ` · rebajó la deuda ${cop.format(d.a_deuda)}` : ''}${Number(d.reembolso) > 0 ? ` · se le entregaron ${cop.format(d.reembolso)}` : ''}</small></div>
+            <small class="num">${hora}${Number(d.a_deuda) > 0 ? ` · rebajó la deuda ${cop.format(d.a_deuda)}` : ''}${Number(d.reembolso) > 0 ? ` · se le entregaron ${cop.format(d.reembolso)}` : ''}</small></div>
           <strong class="menos">−${cop.format(d.valor)}</strong>
-          <a class="btn-texto" href="tablero.html?venta=${d.venta_id}" target="_blank" rel="noopener">Ver</a>
+          <a class="btn-texto" href="tablero.html?venta=${d.venta_id}" target="_blank" rel="noopener" aria-label="Ver venta ${d.venta_id}">Ver</a>
         </li>`;
     }).join('') : `<li class="vacio">${filtroHist === 'todo' ? 'Este cliente todavía no tiene movimientos.' : 'No hay movimientos de este tipo.'}</li>`;
     $('#histMas').hidden = filas.length <= limiteHist;

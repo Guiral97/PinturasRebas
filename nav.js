@@ -1,6 +1,8 @@
 // Barra de navegación común a todas las pantallas.
-// Uso: <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=9"></script>
+// Uso: <nav class="nav" id="nav" aria-label="Secciones"></nav><script src="nav.js?v=10"></script>
 // justo en la cabecera (se ejecuta en el momento y llena la barra).
+// Con sesión, en escritorio (> 1180 px) la cabecera pasa a ser una barra lateral con las secciones por grupos;
+// en tableta (701–1180 px) la misma barra muestra solo íconos.
 // En el celular (≤ 700 px) la barra pasa abajo: Caja, Pedidos, Inventario, Cartera y "Más".
 // Después de iniciar sesión, cada pantalla llama navPendientes(db) para el contador de pedidos
 // y para mostrar "Usuarios" si quien entró es socio.
@@ -20,19 +22,29 @@
     mas: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'
   };
   // [archivo, nombre, ícono, ¿va en la barra del celular?, ¿solo socios?]
-  const SECCIONES = [
-    ['index.html', 'Caja', 'caja', true],
-    ['cotizaciones.html', 'Cotizaciones', 'cotizaciones', false],
-    ['pedidos.html', 'Pedidos', 'pedidos', true],
-    ['inventario.html', 'Inventario', 'inventario', true],
-    ['catalogo-web.html', 'Catálogo', 'catalogo', false],
-    ['cartera.html', 'Cartera', 'cartera', true],
-    ['conversiones.html', 'Conversiones', 'conversiones', false],
-    ['cierre.html', 'Cierre', 'cierre', false],
-    ['gastos.html', 'Gastos', 'gastos', false],
-    ['tablero.html', 'Tablero', 'tablero', false],
-    ['usuarios.html', 'Usuarios', 'usuarios', false, true]
+  // Por grupos: en escritorio la barra lateral muestra el nombre de cada grupo. [nombre, secciones, ¿solo socios?]
+  const GRUPOS = [
+    ['Vender', [
+      ['index.html', 'Caja', 'caja', true],
+      ['cotizaciones.html', 'Cotizaciones', 'cotizaciones', false],
+      ['pedidos.html', 'Pedidos', 'pedidos', true]
+    ]],
+    ['Mercancía', [
+      ['inventario.html', 'Inventario', 'inventario', true],
+      ['catalogo-web.html', 'Catálogo', 'catalogo', false],
+      ['conversiones.html', 'Conversiones', 'conversiones', false]
+    ]],
+    ['Dinero', [
+      ['cartera.html', 'Cartera', 'cartera', true],
+      ['cierre.html', 'Cierre de caja', 'cierre', false],
+      ['gastos.html', 'Gastos', 'gastos', false],
+      ['tablero.html', 'Tablero', 'tablero', false]
+    ]],
+    ['Administrar', [
+      ['usuarios.html', 'Usuarios', 'usuarios', false, true]
+    ], true]
   ];
+  const SECCIONES = GRUPOS.flatMap(([, secciones]) => secciones);
   const icono = (k) => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONOS[k]}</svg>`;
   const pagina = decodeURIComponent(location.pathname.split('/').pop()) || 'index.html';
   const nav = document.getElementById('nav');
@@ -40,11 +52,12 @@
 
   const soloSocios = (socio) => (socio ? ' data-socio hidden' : '');
   const enlace = ([href, nombre, ic, principal, socio]) => `
-    <a href="${href}" class="${principal ? '' : 'nav-secundaria'}"${href === pagina ? ' aria-current="page"' : ''}${soloSocios(socio)}>
+    <a href="${href}" title="${nombre}" class="${principal ? '' : 'nav-secundaria'}"${href === pagina ? ' aria-current="page"' : ''}${soloSocios(socio)}>
       ${icono(ic)}<span data-t="${nombre}">${nombre}</span>${ic === 'pedidos' ? '<b class="nav-cuenta" data-pedidos hidden></b>' : ''}
     </a>`;
   const secundariaActual = SECCIONES.some(([h, , , p]) => h === pagina && !p);
-  nav.innerHTML = SECCIONES.map(enlace).join('') + `
+  nav.innerHTML = GRUPOS.map(([grupo, secciones, socio]) =>
+    `<span class="nav-grupo"${soloSocios(socio)}>${grupo}</span>` + secciones.map(enlace).join('')).join('') + `
     <button type="button" class="nav-mas"${secundariaActual ? ' aria-current="page"' : ''} aria-expanded="false" aria-controls="navMenu">${icono('mas')}<span data-t="Más">Más</span></button>
     <div class="nav-menu" id="navMenu" hidden>
       ${SECCIONES.filter((s) => !s[3]).map(([href, nombre, ic, , socio]) =>
@@ -82,10 +95,55 @@
       font-size: .72rem; font-weight: 700; line-height: 1.35; padding: 0 .4rem; border-radius: 999px;
       color: #1A2127; background: #E3B94F;
     }
-    #nav .nav-mas, #nav .nav-menu { display: none; }
+    #nav .nav-mas, #nav .nav-menu, #nav .nav-grupo { display: none; }
     #nav [hidden] { display: none !important; }
-    @media (max-width: 1180px) and (min-width: 701px) {
-      #nav { order: 3; flex-basis: 100%; justify-content: center; }
+
+    /* ===== Escritorio y tableta (≥ 701 px): con sesión, la cabecera pasa a ser una barra lateral fija ===== */
+    @media (min-width: 701px) {
+      :root { --nav-ancho: 14.5rem; }
+      body:has(main#app:not([hidden]), main#pos:not([hidden])) { padding-left: var(--nav-ancho); }
+      body:has(main#app:not([hidden]), main#pos:not([hidden])) header.barra:has(#nav) {
+        position: fixed; top: 0; left: 0; bottom: 0; z-index: 30; width: var(--nav-ancho); box-sizing: border-box;
+        display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: .3rem;
+        padding: .9rem .7rem; border-bottom: 0; border-right: 1px solid var(--linea);
+        overflow-y: auto; overscroll-behavior: contain;
+      }
+      header.barra:has(#nav) .marca { margin: 0 0 .35rem; padding: 0 .35rem; }
+      header.barra:has(#nav) .logo { height: 2.7rem; margin: 0; }
+      header.barra:has(#nav) .tienda { font-size: 1.3rem; line-height: 1.05; }
+      #nav { flex: 1 0 auto; flex-direction: column; flex-wrap: nowrap; gap: 1px; }
+      #nav a > span { align-items: flex-start; }
+      #nav .nav-grupo {
+        display: block; padding: .85rem .75rem .3rem; font-size: .7rem; font-weight: 700;
+        letter-spacing: .08em; text-transform: uppercase; color: var(--suave);
+      }
+      #nav .nav-grupo:first-child { padding-top: .3rem; }
+      #nav a { min-height: 2.6rem; padding: .35rem .75rem; }
+      #nav .nav-cuenta { margin-left: auto; }
+      header.barra:has(#nav) #usuario {
+        display: block; margin-top: .4rem; padding: .7rem .75rem 0; border-top: 1px solid var(--linea);
+        font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      header.barra:has(#nav) #salir { margin: 0 .1rem; }
+      header.barra:has(#nav) .red { align-self: stretch; justify-content: center; margin: .4rem .1rem 0; }
+    }
+    /* Tableta: solo íconos; el nombre queda para lectores de pantalla y en el globo al pasar el ratón */
+    @media (min-width: 701px) and (max-width: 1180px) {
+      :root { --nav-ancho: 4.75rem; }
+      body:has(main#app:not([hidden]), main#pos:not([hidden])) header.barra:has(#nav) { padding: .75rem .45rem; align-items: center; }
+      header.barra:has(#nav) .marca { padding: 0; margin-bottom: .2rem; }
+      header.barra:has(#nav) .tienda, header.barra:has(#nav) #usuario { display: none; }
+      #nav { align-items: center; }
+      #nav a { width: 3.5rem; justify-content: center; padding: .55rem 0; min-height: 2.9rem; }
+      #nav a > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+      #nav .nav-grupo { width: 2.5rem; height: 1px; padding: 0; margin: .45rem 0; font-size: 0; background: var(--linea); }
+      #nav .nav-grupo:first-child { display: none; }
+      #nav .nav-cuenta { position: absolute; top: .1rem; right: .15rem; margin: 0; }
+      header.barra:has(#nav) #salir {
+        width: 3.75rem; min-height: 2.75rem; padding: .25rem; font-size: .72rem; line-height: 1.1;
+        white-space: normal; text-align: center; margin-top: .5rem;
+      }
+      header.barra:has(#nav) .red { padding: .2rem .35rem; font-size: .7rem; white-space: normal; text-align: center; gap: .25rem; }
     }
     @media (max-width: 700px) {
       #nav {
@@ -137,7 +195,10 @@
       dialog .dlg-cuerpo { padding: .85rem .75rem; gap: .8rem; }
       dialog .dlg-pie { padding: .55rem .75rem calc(.55rem + env(safe-area-inset-bottom)); }
     }
-    @media print { #nav { display: none !important; } }
+    @media print {
+      #nav, header.barra:has(#nav) { display: none !important; }
+      body { padding-left: 0 !important; }
+    }
     /* Solo con sesión: en el ingreso (o mientras se revisa la sesión) no hay secciones a las que ir.
        La pantalla de trabajo es main#app, o main#pos en la caja. */
     body:not(:has(main#app:not([hidden]), main#pos:not([hidden]))) #nav { display: none !important; }
