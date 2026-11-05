@@ -380,10 +380,11 @@
     <div class="cabecera">
       <h1>Tablero</h1>
       <div class="segmentado" id="presets" role="group" aria-label="Período">
-        <button type="button" data-p="hoy" aria-pressed="false">Hoy</button>
+        <button type="button" data-p="hoy" aria-pressed="true">Hoy</button>
         <button type="button" data-p="7" aria-pressed="false">7 días</button>
-        <button type="button" data-p="mes" aria-pressed="true">Este mes</button>
+        <button type="button" data-p="mes" aria-pressed="false">Este mes</button>
         <button type="button" data-p="anterior" aria-pressed="false">Mes anterior</button>
+        <button type="button" data-p="todo" aria-pressed="false">Todo</button>
         <button type="button" data-p="rango" aria-pressed="false" aria-expanded="false" aria-controls="frmRango">Elegir fechas…</button>
       </div>
       <span class="rango-texto" id="rangoTexto" aria-live="polite"></span>
@@ -595,9 +596,27 @@
   }
   const fechaLocal = (iso) => { const [a, m, d] = iso.split('-').map(Number); return new Date(a, m - 1, d); };
 
-  function rangoPreset(p) {
+  // Primer día con registros (venta o gasto) en hora de Colombia; se consulta una vez por sesión
+  let primerDia = null;
+  async function buscarPrimerDia() {
+    if (primerDia) return primerDia;
+    const [rv, rg] = await Promise.all([
+      db.from('ventas').select('creado_en').order('creado_en').limit(1),
+      db.from('v_gastos').select('fecha').order('fecha').limit(1)   // sin el script 07 llega con error y se ignora
+    ]);
+    const fechas = [];
+    if (rv.data?.[0]) fechas.push(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date(rv.data[0].creado_en)));
+    if (!rg.error && rg.data?.[0]) fechas.push(String(rg.data[0].fecha).slice(0, 10));
+    const h = hoyBogota();
+    primerDia = fechas.length ? fechas.sort()[0] : h;
+    if (primerDia > h) primerDia = h;
+    return primerDia;
+  }
+
+  async function rangoPreset(p) {
     const h = hoyBogota();
     const [a, m] = h.split('-').map(Number);
+    if (p === 'todo') return [await buscarPrimerDia(), h];
     if (p === 'hoy') return [h, h];
     if (p === '7') return [sumarDias(h, -6), h];
     if (p === 'mes') return [h.slice(0, 8) + '01', h];
@@ -637,8 +656,9 @@
     $('#presets').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.p === p));
   }
 
-  function aplicarPreset(p) {
-    const [d, h] = rangoPreset(p);
+  async function aplicarPreset(p) {
+    marcarPreset(p);
+    const [d, h] = await rangoPreset(p);
     $('#desde').value = d;
     $('#hasta').value = h;
     $('#frmRango').hidden = true;
@@ -676,7 +696,7 @@
     if (!perfiles[session.user.id]) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
     $('#usuario').textContent = perfiles[session.user.id] ?? session.user.email;
     navPendientes(db);
-    aplicarPreset('mes');
+    aplicarPreset('hoy');
     cargarCostos();
     // Desde el historial del cliente (Cartera): tablero.html?venta=119 abre esa venta
     const venta = +new URLSearchParams(location.search).get('venta');
@@ -903,6 +923,9 @@
         <td class="der num">${cop.format(v.total)}</td>
         <td><button type="button" class="btn-texto" data-venta="${v.id}" aria-label="Ver venta ${v.id}">Ver</button></td>
       </tr>`).join('') : '<tr><td colspan="7" class="vacio">No hay ventas en el período.</td></tr>';
+    // La consulta trae como máximo 200; los indicadores sí cuentan todo el período
+    if (lista.length >= 200) $('#tbVentas').insertAdjacentHTML('beforeend',
+      '<tr><td colspan="7" class="vacio">Se muestran las 200 ventas más recientes del período. Los indicadores incluyen todas.</td></tr>');
     // En celular se ven las primeras 5; el botón (oculto en escritorio por CSS) despliega el resto
     $('#tbVentas').classList.remove('todas');
     const b = $('#verTodas');
