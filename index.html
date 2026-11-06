@@ -148,21 +148,49 @@
   }
   .carrito h2 span { color: var(--suave); font-weight: 600; }
   /* Costos y detalle: escondidos hasta que se piden */
-  .ver-detalle { display: inline-flex; align-items: center; gap: .35rem; color: var(--suave); font-weight: 500; font-size: .875rem; min-height: 2.25rem; }
-  .ver-detalle[aria-pressed="true"] { color: var(--acento); font-weight: 600; }
-  .linea .detalle { display: flex; flex-wrap: wrap; gap: .1rem .5rem; margin-top: .35rem; padding: .3rem .55rem; border-left: 2px solid var(--acento); background: color-mix(in srgb, var(--acento) 7%, transparent); color: var(--suave); font-size: .82rem; }
-  .linea .detalle b { color: var(--tinta); font-weight: 600; }
+  .oculto-visual { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  /* Interruptor de costos (uno solo, en la cabecera de la venta; atajo F4) */
+  .ver-costos {
+    display: inline-flex; align-items: center; gap: .55rem; min-height: 2.75rem; padding: 0 .8rem;
+    border: 1px solid var(--linea); border-radius: var(--radio); background: none; color: var(--tinta); font-weight: 600;
+  }
+  .ver-costos[aria-pressed="true"] { border-color: var(--acento); }
+  .ver-costos .pista { position: relative; width: 2.25rem; height: 1.25rem; border-radius: 1rem; background: var(--linea); flex: none; }
+  .ver-costos .pista::after { content: ""; position: absolute; top: .1875rem; left: .1875rem; width: .875rem; height: .875rem; border-radius: 50%; background: var(--panel); transition: left .15s; }
+  .ver-costos[aria-pressed="true"] .pista { background: var(--acento); }
+  .ver-costos[aria-pressed="true"] .pista::after { left: 1.1875rem; background: var(--acento-tinta); }
+  .ver-costos kbd, .tecla { font: inherit; font-size: .75rem; font-weight: 700; padding: .05rem .35rem; border: 1px solid var(--linea); border-radius: 4px; color: var(--suave); }
+  /* La pantalla la puede ver el cliente */
+  .aviso-costos { display: flex; align-items: center; gap: .55rem; margin: 0; padding: .55rem 1.1rem; border-bottom: 1px solid var(--linea); font-size: .875rem; font-weight: 500; color: var(--aviso); background: color-mix(in srgb, var(--aviso) 10%, transparent); }
+  .aviso-costos svg { flex: none; }
+  /* Detalle de la línea: celdas con rótulo */
+  .linea .detalle {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 1px; margin: .55rem 0 0;
+    background: var(--linea); border: 1px solid var(--linea); border-radius: var(--radio); overflow: hidden;
+  }
+  .linea .detalle > div { background: var(--fondo); padding: .4rem .7rem; min-width: 0; }
+  .linea .detalle dt { color: var(--suave); font-size: .8rem; }
+  .linea .detalle dd { margin: 0; font-weight: 600; font-size: .94rem; overflow-wrap: anywhere; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .4rem; }
+  .linea .detalle dd small { color: var(--suave); font-weight: 500; font-size: .85rem; }
+  .linea .cargando { margin: .45rem 0 0; color: var(--suave); font-size: .875rem; }
   .gan { font-weight: 600; color: var(--ok); }
   .gan.baja { color: var(--aviso); }
-  .gan.neg { color: var(--alerta); }
+  .gan.neg, .sin-costo { color: var(--alerta); }
+  .sin-dato { color: var(--suave); font-weight: 500; }
+  /* Marca con ícono y palabra: el color nunca va solo */
+  .marca-gan { display: inline-flex; align-items: center; gap: .2rem; font-size: .75rem; font-weight: 700; line-height: 1.2; padding: .05rem .35rem; border: 1px solid currentColor; border-radius: 4px; }
+  .con-icono { display: inline-flex; align-items: center; gap: .3rem; }
+  .con-icono svg { flex: none; }
   /* En el resumen, debajo del total */
-  .costos-venta { border-top: 1px dashed var(--linea); padding-top: .35rem; }
-  .costos-venta .ver-detalle { min-height: 2rem; padding-left: 0; }
-  #detalleResumen { padding: .55rem .7rem; margin-top: .2rem; border-left: 2px solid var(--acento); background: color-mix(in srgb, var(--acento) 7%, transparent); border-radius: 0 var(--radio) var(--radio) 0; }
-  #detalleResumen .cifras { font-size: .9rem; }
-  #detalleResumen .cifras dd { font-weight: 600; }
-  #detalleResumen .nota { margin: .4rem 0 0; color: var(--suave); font-size: .8rem; }
-  #detalleResumen .nota:first-child { margin-top: 0; }
+  .costos-venta h3 { margin: 0 0 .5rem; }
+  .costos-caja { display: grid; gap: .55rem; padding: .8rem .9rem; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--fondo); }
+  .costos-caja .principal { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; font-weight: 600; }
+  .costos-caja .principal b { font-family: "Barlow Condensed", sans-serif; font-size: 2rem; line-height: 1; }
+  .costos-caja .cifras { font-size: .94rem; }
+  .costos-caja .cifras dd { font-weight: 600; }
+  .costos-caja .nota { margin: 0; color: var(--suave); font-size: .875rem; }
+  .costos-caja .nota.mal { color: var(--alerta); display: flex; gap: .4rem; align-items: flex-start; }
+  .costos-caja .nota.mal svg { flex: none; margin-top: .15rem; }
   .vacio { color: var(--suave); padding: 1.5rem 1.1rem; max-width: 36rem; margin: 0; }
   #lineas { list-style: none; margin: 0; padding: 0; }
   #lineas li:last-child { border-bottom: 0; }
@@ -246,16 +274,27 @@
   .cifras dd { margin: 0; text-align: right; }
   .totales { display: grid; gap: .5rem; }
   /* Ajuste al total: descuento o recargo, con motivo obligatorio */
-  .ajuste-cab { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .35rem .75rem; }
-  .ajuste-tipo { display: inline-flex; border: 1px solid var(--linea); border-radius: var(--radio); overflow: hidden; }
-  .ajuste-tipo button { border: 0; background: var(--fondo); color: var(--suave); font-weight: 600; font-size: .85rem; padding: .3rem .65rem; min-height: 2.1rem; }
-  .ajuste-tipo button + button { border-left: 1px solid var(--linea); }
-  .ajuste-tipo button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); }
-  .ajuste-ayuda { color: var(--suave); font-size: .82rem; }
-  .ajuste-valor { display: flex; gap: .4rem; align-items: stretch; }
-  .ajuste-valor input { flex: 1 1 auto; min-width: 0; }
-  .ajuste-unidad button { min-width: 2.4rem; font-size: 1rem; }
-  #ajusteMotivo.falta { border-color: var(--alerta); outline: 2px solid var(--alerta); }
+  .ajuste { gap: .45rem; }
+  .ajuste legend { margin-bottom: .5rem; }
+  /* Opciones de una sola elección (radios reales), con el aspecto de botones unidos */
+  .segmento { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border: 1px solid var(--linea); border-radius: var(--radio); overflow: hidden; }
+  .segmento label { position: relative; display: flex; align-items: center; justify-content: center; min-height: 2.75rem; padding: 0 .5rem; background: var(--fondo); color: var(--tinta); font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .segmento label + label { border-left: 1px solid var(--linea); }
+  .segmento input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .segmento label:has(input:checked) { background: var(--acento); color: var(--acento-tinta); font-weight: 700; }
+  .segmento label:has(input:focus-visible) { outline: 3px solid var(--acento); outline-offset: -3px; box-shadow: inset 0 0 0 5px var(--panel); }
+  .ajuste-valor { display: flex; gap: .5rem; align-items: stretch; }
+  .ajuste-valor input { flex: 1 1 auto; min-width: 0; font-size: 1.1rem; font-weight: 600; }
+  .ajuste-unidad { flex: none; grid-auto-columns: 3rem; }
+  .ajuste-unidad label { font-size: 1.05rem; }
+  .ajuste-ayuda { margin: 0; color: var(--suave); font-size: .875rem; }
+  .ajuste-ayuda b { color: var(--tinta); }
+  .ajuste-ayuda.mal { color: var(--alerta); font-weight: 600; }
+  .ajuste-motivo { font-size: .9rem; font-weight: 600; margin-top: .2rem; }
+  .ajuste-motivo span { color: var(--suave); font-weight: 500; }
+  #ajusteMotivo[aria-invalid="true"] { border: 2px solid var(--alerta); }
+  .ajuste-error { margin: 0; display: flex; gap: .4rem; align-items: flex-start; color: var(--alerta); font-size: .875rem; font-weight: 600; }
+  .ajuste-error svg { flex: none; margin-top: .15rem; }
   .cifras .recargo { color: var(--aviso); }
   .total {
     border-top: 2px solid var(--tinta); padding-top: .6rem;
@@ -353,7 +392,9 @@
     .cinta input { flex: 1 1 auto; min-width: 0; font-size: 1.15rem; }
     .btn-camara span, .atajos { display: none; }
     .btn-camara { width: 2.9rem; justify-content: center; padding: 0; flex: none; }
-    .linea, .carrito-cab, .vacio { padding-left: .85rem; padding-right: .85rem; }
+    .linea, .carrito-cab, .vacio, .aviso-costos { padding-left: .85rem; padding-right: .85rem; }
+    .ver-costos kbd { display: none; }
+    .linea .detalle { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .resumen { position: static; }
     .total-cifra { font-size: 2.3rem; }
     .red { order: 2; }
@@ -457,7 +498,7 @@
     .resumen fieldset { grid-area: pago; }
     .totales { display: contents; }
     .totales > .campo { grid-area: desc; }
-    .totales > .campo > label { font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); }
+    .resumen .segmento label { min-height: 2.5rem; }
     .resumen .cifras { grid-area: cifras; font-size: .875rem; gap: .1rem 1rem; }
     .resumen .total { grid-area: total; padding-top: .35rem; }
     .costos-venta { grid-area: costos; }
@@ -523,7 +564,7 @@
         <input id="scan" autocomplete="off" spellcheck="false" enterkeyhint="search">
         <button class="btn btn-camara" id="btnCamara" type="button" aria-label="Usar cámara"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 12h8"/></svg><span>Usar cámara</span></button>
       </div>
-      <p class="atajos"><span><kbd>F2</kbd> buscar</span><span><kbd>F9</kbd> cobrar</span><span><kbd>Esc</kbd> limpiar la búsqueda</span></p>
+      <p class="atajos"><span><kbd>F2</kbd> buscar</span><span><kbd>F9</kbd> cobrar</span><span><kbd>F4</kbd> ver u ocultar costos</span><span><kbd>Esc</kbd> limpiar la búsqueda</span></p>
     </div>
     <div id="lector" hidden></div>
     <ul id="resultados" hidden></ul>
@@ -532,11 +573,16 @@
     <div class="carrito">
       <div class="carrito-cab">
         <h2>Venta en curso <span id="cuentaLineas"></span></h2>
-        <button type="button" class="btn-texto ver-detalle" id="verDetalle" aria-pressed="false" aria-controls="lineas costosVenta" title="Muestra costo, ganancia, stock y códigos de cada producto" hidden>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-          <span>Ver costos</span>
+        <button type="button" class="ver-costos" id="verDetalle" aria-pressed="false" aria-controls="lineas costosVenta" aria-keyshortcuts="F4" title="Costo, ganancia y stock de cada producto (F4)" hidden>
+          <span class="pista" aria-hidden="true"></span>
+          Costos
+          <kbd aria-hidden="true">F4</kbd>
         </button>
       </div>
+      <p class="aviso-costos" id="avisoCostos" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Costos a la vista: revisa que el cliente no vea la pantalla. Se ocultan solos al cobrar.</span>
+      </p>
       <p class="vacio" id="vacio">Aún no hay productos. Pasa el lector por el código de barras o busca por nombre, marca o código de color.</p>
       <ul id="lineas"></ul>
     </div>
@@ -569,25 +615,29 @@
     </fieldset>
 
     <div class="totales">
-      <div class="campo ajuste">
-        <div class="ajuste-cab">
-          <label for="ajusteValor">Ajuste al total</label>
-          <div class="ajuste-tipo" id="ajusteTipo" role="group" aria-label="Tipo de ajuste">
-            <button type="button" data-ajuste="descuento" aria-pressed="true">− Descuento</button>
-            <button type="button" data-ajuste="recargo" aria-pressed="false">+ Recargo</button>
-          </div>
+      <fieldset class="campo ajuste">
+        <legend class="rotulo">Ajuste al total</legend>
+        <div class="segmento" id="ajusteTipo" role="radiogroup" aria-label="Tipo de ajuste">
+          <label><input type="radio" name="ajusteTipo" value="descuento" checked>− Descuento</label>
+          <label><input type="radio" name="ajusteTipo" value="recargo">+ Recargo</label>
         </div>
         <div class="ajuste-valor">
-          <input id="ajusteValor" type="number" min="0" step="100" inputmode="numeric" value="0" class="num" aria-describedby="ajusteAyuda ajusteEquiv">
-          <div class="ajuste-tipo ajuste-unidad" id="ajusteUnidad" role="group" aria-label="Ajuste en pesos o en porcentaje">
-            <button type="button" data-unidad="pesos" aria-pressed="true" aria-label="En pesos">$</button>
-            <button type="button" data-unidad="pct" aria-pressed="false" aria-label="En porcentaje">%</button>
+          <label for="ajusteValor" class="oculto-visual" id="ajusteValorRotulo">Descuento en pesos</label>
+          <input id="ajusteValor" type="number" min="0" step="100" inputmode="numeric" placeholder="0" class="num" aria-describedby="ajusteEquiv">
+          <div class="segmento ajuste-unidad" id="ajusteUnidad" role="radiogroup" aria-label="Unidad del ajuste">
+            <label><input type="radio" name="ajusteUnidad" value="pesos" checked aria-label="En pesos">$</label>
+            <label><input type="radio" name="ajusteUnidad" value="pct" aria-label="En porcentaje">%</label>
           </div>
         </div>
-        <small id="ajusteEquiv" class="ajuste-ayuda num" hidden></small>
-        <input id="ajusteMotivo" maxlength="200" autocomplete="off" placeholder="Motivo (obligatorio)" aria-label="Motivo del ajuste" hidden>
-        <small id="ajusteAyuda" class="ajuste-ayuda" hidden>Sale en el recibo.</small>
-      </div>
+        <p id="ajusteEquiv" class="ajuste-ayuda num" aria-live="polite" hidden></p>
+        <label for="ajusteMotivo" class="ajuste-motivo" id="ajusteMotivoRotulo" hidden>Motivo <span>(obligatorio, sale en el recibo)</span></label>
+        <input id="ajusteMotivo" maxlength="200" autocomplete="off" aria-required="true" aria-describedby="ajusteError ajusteAyuda" hidden>
+        <p id="ajusteError" class="ajuste-error" role="alert" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+          <span></span>
+        </p>
+        <p id="ajusteAyuda" class="ajuste-ayuda" hidden></p>
+      </fieldset>
       <dl class="cifras num">
         <dt>Subtotal</dt><dd id="subtotal">$ 0</dd>
         <dt id="ajusteRotulo">Descuento</dt><dd id="descMostrado">$ 0</dd>
@@ -596,13 +646,10 @@
         <span>Total</span>
         <span class="total-cifra num" id="total">$ 0</span>
       </div>
-      <div class="costos-venta" id="costosVenta" hidden>
-        <button type="button" class="btn-texto ver-detalle" id="verDetalleResumen" aria-pressed="false" aria-controls="lineas costosVenta">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-          <span>Ver costos</span>
-        </button>
-        <div id="detalleResumen" class="num" aria-live="polite" hidden></div>
-      </div>
+      <section class="costos-venta" id="costosVenta" aria-labelledby="costosTitulo" hidden>
+        <h3 class="rotulo" id="costosTitulo">Costos de esta venta</h3>
+        <div id="detalleResumen" class="costos-caja num" aria-live="polite"></div>
+      </section>
     </div>
 
     <div id="bloqueEfectivo" class="campo">
@@ -1343,39 +1390,47 @@
     if (verDetalle) pintar();
   }
 
+  // Íconos de las marcas: el estado se dice con ícono y palabra, no solo con color
+  const ICONO_AVISO = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5"/></svg>';
+  const ICONO_ALERTA = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>';
+  const marcaGan = (pct) => {
+    const c = claseGan(pct);
+    return c ? `<span class="marca-gan">${ICONO_AVISO}${c === 'neg' ? 'Pérdida' : 'Baja'}</span>` : '';
+  };
+  const celda = (rotulo, valor) => `<div><dt>${rotulo}</dt><dd>${valor}</dd></div>`;
+
   function lineaDetalle(i) {
     if (!verDetalle) return '';
     const p = detalle.get(i.id);
-    if (!p) return detalleError ? '' : '<div class="detalle">Cargando costos…</div>';
+    if (!p) return detalleError ? '' : '<p class="cargando">Cargando costos…</p>';
     const costo = Number(p.costo) || 0;
     const pct = pctSobreCosto(costo, i.precio);
     const ganancia = (i.precio - costo) * i.cantidad;
-    const stock = Number(p.stock);
-    const abierto = !p.madre_id && p.tiene_fracciones && Number(p.abierto) > 0 ? ` + abierto ${Math.round(Number(p.abierto) * 100)} %` : '';
-    const datos = [
-      costo > 0 ? `Costo <b>${cop.format(costo)}</b> c/u` : '<b>Sin costo</b>',
-      costo > 0 ? `Ganancia <span class="gan ${claseGan(pct)}">${cop.format(ganancia)}${pct != null ? ` (${pct > 0 ? '+' : ''}${fmtPct(pct)} %)` : ''}</span>` : '',
-      `Stock <b>${stock}</b>${abierto}${p.stock_minimo != null ? ` · mín. ${Number(p.stock_minimo)}` : ''}`,
-      p.sku ? `SKU ${esc(p.sku)}` : '',
-      p.codigo_barras ? `Código ${esc(p.codigo_barras)}` : '',
-      typeof p.categoria === 'string' && p.categoria ? esc(p.categoria) : '',
-      p.codigo_color ? `Color ${esc(p.codigo_color)}` : ''
-    ].filter(Boolean);
-    return `<div class="detalle">${datos.map((d) => `<span>${d}</span>`).join('<span aria-hidden="true">·</span>')}</div>`;
+    const abierto = !p.madre_id && p.tiene_fracciones && Number(p.abierto) > 0 ? ` <small>+ abierto ${Math.round(Number(p.abierto) * 100)} %</small>` : '';
+    const minimo = p.stock_minimo != null ? ` <small>(mín. ${Number(p.stock_minimo)})</small>` : '';
+    const celdas = [
+      celda('Costo c/u', costo > 0 ? cop.format(costo) : `<span class="sin-costo con-icono">${ICONO_ALERTA}Sin costo</span>`),
+      celda('Ganancia', costo > 0
+        ? `<span class="gan ${claseGan(pct)}">${cop.format(ganancia)}${pct != null ? ` · ${fmtPct(pct)} %` : ''}</span><span class="gan ${claseGan(pct)}">${marcaGan(pct)}</span>`
+        : '<span class="sin-dato">No se puede calcular</span>'),
+      celda('Stock', `${Number(p.stock)}${abierto}${minimo}`),
+      p.sku ? celda('SKU', esc(p.sku)) : '',
+      typeof p.categoria === 'string' && p.categoria ? celda('Categoría', esc(p.categoria)) : '',
+      p.codigo_color ? celda('Color', esc(p.codigo_color)) : ''
+    ].join('');
+    return `<dl class="detalle num" aria-label="Costos de ${esc(i.etiqueta)}">${celdas}</dl>`;
   }
 
   // Costo, ganancia y margen de toda la venta (con catalizadores y el ajuste al total)
   function pintarDetalle() {
     const dl = $('#detalleResumen');
-    $('#costosVenta').hidden = !carrito.length;
-    ['#verDetalle', '#verDetalleResumen'].forEach((s) => {
-      const btn = $(s);
-      btn.hidden = !carrito.length;
-      btn.setAttribute('aria-pressed', String(verDetalle));
-      btn.querySelector('span').textContent = verDetalle ? 'Ocultar costos' : 'Ver costos';
-    });
-    dl.hidden = !verDetalle || !carrito.length;
-    if (dl.hidden) return;
+    const btn = $('#verDetalle');
+    btn.hidden = !carrito.length;
+    btn.setAttribute('aria-pressed', String(verDetalle));
+    const visible = verDetalle && carrito.length > 0;
+    $('#avisoCostos').hidden = !visible;
+    $('#costosVenta').hidden = !visible;
+    if (!visible) return;
     const items = itemsVenta();
     const faltan = items.filter((x) => !detalle.has(x.presentacion_id));
     // Lo que entra a la venta con el detalle abierto se consulta solo
@@ -1384,18 +1439,22 @@
     if (faltan.length) { dl.innerHTML = '<p class="nota">Cargando costos…</p>'; return; }
     const { total } = calcular();
     const costo = items.reduce((s, x) => s + (Number(detalle.get(x.presentacion_id).costo) || 0) * x.cantidad, 0);
-    const sinCosto = items.filter((x) => !(Number(detalle.get(x.presentacion_id).costo) > 0)).length;
+    const sinCosto = [...new Set(items.filter((x) => !(Number(detalle.get(x.presentacion_id).costo) > 0)).map((x) => x.etiqueta))];
     const ganancia = total - costo;
     const pct = pctSobreCosto(costo, total);
     const margen = total > 0 ? ganancia / total * 100 : null;
+    const explica = margen != null && margen > 0
+      ? `De cada ${cop.format(100)} cobrados quedan ${cop.format(Math.round(margen))} de ganancia. `
+      : margen != null && margen <= 0 ? 'Con este precio la venta no deja ganancia. ' : '';
     dl.innerHTML = `
+      <div class="principal"><span>Ganancia</span><span class="con-icono gan ${claseGan(pct)}">${marcaGan(pct)}<b>${cop.format(ganancia)}</b></span></div>
       <dl class="cifras">
         <dt>Costo</dt><dd>${cop.format(costo)}</dd>
-        <dt>Ganancia</dt><dd class="gan ${claseGan(pct)}">${cop.format(ganancia)}</dd>
-        <dt>Sobre el costo</dt><dd class="gan ${claseGan(pct)}">${pct != null ? `${pct > 0 ? '+' : ''}${fmtPct(pct)} %` : '—'}</dd>
-        <dt>Margen sobre la venta</dt><dd>${margen != null ? `${fmtPct(margen)} %` : '—'}</dd>
+        <dt>Margen</dt><dd>${margen != null ? `${fmtPct(margen)} %` : '—'}</dd>
+        <dt>Sobre el costo</dt><dd>${pct != null ? `${fmtPct(pct)} %` : '—'}</dd>
       </dl>
-      <p class="nota">Con el ajuste al total y los catalizadores.${sinCosto ? ` ${sinCosto} ${sinCosto === 1 ? 'producto no tiene' : 'productos no tienen'} costo: la ganancia sale mayor de lo real.` : ''}</p>`;
+      <p class="nota">${explica}Ya incluye el ajuste al total y los catalizadores.</p>
+      ${sinCosto.length ? `<p class="nota mal">${ICONO_ALERTA}<span>${sinCosto.length === 1 ? `${esc(sinCosto[0])} no tiene costo` : `${sinCosto.length} productos no tienen costo`}: la ganancia real es menor.</span></p>` : ''}`;
   }
 
   const alternarDetalle = () => {
@@ -1404,7 +1463,6 @@
     pintar();
   };
   $('#verDetalle').addEventListener('click', alternarDetalle);
-  $('#verDetalleResumen').addEventListener('click', alternarDetalle);
   $('#detalleResumen').addEventListener('click', (e) => {
     if (e.target.id === 'reintentarDetalle') { detalleError = ''; pintar(); }
   });
@@ -1451,19 +1509,28 @@
 
   function ponerUnidad(unidad) {
     unidadAjuste = unidad;
-    el.ajusteUnidad.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.unidad === unidad)));
+    el.ajusteUnidad.querySelectorAll('input').forEach((r) => { r.checked = r.value === unidad; });
     el.ajusteValor.step = unidad === 'pct' ? 'any' : '100';
     el.ajusteValor.inputMode = unidad === 'pct' ? 'decimal' : 'numeric';
     el.ajusteValor.max = unidad === 'pct' && tipoAjuste === 'descuento' ? '100' : '';
+    $('#ajusteValorRotulo').textContent = `${tipoAjuste === 'recargo' ? 'Recargo' : 'Descuento'} ${unidad === 'pct' ? 'en porcentaje del subtotal' : 'en pesos'}`;
+  }
+
+  // Motivo que falta: borde, ícono y mensaje con texto (se anuncia)
+  function marcarMotivo(mensaje) {
+    el.ajusteMotivo.setAttribute('aria-invalid', String(!!mensaje));
+    const err = $('#ajusteError');
+    err.hidden = !mensaje;
+    err.querySelector('span').textContent = mensaje || '';
   }
 
   function limpiarAjuste() {
     tipoAjuste = 'descuento';
+    el.ajusteTipo.querySelectorAll('input').forEach((r) => { r.checked = r.value === tipoAjuste; });
     ponerUnidad('pesos');
-    el.ajusteValor.value = 0;
+    el.ajusteValor.value = '';
     el.ajusteMotivo.value = '';
-    el.ajusteMotivo.classList.remove('falta');
-    el.ajusteTipo.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.ajuste === tipoAjuste));
+    marcarMotivo('');
   }
 
   function recalcular() {
@@ -1475,12 +1542,26 @@
     // El motivo solo se pide cuando hay ajuste
     const hayAjuste = descuento > 0 || recargo > 0;
     el.ajusteMotivo.hidden = !hayAjuste;
-    el.ajusteAyuda.hidden = !hayAjuste;
-    el.ajusteMotivo.placeholder = `Motivo del ${tipoAjuste} (obligatorio)`;
-    // En %: cuánto queda en pesos
-    const { pct } = calcular();
-    el.ajusteEquiv.hidden = !(unidadAjuste === 'pct' && hayAjuste);
-    if (!el.ajusteEquiv.hidden) el.ajusteEquiv.textContent = `${fmtPct(pct)} % de ${cop.format(subtotal)} = ${recargo > 0 ? '+' : '−'} ${cop.format(recargo || descuento)}`;
+    $('#ajusteMotivoRotulo').hidden = !hayAjuste;
+    if (!hayAjuste) marcarMotivo('');
+    // Cuánto es en la otra unidad: en % se ve en pesos, y en pesos, qué % del subtotal es
+    const { pct, motivo } = calcular();
+    const monto = recargo || descuento;
+    const signo = recargo > 0 ? '+' : '−';
+    const escrito = parseFloat(el.ajusteValor.value) || 0;
+    const tope = tipoAjuste === 'descuento' && (unidadAjuste === 'pct' ? escrito > 100 : escrito > subtotal && subtotal > 0);
+    el.ajusteEquiv.hidden = !hayAjuste;
+    el.ajusteEquiv.classList.toggle('mal', tope);
+    if (tope) {
+      el.ajusteEquiv.textContent = `Un descuento no puede pasar ${unidadAjuste === 'pct' ? 'del 100 %' : 'del subtotal'}: se toma ${signo} ${cop.format(monto)}.`;
+    } else if (hayAjuste) {
+      el.ajusteEquiv.innerHTML = unidadAjuste === 'pct'
+        ? `${fmtPct(pct)} % de ${cop.format(subtotal)} = <b>${signo} ${cop.format(monto)}</b>`
+        : `<b>${signo} ${cop.format(monto)}</b>${subtotal > 0 ? ` · ${fmtPct(monto / subtotal * 100)} % del subtotal` : ''}`;
+    }
+    // Así sale en el recibo
+    el.ajusteAyuda.hidden = !(hayAjuste && motivo);
+    if (!el.ajusteAyuda.hidden) el.ajusteAyuda.textContent = `En el recibo: “${motivoConPct(motivo, pct)}”`;
     el.total.textContent = cop.format(total);
 
     el.bloqueEfectivo.hidden = metodo !== 'efectivo';
@@ -1509,31 +1590,30 @@
   }
 
   el.ajusteValor.addEventListener('input', () => { uuidVenta = null; recalcular(); });
-  el.ajusteMotivo.addEventListener('input', () => { uuidVenta = null; el.ajusteMotivo.classList.remove('falta'); });
-  el.ajusteTipo.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-ajuste]');
-    if (!b) return;
-    tipoAjuste = b.dataset.ajuste;
+  el.ajusteMotivo.addEventListener('input', () => {
     uuidVenta = null;
-    el.ajusteTipo.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    if (el.ajusteMotivo.value.trim()) marcarMotivo('');
+    recalcular();
+  });
+  // Radios: las flechas cambian la opción sin mover el foco; un clic lleva al valor
+  const alValor = (e) => { if (e.detail > 0) { el.ajusteValor.focus(); el.ajusteValor.select(); } };
+  el.ajusteTipo.addEventListener('change', (e) => {
+    tipoAjuste = e.target.value;
+    uuidVenta = null;
     ponerUnidad(unidadAjuste);
     recalcular();
-    el.ajusteValor.focus();
-    el.ajusteValor.select();
   });
+  el.ajusteTipo.addEventListener('click', (e) => { if (e.target.matches('input')) alValor(e); });
   // Al cambiar de $ a % (o al revés) se convierte lo escrito, para que el ajuste no cambie
-  el.ajusteUnidad.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-unidad]');
-    if (!b || b.dataset.unidad === unidadAjuste) return;
+  el.ajusteUnidad.addEventListener('change', (e) => {
     const { subtotal, descuento, recargo } = calcular();
     const monto = recargo || descuento;
-    ponerUnidad(b.dataset.unidad);
+    ponerUnidad(e.target.value);
     if (monto > 0) el.ajusteValor.value = unidadAjuste === 'pct' ? (subtotal > 0 ? Math.round(monto / subtotal * 1000) / 10 : 0) : monto;
     uuidVenta = null;
     recalcular();
-    el.ajusteValor.focus();
-    el.ajusteValor.select();
   });
+  el.ajusteUnidad.addEventListener('click', (e) => { if (e.target.matches('input')) alValor(e); });
   el.recibido.addEventListener('input', recalcular);
   el.billetes.addEventListener('click', (e) => {
     const b = e.target.closest('[data-billete]');
@@ -1637,8 +1717,9 @@
       return;
     }
     if ((descuento > 0 || recargo > 0) && !motivo) {
-      aviso(`Escribe el motivo del ${recargo > 0 ? 'recargo' : 'descuento'}: sale en el recibo.`, 'error');
-      el.ajusteMotivo.classList.add('falta');
+      const falta = `Escribe por qué se hace el ${recargo > 0 ? 'recargo' : 'descuento'} para poder cobrar.`;
+      aviso(falta, 'error');
+      marcarMotivo(falta);
       el.ajusteMotivo.focus();
       return;
     }
@@ -1880,6 +1961,7 @@
     // Atajos: F2 buscar, F9 cobrar
     if (e.key === 'F2') { e.preventDefault(); el.scan.focus(); el.scan.select(); return; }
     if (e.key === 'F9') { e.preventDefault(); if (!el.cobrar.disabled) el.cobrar.click(); return; }
+    if (e.key === 'F4') { e.preventDefault(); if (carrito.length) alternarDetalle(); return; }
     if ((!activo || activo === document.body) && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       el.scan.focus();
     }
