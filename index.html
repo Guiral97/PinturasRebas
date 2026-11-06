@@ -141,11 +141,28 @@
 
   /* Carrito */
   .carrito { margin-top: 1.25rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
+  .carrito-cab { display: flex; align-items: center; gap: .75rem; padding: .8rem 1.1rem; border-bottom: 1px solid var(--linea); }
   .carrito h2 {
     font-family: "Barlow Condensed", sans-serif; font-size: 1.5rem; font-weight: 700;
-    margin: 0; padding: .8rem 1.1rem; border-bottom: 1px solid var(--linea);
+    margin: 0 auto 0 0;
   }
   .carrito h2 span { color: var(--suave); font-weight: 600; }
+  /* Costos y detalle: escondidos hasta que se piden */
+  .ver-detalle { display: inline-flex; align-items: center; gap: .35rem; color: var(--suave); font-weight: 500; font-size: .875rem; min-height: 2.25rem; }
+  .ver-detalle[aria-pressed="true"] { color: var(--acento); font-weight: 600; }
+  .linea .detalle { display: flex; flex-wrap: wrap; gap: .1rem .5rem; margin-top: .35rem; padding: .3rem .55rem; border-left: 2px solid var(--acento); background: color-mix(in srgb, var(--acento) 7%, transparent); color: var(--suave); font-size: .82rem; }
+  .linea .detalle b { color: var(--tinta); font-weight: 600; }
+  .gan { font-weight: 600; color: var(--ok); }
+  .gan.baja { color: var(--aviso); }
+  .gan.neg { color: var(--alerta); }
+  /* En el resumen, debajo del total */
+  .costos-venta { border-top: 1px dashed var(--linea); padding-top: .35rem; }
+  .costos-venta .ver-detalle { min-height: 2rem; padding-left: 0; }
+  #detalleResumen { padding: .55rem .7rem; margin-top: .2rem; border-left: 2px solid var(--acento); background: color-mix(in srgb, var(--acento) 7%, transparent); border-radius: 0 var(--radio) var(--radio) 0; }
+  #detalleResumen .cifras { font-size: .9rem; }
+  #detalleResumen .cifras dd { font-weight: 600; }
+  #detalleResumen .nota { margin: .4rem 0 0; color: var(--suave); font-size: .8rem; }
+  #detalleResumen .nota:first-child { margin-top: 0; }
   .vacio { color: var(--suave); padding: 1.5rem 1.1rem; max-width: 36rem; margin: 0; }
   #lineas { list-style: none; margin: 0; padding: 0; }
   #lineas li:last-child { border-bottom: 0; }
@@ -235,6 +252,9 @@
   .ajuste-tipo button + button { border-left: 1px solid var(--linea); }
   .ajuste-tipo button[aria-pressed="true"] { background: var(--acento); color: var(--acento-tinta); }
   .ajuste-ayuda { color: var(--suave); font-size: .82rem; }
+  .ajuste-valor { display: flex; gap: .4rem; align-items: stretch; }
+  .ajuste-valor input { flex: 1 1 auto; min-width: 0; }
+  .ajuste-unidad button { min-width: 2.4rem; font-size: 1rem; }
   #ajusteMotivo.falta { border-color: var(--alerta); outline: 2px solid var(--alerta); }
   .cifras .recargo { color: var(--aviso); }
   .total {
@@ -333,7 +353,7 @@
     .cinta input { flex: 1 1 auto; min-width: 0; font-size: 1.15rem; }
     .btn-camara span, .atajos { display: none; }
     .btn-camara { width: 2.9rem; justify-content: center; padding: 0; flex: none; }
-    .linea, .carrito h2, .vacio { padding-left: .85rem; padding-right: .85rem; }
+    .linea, .carrito-cab, .vacio { padding-left: .85rem; padding-right: .85rem; }
     .resumen { position: static; }
     .total-cifra { font-size: 2.3rem; }
     .red { order: 2; }
@@ -418,7 +438,7 @@
       max-height: 85dvh; overflow: auto; overscroll-behavior: contain;
       border-radius: 14px 14px 0 0; border-width: 1px 0 0; box-shadow: 0 -8px 28px rgba(0, 0, 0, .28);
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      grid-template-areas: "cab cab" "cliente cliente" "desc desc" "pago pago" "cifras cifras" "total total" "efectivo efectivo" "pie pie";
+      grid-template-areas: "cab cab" "cliente cliente" "desc desc" "pago pago" "cifras cifras" "total total" "costos costos" "efectivo efectivo" "pie pie";
       gap: .6rem; padding: 0 .75rem; align-items: start;
     }
     .resumen > * { padding: 0; border-bottom: 0; }
@@ -440,6 +460,7 @@
     .totales > .campo > label { font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); }
     .resumen .cifras { grid-area: cifras; font-size: .875rem; gap: .1rem 1rem; }
     .resumen .total { grid-area: total; padding-top: .35rem; }
+    .costos-venta { grid-area: costos; }
     .total-cifra { font-size: 2rem; }
     .ficha { padding: .4rem .6rem; gap: .6rem; }
     .ficha .ini { width: 2rem; height: 2rem; }
@@ -509,7 +530,13 @@
     </div>
 
     <div class="carrito">
-      <h2>Venta en curso <span id="cuentaLineas"></span></h2>
+      <div class="carrito-cab">
+        <h2>Venta en curso <span id="cuentaLineas"></span></h2>
+        <button type="button" class="btn-texto ver-detalle" id="verDetalle" aria-pressed="false" aria-controls="lineas costosVenta" title="Muestra costo, ganancia, stock y códigos de cada producto" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>Ver costos</span>
+        </button>
+      </div>
       <p class="vacio" id="vacio">Aún no hay productos. Pasa el lector por el código de barras o busca por nombre, marca o código de color.</p>
       <ul id="lineas"></ul>
     </div>
@@ -550,7 +577,14 @@
             <button type="button" data-ajuste="recargo" aria-pressed="false">+ Recargo</button>
           </div>
         </div>
-        <input id="ajusteValor" type="number" min="0" step="100" inputmode="numeric" value="0" class="num" aria-describedby="ajusteAyuda">
+        <div class="ajuste-valor">
+          <input id="ajusteValor" type="number" min="0" step="100" inputmode="numeric" value="0" class="num" aria-describedby="ajusteAyuda ajusteEquiv">
+          <div class="ajuste-tipo ajuste-unidad" id="ajusteUnidad" role="group" aria-label="Ajuste en pesos o en porcentaje">
+            <button type="button" data-unidad="pesos" aria-pressed="true" aria-label="En pesos">$</button>
+            <button type="button" data-unidad="pct" aria-pressed="false" aria-label="En porcentaje">%</button>
+          </div>
+        </div>
+        <small id="ajusteEquiv" class="ajuste-ayuda num" hidden></small>
         <input id="ajusteMotivo" maxlength="200" autocomplete="off" placeholder="Motivo (obligatorio)" aria-label="Motivo del ajuste" hidden>
         <small id="ajusteAyuda" class="ajuste-ayuda" hidden>Sale en el recibo.</small>
       </div>
@@ -561,6 +595,13 @@
       <div class="total">
         <span>Total</span>
         <span class="total-cifra num" id="total">$ 0</span>
+      </div>
+      <div class="costos-venta" id="costosVenta" hidden>
+        <button type="button" class="btn-texto ver-detalle" id="verDetalleResumen" aria-pressed="false" aria-controls="lineas costosVenta">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>Ver costos</span>
+        </button>
+        <div id="detalleResumen" class="num" aria-live="polite" hidden></div>
       </div>
     </div>
 
@@ -625,7 +666,7 @@
     login: $('#login'), pos: $('#pos'), salir: $('#salir'), usuario: $('#usuario'),
     scan: $('#scan'), resultados: $('#resultados'), lineas: $('#lineas'), vacio: $('#vacio'),
     cliente: $('#cliente'), metodos: $('#metodos'),
-    ajusteTipo: $('#ajusteTipo'), ajusteValor: $('#ajusteValor'), ajusteMotivo: $('#ajusteMotivo'),
+    ajusteTipo: $('#ajusteTipo'), ajusteUnidad: $('#ajusteUnidad'), ajusteEquiv: $('#ajusteEquiv'), ajusteValor: $('#ajusteValor'), ajusteMotivo: $('#ajusteMotivo'),
     ajusteAyuda: $('#ajusteAyuda'), ajusteRotulo: $('#ajusteRotulo'),
     subtotal: $('#subtotal'), descMostrado: $('#descMostrado'), total: $('#total'),
     bloqueEfectivo: $('#bloqueEfectivo'), recibido: $('#recibido'), cambio: $('#cambio'),
@@ -672,6 +713,9 @@
   movil.addEventListener('change', () => { marcarLector(); if (!movil.matches) cerrarHoja(false); });
 
   let carrito = [];          // { id, etiqueta, codigo, precio, cantidad, stock }
+  let verDetalle = false;    // "Ver costos" en la venta en curso
+  const detalle = new Map(); // presentacion_id → fila de v_catalogo con costo (solo en memoria)
+  let detalleError = '', cargandoDetalle = false;
   let metodo = 'efectivo';
   let procesando = false;
   let lectorCamara = null;
@@ -985,6 +1029,8 @@
   el.salir.addEventListener('click', async () => {
     if (cola.length && !confirm(`Hay ${cola.length} ventas sin enviar. Quedan guardadas en este equipo y se enviarán cuando alguien inicie sesión. ¿Cerrar sesión?`)) return;
     await almacen.set('perfil', null);
+    verDetalle = false; detalle.clear();
+    pintarDetalle();
     db.auth.signOut();
   });
 
@@ -1255,6 +1301,7 @@
             <div class="nombre">${esc(i.etiqueta)}</div>
             <div class="meta num"><span class="cod">${esc(i.codigo)} · </span>${cop.format(i.precio)} c/u<span class="sub-movil"> · ${cop.format(valorLinea(i))}</span></div>
             ${i.cantidad > i.stock ? `<div class="falta">Stock disponible: ${i.stock}</div>` : ''}
+            ${lineaDetalle(i)}
             ${lineaPeso(i)}
             ${lineaCatalizador(i)}
           </div>
@@ -1271,6 +1318,96 @@
     if (!carrito.length) cerrarHoja(false);
     recalcular();
   }
+
+  // ---------- Costos y detalle (escondidos hasta que se piden) ----------
+  // Los costos no se guardan en el equipo: se consultan al abrir y solo de lo que está en la venta
+  const pctSobreCosto = (costo, precio) => (Number(costo) > 0 ? (precio - Number(costo)) / Number(costo) * 100 : null);
+  const fmtPct = (n) => n.toLocaleString('es-CO', { maximumFractionDigits: 1 });
+  const GANANCIA_BAJA = 20;   // % sobre el costo por debajo del cual se marca en ámbar (igual que en Inventario)
+  const claseGan = (pct) => (pct == null ? '' : pct <= 0 ? 'neg' : pct < GANANCIA_BAJA ? 'baja' : '');
+
+  async function cargarDetalle() {
+    const ids = [...new Set(itemsVenta().map((x) => x.presentacion_id))].filter((id) => !detalle.has(id));
+    if (!ids.length || cargandoDetalle) return;
+    if (!enLinea || !haySesion) { detalleError = 'Sin conexión: los costos se ven cuando vuelva internet.'; pintar(); return; }
+    cargandoDetalle = true;
+    const res = await conLimite(db.from('v_catalogo').select('*').in('id', ids), 8000);
+    cargandoDetalle = false;
+    if (res.error) {
+      if (esErrorDeRed(res)) marcarSinRed();
+      detalleError = 'No se pudieron traer los costos. Intenta de nuevo.';
+    } else {
+      detalleError = '';
+      res.data.forEach((p) => detalle.set(p.id, p));
+    }
+    if (verDetalle) pintar();
+  }
+
+  function lineaDetalle(i) {
+    if (!verDetalle) return '';
+    const p = detalle.get(i.id);
+    if (!p) return detalleError ? '' : '<div class="detalle">Cargando costos…</div>';
+    const costo = Number(p.costo) || 0;
+    const pct = pctSobreCosto(costo, i.precio);
+    const ganancia = (i.precio - costo) * i.cantidad;
+    const stock = Number(p.stock);
+    const abierto = !p.madre_id && p.tiene_fracciones && Number(p.abierto) > 0 ? ` + abierto ${Math.round(Number(p.abierto) * 100)} %` : '';
+    const datos = [
+      costo > 0 ? `Costo <b>${cop.format(costo)}</b> c/u` : '<b>Sin costo</b>',
+      costo > 0 ? `Ganancia <span class="gan ${claseGan(pct)}">${cop.format(ganancia)}${pct != null ? ` (${pct > 0 ? '+' : ''}${fmtPct(pct)} %)` : ''}</span>` : '',
+      `Stock <b>${stock}</b>${abierto}${p.stock_minimo != null ? ` · mín. ${Number(p.stock_minimo)}` : ''}`,
+      p.sku ? `SKU ${esc(p.sku)}` : '',
+      p.codigo_barras ? `Código ${esc(p.codigo_barras)}` : '',
+      typeof p.categoria === 'string' && p.categoria ? esc(p.categoria) : '',
+      p.codigo_color ? `Color ${esc(p.codigo_color)}` : ''
+    ].filter(Boolean);
+    return `<div class="detalle">${datos.map((d) => `<span>${d}</span>`).join('<span aria-hidden="true">·</span>')}</div>`;
+  }
+
+  // Costo, ganancia y margen de toda la venta (con catalizadores y el ajuste al total)
+  function pintarDetalle() {
+    const dl = $('#detalleResumen');
+    $('#costosVenta').hidden = !carrito.length;
+    ['#verDetalle', '#verDetalleResumen'].forEach((s) => {
+      const btn = $(s);
+      btn.hidden = !carrito.length;
+      btn.setAttribute('aria-pressed', String(verDetalle));
+      btn.querySelector('span').textContent = verDetalle ? 'Ocultar costos' : 'Ver costos';
+    });
+    dl.hidden = !verDetalle || !carrito.length;
+    if (dl.hidden) return;
+    const items = itemsVenta();
+    const faltan = items.filter((x) => !detalle.has(x.presentacion_id));
+    // Lo que entra a la venta con el detalle abierto se consulta solo
+    if (faltan.length && !detalleError) cargarDetalle();
+    if (detalleError && faltan.length) { dl.innerHTML = `<p class="nota">${esc(detalleError)} <button type="button" class="btn-texto" id="reintentarDetalle">Reintentar</button></p>`; return; }
+    if (faltan.length) { dl.innerHTML = '<p class="nota">Cargando costos…</p>'; return; }
+    const { total } = calcular();
+    const costo = items.reduce((s, x) => s + (Number(detalle.get(x.presentacion_id).costo) || 0) * x.cantidad, 0);
+    const sinCosto = items.filter((x) => !(Number(detalle.get(x.presentacion_id).costo) > 0)).length;
+    const ganancia = total - costo;
+    const pct = pctSobreCosto(costo, total);
+    const margen = total > 0 ? ganancia / total * 100 : null;
+    dl.innerHTML = `
+      <dl class="cifras">
+        <dt>Costo</dt><dd>${cop.format(costo)}</dd>
+        <dt>Ganancia</dt><dd class="gan ${claseGan(pct)}">${cop.format(ganancia)}</dd>
+        <dt>Sobre el costo</dt><dd class="gan ${claseGan(pct)}">${pct != null ? `${pct > 0 ? '+' : ''}${fmtPct(pct)} %` : '—'}</dd>
+        <dt>Margen sobre la venta</dt><dd>${margen != null ? `${fmtPct(margen)} %` : '—'}</dd>
+      </dl>
+      <p class="nota">Con el ajuste al total y los catalizadores.${sinCosto ? ` ${sinCosto} ${sinCosto === 1 ? 'producto no tiene' : 'productos no tienen'} costo: la ganancia sale mayor de lo real.` : ''}</p>`;
+  }
+
+  const alternarDetalle = () => {
+    verDetalle = !verDetalle;
+    detalleError = '';
+    pintar();
+  };
+  $('#verDetalle').addEventListener('click', alternarDetalle);
+  $('#verDetalleResumen').addEventListener('click', alternarDetalle);
+  $('#detalleResumen').addEventListener('click', (e) => {
+    if (e.target.id === 'reintentarDetalle') { detalleError = ''; pintar(); }
+  });
 
   el.lineas.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-accion]');
@@ -1291,18 +1428,38 @@
 
   // ---------- Totales ----------
   // Ajuste al total: un descuento (resta, hasta el subtotal) o un recargo (suma), con motivo
-  let tipoAjuste = 'descuento';
+  // El valor se escribe en pesos o en % del subtotal (redondeado al peso)
+  let tipoAjuste = 'descuento', unidadAjuste = 'pesos';
   function calcular() {
     const subtotal = itemsVenta().reduce((s, i) => s + i.precio * i.cantidad, 0);
-    const valor = Math.max(parseFloat(el.ajusteValor.value) || 0, 0);
+    let valor = Math.max(parseFloat(el.ajusteValor.value) || 0, 0);
+    let pct = null;
+    if (unidadAjuste === 'pct') {
+      pct = tipoAjuste === 'descuento' ? Math.min(valor, 100) : valor;
+      valor = Math.round(subtotal * pct / 100);
+    }
     const descuento = tipoAjuste === 'descuento' ? Math.min(valor, subtotal) : 0;
     const recargo = tipoAjuste === 'recargo' ? valor : 0;
     const motivo = el.ajusteMotivo.value.trim();
-    return { subtotal, descuento, recargo, motivo, total: subtotal - descuento + recargo };
+    return { subtotal, descuento, recargo, motivo, pct, total: subtotal - descuento + recargo };
+  }
+
+  // Lo que se guarda y sale en el recibo: el motivo, con el % si se ajustó por porcentaje
+  function motivoConPct(motivo, pct) {
+    return pct ? `${motivo} (${fmtPct(pct)} %)` : motivo;
+  }
+
+  function ponerUnidad(unidad) {
+    unidadAjuste = unidad;
+    el.ajusteUnidad.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.unidad === unidad)));
+    el.ajusteValor.step = unidad === 'pct' ? 'any' : '100';
+    el.ajusteValor.inputMode = unidad === 'pct' ? 'decimal' : 'numeric';
+    el.ajusteValor.max = unidad === 'pct' && tipoAjuste === 'descuento' ? '100' : '';
   }
 
   function limpiarAjuste() {
     tipoAjuste = 'descuento';
+    ponerUnidad('pesos');
     el.ajusteValor.value = 0;
     el.ajusteMotivo.value = '';
     el.ajusteMotivo.classList.remove('falta');
@@ -1320,6 +1477,10 @@
     el.ajusteMotivo.hidden = !hayAjuste;
     el.ajusteAyuda.hidden = !hayAjuste;
     el.ajusteMotivo.placeholder = `Motivo del ${tipoAjuste} (obligatorio)`;
+    // En %: cuánto queda en pesos
+    const { pct } = calcular();
+    el.ajusteEquiv.hidden = !(unidadAjuste === 'pct' && hayAjuste);
+    if (!el.ajusteEquiv.hidden) el.ajusteEquiv.textContent = `${fmtPct(pct)} % de ${cop.format(subtotal)} = ${recargo > 0 ? '+' : '−'} ${cop.format(recargo || descuento)}`;
     el.total.textContent = cop.format(total);
 
     el.bloqueEfectivo.hidden = metodo !== 'efectivo';
@@ -1344,6 +1505,7 @@
     // Barra de cobro del celular: las mismas cifras de este resumen
     hoja.total.textContent = el.total.textContent;
     hoja.boton.disabled = el.cobrar.disabled;
+    pintarDetalle();
   }
 
   el.ajusteValor.addEventListener('input', () => { uuidVenta = null; recalcular(); });
@@ -1354,6 +1516,20 @@
     tipoAjuste = b.dataset.ajuste;
     uuidVenta = null;
     el.ajusteTipo.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    ponerUnidad(unidadAjuste);
+    recalcular();
+    el.ajusteValor.focus();
+    el.ajusteValor.select();
+  });
+  // Al cambiar de $ a % (o al revés) se convierte lo escrito, para que el ajuste no cambie
+  el.ajusteUnidad.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-unidad]');
+    if (!b || b.dataset.unidad === unidadAjuste) return;
+    const { subtotal, descuento, recargo } = calcular();
+    const monto = recargo || descuento;
+    ponerUnidad(b.dataset.unidad);
+    if (monto > 0) el.ajusteValor.value = unidadAjuste === 'pct' ? (subtotal > 0 ? Math.round(monto / subtotal * 1000) / 10 : 0) : monto;
+    uuidVenta = null;
     recalcular();
     el.ajusteValor.focus();
     el.ajusteValor.select();
@@ -1429,7 +1605,7 @@
     if (res.data) {
       aviso(`La venta a crédito que quedó en duda sí se registró (venta ${res.data.id}). No la vuelvas a cobrar.`);
       if (dudosa.firma === firmaVenta('credito', el.cliente.value ? +el.cliente.value : null, ajusteActual())) {
-        carrito = []; limpiarAjuste(); el.cliente.value = ''; pintarCliente(); pintar();
+        carrito = []; verDetalle = false; limpiarAjuste(); el.cliente.value = ''; pintarCliente(); pintar();
       }
     }
     dudosa = null;
@@ -1440,7 +1616,7 @@
   el.cobrar.addEventListener('click', async () => {
     if (!carrito.length || procesando) return;
     const metodoVenta = metodo;   // fijo durante todo el cobro, aunque cambie el estado de la red
-    const { subtotal, total, descuento, recargo, motivo } = calcular();
+    const { subtotal, total, descuento, recargo, motivo, pct } = calcular();
     const clienteId = el.cliente.value ? +el.cliente.value : null;
     const clienteNombre = clienteId ? el.cliente.selectedOptions[0].textContent : null;
 
@@ -1475,7 +1651,7 @@
 
     // El mismo código si se reintenta la misma venta: nunca se registra dos veces
     const firma = firmaVenta(metodoVenta, clienteId, [descuento, recargo, motivo]);
-    const motivoAjuste = descuento > 0 || recargo > 0 ? motivo : null;
+    const motivoAjuste = descuento > 0 || recargo > 0 ? motivoConPct(motivo, pct) : null;
     if (dudosa && dudosa.firma === firma) uuidVenta = dudosa.uuid;
     uuidVenta = uuidVenta ?? nuevoUuid();
     const uuidCobro = uuidVenta;
@@ -1568,6 +1744,7 @@
   function nuevaVenta() {
     cerrarHoja(false);
     carrito = [];
+    verDetalle = false; detalle.clear();   // los costos no quedan a la vista del siguiente cliente
     uuidVenta = null;
     limpiarAjuste();
     el.recibido.value = '';
