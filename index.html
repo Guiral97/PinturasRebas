@@ -323,6 +323,21 @@
   dialog::backdrop { background: rgba(10, 14, 18, .45); }
   .dlg-acciones { display: flex; flex-wrap: wrap; gap: .5rem; }
   dialog h2 { font-family: "Barlow Condensed", sans-serif; font-size: 1.8rem; margin: 0 0 .5rem; }
+  /* Nuevo cliente desde la caja */
+  .cliente-cab { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+  .nuevo-cliente { min-height: 2rem; padding: .1rem .2rem; font-size: .875rem; }
+  #dlgCliente { max-width: 32rem; }
+  .frm-cliente { display: grid; gap: .8rem; }
+  .frm-cliente h2, .frm-cliente .ayuda { margin: 0; }
+  .frm-cliente .ayuda { color: var(--suave); font-size: .875rem; }
+  .frm-cliente label small { color: var(--suave); font-weight: 400; }
+  .frm-cliente .dos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+  .cli-credito summary { cursor: pointer; color: var(--acento); font-weight: 600; padding: .25rem 0; }
+  .cli-credito[open] summary { margin-bottom: .5rem; }
+  .cli-error { margin: 0; color: var(--alerta); font-weight: 500; }
+  .cli-error:empty { display: none; }
+  .dlg-acciones:has(#cliGuardar) { justify-content: flex-end; }
+  @media (max-width: 520px) { .frm-cliente .dos { grid-template-columns: 1fr; } }
 
   @media (max-width: 860px) {
     #pos { grid-template-columns: 1fr; padding: 1rem; }
@@ -595,7 +610,10 @@
       <button type="button" class="hoja-cerrar" id="hojaCerrar" aria-label="Cerrar">×</button>
     </div>
     <div class="campo campo-cliente">
-      <label for="cliente" class="rotulo">Cliente</label>
+      <div class="cliente-cab">
+        <label for="cliente" class="rotulo">Cliente</label>
+        <button type="button" class="btn-texto nuevo-cliente" id="nuevoCliente" aria-haspopup="dialog">+ Nuevo cliente</button>
+      </div>
       <select id="cliente"><option value="">Consumidor final</option></select>
       <div class="ficha" id="clienteFicha" hidden>
         <span class="ini" id="fichaIni" aria-hidden="true"></span>
@@ -684,6 +702,36 @@
     <button class="btn" id="imprimirRecibo" type="button">Imprimir recibo</button>
     <button class="btn btn-primario" id="nuevaVenta" type="button">Nueva venta</button>
   </div>
+</dialog>
+
+<dialog id="dlgCliente" aria-labelledby="cliTitulo">
+  <form id="frmCliente" class="frm-cliente" method="dialog" novalidate>
+    <h2 id="cliTitulo">Nuevo cliente</h2>
+    <p class="ayuda">Queda elegido en esta venta. Lo demás se completa después en Inventario › Clientes.</p>
+    <div class="campo"><label for="cliNombre">Nombre o razón social</label><input id="cliNombre" required maxlength="150" autocomplete="off"></div>
+    <div class="dos">
+      <div class="campo"><label for="cliDoc">Cédula o NIT <small>(opcional)</small></label><input id="cliDoc" maxlength="30" autocomplete="off" inputmode="numeric"></div>
+      <div class="campo"><label for="cliTipo">Tipo</label>
+        <select id="cliTipo"><option value="particular">Particular</option><option value="taller">Taller</option><option value="empresa">Empresa</option></select>
+      </div>
+    </div>
+    <div class="dos">
+      <div class="campo"><label for="cliTel">Teléfono <small>(opcional)</small></label><input id="cliTel" type="tel" maxlength="30" autocomplete="off"></div>
+      <div class="campo"><label for="cliEmail">Correo <small>(opcional)</small></label><input id="cliEmail" type="email" maxlength="120" autocomplete="off"></div>
+    </div>
+    <details class="cli-credito">
+      <summary>Crédito (opcional)</summary>
+      <div class="dos">
+        <div class="campo"><label for="cliCupo">Cupo de crédito</label><input id="cliCupo" type="number" min="0" step="any" inputmode="numeric" class="num" placeholder="Sin límite"></div>
+        <div class="campo"><label for="cliPlazo">Plazo (días)</label><input id="cliPlazo" type="number" min="0" step="1" inputmode="numeric" class="num" value="30"></div>
+      </div>
+    </details>
+    <p class="cli-error" id="cliError" role="alert"></p>
+    <div class="dlg-acciones">
+      <button class="btn" type="button" id="cliCancelar">Cancelar</button>
+      <button class="btn btn-primario" type="submit" id="cliGuardar">Guardar y usar en la venta</button>
+    </div>
+  </form>
 </dialog>
 
 <dialog id="dlgCola" aria-labelledby="colaTitulo">
@@ -1622,6 +1670,56 @@
     recalcular();
   });
   el.cliente.addEventListener('change', () => { uuidVenta = null; pintarCliente(); });
+
+  // ---------- Nuevo cliente sin salir de la caja ----------
+  // Necesita internet (es un maestro: insert directo, igual que en Inventario)
+  const dlgCli = $('#dlgCliente');
+  const textoONull = (v) => (v.trim() === '' ? null : v.trim());
+  function errorCliente(error) {
+    if (error.code === '23505') return /documento/.test(error.message || '') ? 'Ya existe un cliente con esa cédula o NIT. Búscalo en la lista.' : 'Ese cliente ya existe.';
+    if (esErrorDeRed({ error })) return 'Sin conexión: el cliente no se guardó. Intenta cuando vuelva internet.';
+    return error.message;
+  }
+  $('#nuevoCliente').addEventListener('click', () => {
+    if (!enLinea || !haySesion) return aviso('Sin conexión no se pueden crear clientes. Vende como consumidor final o espera a que vuelva internet.', 'error');
+    $('#frmCliente').reset();
+    $('#cliError').textContent = '';
+    $('.cli-credito').open = false;
+    dlgCli.showModal();
+    $('#cliNombre').focus();
+  });
+  $('#cliCancelar').addEventListener('click', () => dlgCli.close());
+  dlgCli.addEventListener('close', enfocar);
+  $('#frmCliente').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nombre = $('#cliNombre').value.trim();
+    if (!nombre) { $('#cliError').textContent = 'Escribe el nombre del cliente.'; return $('#cliNombre').focus(); }
+    if ($('#cliEmail').value.trim() && !$('#cliEmail').checkValidity()) { $('#cliError').textContent = 'Revisa el correo.'; return $('#cliEmail').focus(); }
+    const cupo = $('#cliCupo').value, plazo = $('#cliPlazo').value;
+    const datos = {
+      nombre,
+      documento: textoONull($('#cliDoc').value),
+      tipo: $('#cliTipo').value,
+      telefono: textoONull($('#cliTel').value),
+      email: textoONull($('#cliEmail').value),
+      cupo_credito: cupo === '' ? null : Number(cupo),
+      plazo_dias: plazo === '' ? 30 : Number(plazo)
+    };
+    const btn = $('#cliGuardar');
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    const res = await conLimite(db.from('clientes').insert(datos).select('id, nombre, documento, cupo_credito').single(), 8000);
+    btn.disabled = false; btn.textContent = 'Guardar y usar en la venta';
+    if (res.error) { $('#cliError').textContent = errorCliente(res.error); return; }
+    const nuevo = res.data;
+    const lista = [...listaClientes, nuevo].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    await almacen.set('clientes', lista);   // la lista que la caja usa sin conexión
+    pintarClientes(lista);
+    el.cliente.value = String(nuevo.id);
+    uuidVenta = null;
+    pintarCliente();
+    dlgCli.close();
+    aviso(`Cliente ${nuevo.nombre} creado y elegido en la venta.`);
+  });
   $('#cambiarCliente').addEventListener('click', () => {
     el.clienteFicha.hidden = true;
     el.cliente.hidden = false;
@@ -1953,6 +2051,7 @@
 
   // Si nada tiene el foco y llega una tecla (el lector disparó), va al campo del lector.
   document.addEventListener('keydown', (e) => {
+    if (dlgCli.open) return;   // escribiendo el cliente nuevo: Esc cierra el diálogo, no la hoja
     // Hoja de cobro del celular: Esc la cierra; F9 cobra; las demás teclas no van al lector
     if (hojaAbierta() && e.key === 'Escape') { e.preventDefault(); cerrarHoja(); return; }
     if (hojaAbierta() && e.key !== 'F9') return;
