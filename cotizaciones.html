@@ -179,6 +179,46 @@
   .linea .valor { grid-area: valor; text-align: right; font-weight: 600; }
   .quitar { grid-area: quitar; border: 0; background: none; color: var(--suave); width: 2.3rem; height: 2.3rem; font-size: 1.4rem; border-radius: var(--radio); }
   .pie-editor { display: grid; grid-template-columns: minmax(0, 1fr) 22rem; gap: 1.5rem; align-items: end; }
+  /* Costos y detalle (igual que en la caja): escondidos hasta que se piden; atajo F4 */
+  .lineas-cab { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+  .ver-costos {
+    display: inline-flex; align-items: center; gap: .55rem; min-height: 2.75rem; padding: 0 .8rem;
+    border: 1px solid var(--linea); border-radius: var(--radio); background: none; color: var(--tinta); font-weight: 600;
+  }
+  .ver-costos[aria-pressed="true"] { border-color: var(--acento); }
+  .ver-costos .pista { position: relative; width: 2.25rem; height: 1.25rem; border-radius: 1rem; background: var(--linea); flex: none; }
+  .ver-costos .pista::after { content: ""; position: absolute; top: .1875rem; left: .1875rem; width: .875rem; height: .875rem; border-radius: 50%; background: var(--panel); transition: left .15s; }
+  .ver-costos[aria-pressed="true"] .pista { background: var(--acento); }
+  .ver-costos[aria-pressed="true"] .pista::after { left: 1.1875rem; background: var(--acento-tinta); }
+  .ver-costos kbd { font: inherit; font-size: .75rem; font-weight: 700; padding: .05rem .35rem; border: 1px solid var(--linea); border-radius: 4px; color: var(--suave); }
+  .aviso-costos { display: flex; align-items: center; gap: .55rem; margin: .5rem 0 0; padding: .55rem .8rem; border-radius: var(--radio); font-size: .875rem; font-weight: 500; color: var(--aviso); background: color-mix(in srgb, var(--aviso) 10%, transparent); }
+  .aviso-costos svg { flex: none; }
+  .linea .detalle {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 1px; margin: .55rem 0 0;
+    background: var(--linea); border: 1px solid var(--linea); border-radius: var(--radio); overflow: hidden;
+  }
+  .linea .detalle > div { background: var(--fondo); padding: .4rem .7rem; min-width: 0; }
+  .linea .detalle dt { color: var(--suave); font-size: .8rem; }
+  .linea .detalle dd { margin: 0; font-weight: 600; font-size: .94rem; overflow-wrap: anywhere; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .4rem; }
+  .linea .detalle dd small { color: var(--suave); font-weight: 500; font-size: .85rem; }
+  .linea .cargando { margin: .45rem 0 0; color: var(--suave); font-size: .875rem; }
+  .gan { font-weight: 600; color: var(--ok); }
+  .gan.baja { color: var(--aviso); }
+  .gan.neg, .sin-costo { color: var(--alerta); }
+  .sin-dato { color: var(--suave); font-weight: 500; }
+  .marca-gan { display: inline-flex; align-items: center; gap: .2rem; font-size: .75rem; font-weight: 700; line-height: 1.2; padding: .05rem .35rem; border: 1px solid currentColor; border-radius: 4px; }
+  .con-icono { display: inline-flex; align-items: center; gap: .3rem; }
+  .con-icono svg { flex: none; }
+  .costos-cot { margin-top: .9rem; }
+  .costos-cot h4 { margin: 0 0 .5rem; }
+  .costos-caja { display: grid; gap: .55rem; padding: .8rem .9rem; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--fondo); }
+  .costos-caja .principal { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; font-weight: 600; }
+  .costos-caja .principal b { font-family: "Barlow Condensed", sans-serif; font-size: 2rem; line-height: 1; }
+  .costos-caja .cifras { font-size: .94rem; }
+  .costos-caja .cifras dd { font-weight: 600; }
+  .costos-caja .nota { margin: 0; color: var(--suave); font-size: .875rem; }
+  .costos-caja .nota.mal { color: var(--alerta); display: flex; gap: .4rem; align-items: flex-start; }
+  .costos-caja .nota.mal svg { flex: none; margin-top: .15rem; }
 
   dialog { border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel); color: var(--tinta); padding: 1.5rem; max-width: 28rem; width: calc(100% - 2rem); }
   dialog::backdrop { background: rgba(10, 14, 18, .45); }
@@ -499,7 +539,18 @@
         <ul id="resultados" hidden></ul>
 
         <div>
-          <h3>Productos cotizados</h3>
+          <div class="lineas-cab">
+            <h3>Productos cotizados</h3>
+            <button type="button" class="ver-costos" id="verCostos" aria-pressed="false" aria-controls="lineas costosCot" aria-keyshortcuts="F4" title="Costo, ganancia y stock de cada producto (F4)" hidden>
+              <span class="pista" aria-hidden="true"></span>
+              Costos
+              <kbd aria-hidden="true">F4</kbd>
+            </button>
+          </div>
+          <p class="aviso-costos" id="avisoCostos" hidden>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>Costos a la vista: revisa que el cliente no vea la pantalla. No salen en la cotización impresa ni en el PDF.</span>
+          </p>
           <p class="vacio" id="eVacio" style="padding-inline:0">Aún no hay productos. Se cotiza con el precio de lista del catálogo.</p>
           <ul id="lineas"></ul>
         </div>
@@ -515,6 +566,10 @@
               <dt>Descuento</dt><dd id="eDescMostrado">$ 0</dd>
             </dl>
             <div class="total"><span>Total</span><span class="total-cifra num" id="eTotal">$ 0</span></div>
+            <section class="costos-cot" id="costosCot" aria-labelledby="costosTitulo" hidden>
+              <h4 class="rotulo" id="costosTitulo">Costos de esta cotización</h4>
+              <div id="costosResumen" class="costos-caja num" aria-live="polite"></div>
+            </section>
           </div>
         </div>
         <div class="acciones" id="ePie" style="justify-content:flex-end">
@@ -607,6 +662,9 @@
   let actual = null;        // { ...fila de v_cotizaciones, detalle: [...] }
   let clientes = [];
   let editando = null;      // { id|null, tipo, items: [...] }
+  let verCostos = false;    // "Costos" en el editor (no se recuerda: se apaga al salir del editor)
+  const costos = new Map(); // presentacion_id → fila de v_catalogo con costo (solo en memoria)
+  let costosError = '', cargandoCostos = false;
   let fotos = {};           // { presentacion_id: url } (fotos.js)
   const miniatura = (id) => (fotos[id] ? `<img class="miniatura" src="${esc(fotos[id])}" alt="" loading="lazy" crossorigin="anonymous">` : '');
   let procesando = false;
@@ -808,7 +866,7 @@
     $('#panelVacio').hidden = cual !== 'vacio';
     $('#vista').hidden = cual !== 'vista';
     $('#editor').hidden = cual !== 'editor';
-    if (cual !== 'editor') { detenerCamara(); editando = null; }
+    if (cual !== 'editor') { detenerCamara(); editando = null; verCostos = false; costos.clear(); }
     const ahora = cual !== 'vacio';
     $('#app').classList.toggle('con-detalle', ahora);
     if (antes !== ahora) cambioDetalle(ahora);
@@ -1076,6 +1134,7 @@
   // q: cotización a editar (o copiar si copia = true); null para una nueva
   function abrirEditor(q, copia = false) {
     const prospecto = q ? q.es_prospecto : false;
+    verCostos = false; costos.clear();   // costos al día y escondidos en cada cotización
     editando = {
       id: q && !copia ? q.id : null,
       tipo: prospecto ? 'prospecto' : 'cliente',
@@ -1198,7 +1257,103 @@
     $('#eDescMostrado').textContent = cop.format(descuento);
     $('#eDescMostrado').className = excede ? 'falta' : '';
     $('#eTotal').textContent = cop.format(subtotal - descuento);
+    pintarCostos();
   }
+
+  // ---------- Costos y detalle (igual que en la caja) ----------
+  // Los costos se consultan al encenderlo y solo de lo que está en la cotización
+  const pctSobreCosto = (costo, precio) => (Number(costo) > 0 ? (precio - Number(costo)) / Number(costo) * 100 : null);
+  const fmtPct = (n) => n.toLocaleString('es-CO', { maximumFractionDigits: 1 });
+  const GANANCIA_BAJA = 20;   // % sobre el costo por debajo del cual se marca en ámbar (igual que en Inventario)
+  const claseGan = (pct) => (pct == null ? '' : pct <= 0 ? 'neg' : pct < GANANCIA_BAJA ? 'baja' : '');
+  const ICONO_AVISO = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5"/></svg>';
+  const ICONO_ALERTA = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>';
+  const marcaGan = (pct) => {
+    const c = claseGan(pct);
+    return c ? `<span class="marca-gan">${ICONO_AVISO}${c === 'neg' ? 'Pérdida' : 'Baja'}</span>` : '';
+  };
+  const celda = (rotulo, valor) => `<div><dt>${rotulo}</dt><dd>${valor}</dd></div>`;
+
+  async function cargarCostos() {
+    const ids = (editando?.items ?? []).map((i) => i.id).filter((id) => !costos.has(id));
+    if (!ids.length || cargandoCostos) return;
+    cargandoCostos = true;
+    const { data, error } = await db.from('v_catalogo').select('*').in('id', ids);
+    cargandoCostos = false;
+    if (error) costosError = /fetch|network/i.test(error.message) || !navigator.onLine
+      ? 'Sin conexión: los costos se ven cuando vuelva internet.'
+      : 'No se pudieron traer los costos. Intenta de nuevo.';
+    else { costosError = ''; data.forEach((p) => costos.set(p.id, p)); }
+    if (verCostos && editando) pintarLineas();
+  }
+
+  function lineaCostos(i) {
+    if (!verCostos) return '';
+    const p = costos.get(i.id);
+    if (!p) return costosError ? '' : '<p class="cargando">Cargando costos…</p>';
+    const costo = Number(p.costo) || 0;
+    const pct = pctSobreCosto(costo, i.precio);
+    const ganancia = (i.precio - costo) * i.cantidad;
+    const abierto = !p.madre_id && p.tiene_fracciones && Number(p.abierto) > 0 ? ` <small>+ abierto ${Math.round(Number(p.abierto) * 100)} %</small>` : '';
+    const minimo = p.stock_minimo != null ? ` <small>(mín. ${Number(p.stock_minimo)})</small>` : '';
+    const celdas = [
+      celda('Costo c/u', costo > 0 ? cop.format(costo) : `<span class="sin-costo con-icono">${ICONO_ALERTA}Sin costo</span>`),
+      celda('Ganancia', costo > 0
+        ? `<span class="gan ${claseGan(pct)}">${cop.format(ganancia)}${pct != null ? ` · ${fmtPct(pct)} %` : ''}</span><span class="gan ${claseGan(pct)}">${marcaGan(pct)}</span>`
+        : '<span class="sin-dato">No se puede calcular</span>'),
+      celda('Stock', `${cant.format(Number(p.stock))}${abierto}${minimo}`),
+      p.sku ? celda('SKU', esc(p.sku)) : '',
+      typeof p.categoria === 'string' && p.categoria ? celda('Categoría', esc(p.categoria)) : '',
+      p.codigo_color ? celda('Color', esc(p.codigo_color)) : ''
+    ].join('');
+    return `<dl class="detalle num" aria-label="Costos de ${esc(i.etiqueta)}">${celdas}</dl>`;
+  }
+
+  // Costo, ganancia y margen de toda la cotización (con el descuento)
+  function pintarCostos() {
+    const items = editando?.items ?? [];
+    const btn = $('#verCostos'), caja = $('#costosResumen');
+    btn.hidden = !items.length;
+    btn.setAttribute('aria-pressed', String(verCostos));
+    const visible = verCostos && items.length > 0;
+    $('#avisoCostos').hidden = !visible;
+    $('#costosCot').hidden = !visible;
+    if (!visible) return;
+    const faltan = items.filter((i) => !costos.has(i.id));
+    // Lo que entra con los costos a la vista se consulta solo
+    if (faltan.length && !costosError) cargarCostos();
+    if (costosError && faltan.length) { caja.innerHTML = `<p class="nota">${esc(costosError)} <button type="button" class="btn" id="reintentarCostos">Reintentar</button></p>`; return; }
+    if (faltan.length) { caja.innerHTML = '<p class="nota">Cargando costos…</p>'; return; }
+    const { subtotal, descuento } = calcularEditor();
+    const total = subtotal - descuento;
+    const costo = items.reduce((s, i) => s + (Number(costos.get(i.id).costo) || 0) * i.cantidad, 0);
+    const sinCosto = items.filter((i) => !(Number(costos.get(i.id).costo) > 0)).map((i) => i.etiqueta);
+    const ganancia = total - costo;
+    const pct = pctSobreCosto(costo, total);
+    const margen = total > 0 ? ganancia / total * 100 : null;
+    const explica = margen != null && margen > 0
+      ? `De cada ${cop.format(100)} cotizados quedarían ${cop.format(Math.round(margen))} de ganancia. `
+      : margen != null && margen <= 0 ? 'Con este precio la cotización no deja ganancia. ' : '';
+    caja.innerHTML = `
+      <div class="principal"><span>Ganancia</span><span class="con-icono gan ${claseGan(pct)}">${marcaGan(pct)}<b>${cop.format(ganancia)}</b></span></div>
+      <dl class="cifras">
+        <dt>Costo</dt><dd>${cop.format(costo)}</dd>
+        <dt>Margen</dt><dd>${margen != null ? `${fmtPct(margen)} %` : '—'}</dd>
+        <dt>Sobre el costo</dt><dd>${pct != null ? `${fmtPct(pct)} %` : '—'}</dd>
+      </dl>
+      <p class="nota">${explica}Ya incluye el descuento. Son los costos de hoy: si cambian antes de que acepten, la ganancia también.</p>
+      ${sinCosto.length ? `<p class="nota mal">${ICONO_ALERTA}<span>${sinCosto.length === 1 ? `${esc(sinCosto[0])} no tiene costo` : `${sinCosto.length} productos no tienen costo`}: la ganancia real es menor.</span></p>` : ''}`;
+  }
+
+  const alternarCostos = () => {
+    verCostos = !verCostos;
+    costosError = '';
+    pintarLineas();
+  };
+  $('#verCostos').addEventListener('click', alternarCostos);
+  $('#costosResumen').addEventListener('click', (e) => {
+    if (e.target.id === 'reintentarCostos') { costosError = ''; pintarLineas(); }
+  });
 
   function pintarLineas() {
     const items = editando?.items ?? [];
@@ -1210,6 +1365,7 @@
           <div>
             <div class="nombre">${esc(i.etiqueta)}</div>
             <div class="meta num">${i.codigo ? esc(i.codigo) + ' · ' : ''}${cop.format(i.precio)} c/u · Disponible hoy: ${cant.format(i.stock)}</div>
+            ${lineaCostos(i)}
           </div>
         </div>
         <div class="paso">
@@ -1295,6 +1451,7 @@
   });
   document.addEventListener('keydown', (e) => {
     if ($('#editor').hidden || document.querySelector('dialog[open]')) return;
+    if (e.key === 'F4') { e.preventDefault(); if (editando?.items.length) alternarCostos(); return; }
     const a = document.activeElement;
     if ((!a || a === document.body) && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) $('#scan').focus();
   });
