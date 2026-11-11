@@ -49,7 +49,7 @@
   .logo { height: 3.3rem; width: auto; display: block; flex: none; margin: -.45rem 0; }
 
   main { max-width: 75rem; margin: 0 auto; padding: 1.25rem; display: grid; gap: 1.25rem; }
-  .controles { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: .75rem; align-items: end; padding: 1rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
+  .controles { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, .9fr) auto; gap: .75rem; align-items: end; padding: 1rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
   .ayuda { color: var(--suave); margin: 0; }
   .ayuda a { color: var(--acento); font-weight: 600; }
   .error { color: var(--alerta); font-weight: 600; margin: 0; }
@@ -85,6 +85,13 @@
   .reverso .titulo { font-size: 34px; line-height: .9; letter-spacing: .005em; text-wrap: balance; overflow-wrap: anywhere; }
   .reverso .mensaje { font-size: 12px; line-height: 1.25; }
   .reverso .datos { font-size: 11px; line-height: 1.25; font-weight: 500; }
+  /* Instagram: ícono + @cuenta en una línea propia */
+  .hoja .ig { display: flex; align-items: center; gap: 5px; font-weight: 700; white-space: nowrap; }
+  .hoja .ig svg { flex: none; width: 1.15em; height: 1.15em; }
+  .reverso .ig { font-size: 12px; line-height: 1; }
+  .claro .ig { color: #0E5266; }
+  .oscuro .ig { color: #fff; max-width: 126px; }   /* en el oscuro va debajo del QR: a la izquierda no cabe */
+  .oscuro .ig span { overflow: hidden; text-overflow: ellipsis; }
   .reverso .qr-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
   .reverso .qr-caja { width: 118px; height: 118px; }
 
@@ -117,6 +124,7 @@
   .aviso .titulo { font-size: 92px; line-height: .9; letter-spacing: .005em; text-wrap: balance; }
   .aviso .qr-caja { width: 310px; height: 310px; padding: 12px; border: 3px solid #111; border-radius: 12px; }
   .aviso .mensaje { font-size: 26px; line-height: 1.3; font-weight: 500; max-width: 600px; }
+  .aviso .ig { font-size: 30px; gap: 10px; color: #111; }
   .aviso .datos { font-size: 17px; line-height: 1.3; color: #5B646B; overflow-wrap: anywhere; }
 
   @page { size: letter; margin: 0; }
@@ -160,6 +168,7 @@
     </div>
     <div class="campo" data-texto><label for="titulo">Título</label><input id="titulo" value="Mira nuestro catálogo" maxlength="32"></div>
     <div class="campo" data-texto><label for="mensaje">Mensaje</label><input id="mensaje" value="Escanea el código con la cámara de tu celular." maxlength="70"></div>
+    <div class="campo" data-texto><label for="instagram">Instagram</label><input id="instagram" placeholder="@cuenta" maxlength="40" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
     <button type="button" class="btn btn-primario" id="imprimir" disabled>Imprimir</button>
   </div>
   <p class="error" id="error" role="alert" hidden></p>
@@ -200,6 +209,17 @@
     </div>`;
   const datos = () => [NEGOCIO.DIRECCION, NEGOCIO.TELEFONO && `Tel. ${NEGOCIO.TELEFONO}`].filter(Boolean).map(esc).join(' · ');
 
+  // Instagram: se puede escribir @cuenta, cuenta o el enlace del perfil; queda solo el nombre de usuario.
+  // Por defecto sale de NEGOCIO.INSTAGRAM en config.js; lo escrito aquí se recuerda en este equipo.
+  const LLAVE_IG = 'rebas-instagram';
+  const cuentaIg = (v) => String(v ?? '').trim()
+    .replace(/^(https?:\/\/)?(www\.)?instagram\.com\//i, '').replace(/^@+/, '').split(/[/?#\s]/)[0]
+    .replace(/[^A-Za-z0-9._]/g, '').slice(0, 30);
+  const iconoIg = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2">'
+    + '<rect x="2.5" y="2.5" width="19" height="19" rx="5.5"/><circle cx="12" cy="12" r="4.3"/>'
+    + '<circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none"/></svg>';
+  const ig = () => { const c = cuentaIg($('#instagram').value); return c ? `<div class="ig">${iconoIg}<span>@${esc(c)}</span></div>` : ''; };
+
   const DISENOS = {
     frente: () => `<div class="tarjeta negra frente">${pistola}${lockup}</div>`,
     claro: (titulo, mensaje) => `
@@ -208,6 +228,7 @@
           <div class="ceja-fila"><div class="raya"></div><div class="ceja">${esc(NOMBRE_TIENDA)}</div></div>
           <div class="titulo">${titulo}</div>
           <div class="mensaje">${mensaje}</div>
+          ${ig()}
           ${datos() ? `<div class="datos">${datos()}</div>` : ''}
         </div>
         <div class="qr-col"><div class="qr-caja">${qr}</div><div class="pie-qr">Pintura automotriz</div></div>
@@ -221,7 +242,7 @@
           <div class="mensaje">${mensaje}</div>
           ${datos() ? `<div class="datos">${datos()}</div>` : ''}
         </div>
-        <div class="qr-caja">${qr}</div>
+        <div class="qr-col"><div class="qr-caja">${qr}</div>${ig()}</div>
       </div>`
   };
 
@@ -239,6 +260,7 @@
             <div class="titulo">${titulo}</div>
             <div class="qr-caja">${qr}</div>
             <div class="mensaje">${mensaje}</div>
+            ${ig()}
             <div class="datos">${[esc(URL_CORTA), datos()].filter(Boolean).join(' · ')}</div>
           </div>
         </div>`;
@@ -259,7 +281,18 @@
     $('#imprimir').disabled = false;
   }
 
-  ['#formato', '#titulo', '#mensaje'].forEach((s) => $(s).addEventListener('input', pintar));
+  let igGuardado = '';
+  try { igGuardado = localStorage.getItem(LLAVE_IG) ?? ''; } catch {}
+  const igConfig = cuentaIg(NEGOCIO.INSTAGRAM);
+  $('#instagram').value = igGuardado || (igConfig ? '@' + igConfig : '');
+  $('#instagram').addEventListener('change', () => {
+    const c = cuentaIg($('#instagram').value);
+    $('#instagram').value = c ? '@' + c : '';
+    try { localStorage.setItem(LLAVE_IG, $('#instagram').value); } catch {}
+    pintar();
+  });
+
+  ['#formato', '#titulo', '#mensaje', '#instagram'].forEach((s) => $(s).addEventListener('input', pintar));
   $('#imprimir').addEventListener('click', async () => {
     await document.fonts.ready;   // que salga con Bebas Neue y Barlow, no con la letra del sistema
     window.print();
