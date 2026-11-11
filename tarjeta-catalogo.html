@@ -49,7 +49,7 @@
   .logo { height: 3.3rem; width: auto; display: block; flex: none; margin: -.45rem 0; }
 
   main { max-width: 75rem; margin: 0 auto; padding: 1.25rem; display: grid; gap: 1.25rem; }
-  .controles { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, .9fr) auto; gap: .75rem; align-items: end; padding: 1rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
+  .controles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr); gap: .75rem; align-items: end; padding: 1rem; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; }
   .ayuda { color: var(--suave); margin: 0; }
   .ayuda a { color: var(--acento); font-weight: 600; }
   .error { color: var(--alerta); font-weight: 600; margin: 0; }
@@ -85,13 +85,16 @@
   .reverso .titulo { font-size: 34px; line-height: .9; letter-spacing: .005em; text-wrap: balance; overflow-wrap: anywhere; }
   .reverso .mensaje { font-size: 12px; line-height: 1.25; }
   .reverso .datos { font-size: 11px; line-height: 1.25; font-weight: 500; }
-  /* Instagram: ícono + @cuenta en una línea propia */
-  .hoja .ig { display: flex; align-items: center; gap: 5px; font-weight: 700; white-space: nowrap; }
-  .hoja .ig svg { flex: none; width: 1.15em; height: 1.15em; }
-  .reverso .ig { font-size: 12px; line-height: 1; }
-  .claro .ig { color: #0E5266; }
-  .oscuro .ig { color: #fff; max-width: 126px; }   /* en el oscuro va debajo del QR: a la izquierda no cabe */
-  .oscuro .ig span { overflow: hidden; text-overflow: ellipsis; }
+  /* Contactos (Instagram, WhatsApp): ícono + dato, cada uno en su línea */
+  .hoja .contactos { display: flex; flex-direction: column; gap: 4px; }
+  .hoja .contacto { display: flex; align-items: center; gap: 5px; font-weight: 700; white-space: nowrap; min-width: 0; }
+  .hoja .contacto svg { flex: none; width: 1.15em; height: 1.15em; }
+  .hoja .contacto span { overflow: hidden; text-overflow: ellipsis; }
+  .reverso .contacto { font-size: 12px; line-height: 1; }
+  .claro .contacto { color: #0E5266; }
+  .oscuro .contactos { max-width: 126px; }   /* en el oscuro van debajo del QR: a la izquierda no caben */
+  .oscuro .contacto { color: #fff; }
+  .oscuro .qr-col.dos .qr-caja { width: 112px; height: 112px; }   /* con dos contactos, el QR cede un poco */
   .reverso .qr-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
   .reverso .qr-caja { width: 118px; height: 118px; }
 
@@ -124,7 +127,11 @@
   .aviso .titulo { font-size: 92px; line-height: .9; letter-spacing: .005em; text-wrap: balance; }
   .aviso .qr-caja { width: 310px; height: 310px; padding: 12px; border: 3px solid #111; border-radius: 12px; }
   .aviso .mensaje { font-size: 26px; line-height: 1.3; font-weight: 500; max-width: 600px; }
-  .aviso .ig { font-size: 30px; gap: 10px; color: #111; }
+  /* Con contactos, el cuerpo se aprieta un poco para que todo quepa en la hoja */
+  .aviso .cuerpo.con-contactos { gap: 18px; padding: 32px 72px 36px; }
+  .aviso .con-contactos .qr-caja { width: 260px; height: 260px; }
+  .aviso .contactos { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 12px 40px; }
+  .aviso .contacto { font-size: 30px; gap: 10px; color: #111; }
   .aviso .datos { font-size: 17px; line-height: 1.3; color: #5B646B; overflow-wrap: anywhere; }
 
   @page { size: letter; margin: 0; }
@@ -169,7 +176,8 @@
     <div class="campo" data-texto><label for="titulo">Título</label><input id="titulo" value="Mira nuestro catálogo" maxlength="32"></div>
     <div class="campo" data-texto><label for="mensaje">Mensaje</label><input id="mensaje" value="Escanea el código con la cámara de tu celular." maxlength="70"></div>
     <div class="campo" data-texto><label for="instagram">Instagram</label><input id="instagram" placeholder="@cuenta" maxlength="40" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
-    <button type="button" class="btn btn-primario" id="imprimir" disabled>Imprimir</button>
+    <div class="campo" data-texto><label for="whatsapp">WhatsApp</label><input id="whatsapp" type="tel" inputmode="tel" placeholder="300 123 4567" maxlength="20" autocomplete="off"></div>
+    <button type="button" class="btn btn-primario" id="imprimir" disabled style="justify-self: start">Imprimir</button>
   </div>
   <p class="error" id="error" role="alert" hidden></p>
 
@@ -218,7 +226,26 @@
   const iconoIg = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2">'
     + '<rect x="2.5" y="2.5" width="19" height="19" rx="5.5"/><circle cx="12" cy="12" r="4.3"/>'
     + '<circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none"/></svg>';
-  const ig = () => { const c = cuentaIg($('#instagram').value); return c ? `<div class="ig">${iconoIg}<span>@${esc(c)}</span></div>` : ''; };
+
+  // WhatsApp: se guarda solo con dígitos; un celular colombiano (10 dígitos, o 12 con el 57) sale como 300 123 4567.
+  // Por defecto sale de NEGOCIO.WHATSAPP en config.js; lo escrito aquí se recuerda en este equipo.
+  const LLAVE_WA = 'rebas-whatsapp';
+  const numeroWa = (v) => {
+    let d = String(v ?? '').replace(/\D/g, '');
+    if (d.length === 12 && d.startsWith('57')) d = d.slice(2);
+    return d.length === 10 ? `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}` : d.slice(0, 15);
+  };
+  const iconoWa = '<svg viewBox="0 0 24 24" aria-hidden="true">'
+    + '<path d="M12 2.6a9.4 9.4 0 0 0-8.1 14.2L2.6 21.4l4.7-1.2A9.4 9.4 0 1 0 12 2.6z" fill="none" stroke="currentColor" stroke-width="2"/>'
+    + '<path d="M8.7 7.3c.3-.3.8-.3 1 .1l1 1.7c.2.3.1.7-.1 1l-.6.6c.6 1.3 1.6 2.3 2.9 2.9l.6-.6c.3-.3.7-.3 1-.1l1.7 1c.4.2.4.7.1 1l-.9.9c-.6.6-1.6.7-2.4.3-2.3-1.1-4.1-2.9-5.2-5.2-.4-.8-.3-1.8.3-2.4z" fill="currentColor"/></svg>';
+
+  // Instagram y WhatsApp juntos; vacío si no hay ninguno
+  const contactosLista = () => {
+    const c = cuentaIg($('#instagram').value), w = numeroWa($('#whatsapp').value);
+    return [c && `<div class="contacto">${iconoIg}<span>@${esc(c)}</span></div>`,
+            w && `<div class="contacto">${iconoWa}<span>${esc(w)}</span></div>`].filter(Boolean);
+  };
+  const contactos = () => { const l = contactosLista(); return l.length ? `<div class="contactos">${l.join('')}</div>` : ''; };
 
   const DISENOS = {
     frente: () => `<div class="tarjeta negra frente">${pistola}${lockup}</div>`,
@@ -228,7 +255,7 @@
           <div class="ceja-fila"><div class="raya"></div><div class="ceja">${esc(NOMBRE_TIENDA)}</div></div>
           <div class="titulo">${titulo}</div>
           <div class="mensaje">${mensaje}</div>
-          ${ig()}
+          ${contactos()}
           ${datos() ? `<div class="datos">${datos()}</div>` : ''}
         </div>
         <div class="qr-col"><div class="qr-caja">${qr}</div><div class="pie-qr">Pintura automotriz</div></div>
@@ -242,7 +269,7 @@
           <div class="mensaje">${mensaje}</div>
           ${datos() ? `<div class="datos">${datos()}</div>` : ''}
         </div>
-        <div class="qr-col"><div class="qr-caja">${qr}</div>${ig()}</div>
+        <div class="qr-col${contactosLista().length > 1 ? ' dos' : ''}"><div class="qr-caja">${qr}</div>${contactos()}</div>
       </div>`
   };
 
@@ -255,12 +282,12 @@
       $('#hoja').innerHTML = `
         <div class="aviso">
           <div class="banda">${pistola}${lockup}</div>
-          <div class="cuerpo">
+          <div class="cuerpo${contactosLista().length ? ' con-contactos' : ''}">
             <div class="ceja-fila"><div class="raya"></div><div class="ceja">Pintura automotriz y accesorios</div><div class="raya"></div></div>
             <div class="titulo">${titulo}</div>
             <div class="qr-caja">${qr}</div>
             <div class="mensaje">${mensaje}</div>
-            ${ig()}
+            ${contactos()}
             <div class="datos">${[esc(URL_CORTA), datos()].filter(Boolean).join(' · ')}</div>
           </div>
         </div>`;
@@ -292,7 +319,16 @@
     pintar();
   });
 
-  ['#formato', '#titulo', '#mensaje', '#instagram'].forEach((s) => $(s).addEventListener('input', pintar));
+  let waGuardado = '';
+  try { waGuardado = localStorage.getItem(LLAVE_WA) ?? ''; } catch {}
+  $('#whatsapp').value = waGuardado || numeroWa(NEGOCIO.WHATSAPP);
+  $('#whatsapp').addEventListener('change', () => {
+    $('#whatsapp').value = numeroWa($('#whatsapp').value);
+    try { localStorage.setItem(LLAVE_WA, $('#whatsapp').value); } catch {}
+    pintar();
+  });
+
+  ['#formato', '#titulo', '#mensaje', '#instagram', '#whatsapp'].forEach((s) => $(s).addEventListener('input', pintar));
   $('#imprimir').addEventListener('click', async () => {
     await document.fonts.ready;   // que salga con Bebas Neue y Barlow, no con la letra del sistema
     window.print();
