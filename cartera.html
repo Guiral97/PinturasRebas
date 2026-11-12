@@ -186,6 +186,10 @@
   #tbHistorial .f-info small { font-weight: 400; }
   #tbHistorial strong { white-space: nowrap; }
   #tbHistorial .abonado { color: var(--ok); }
+  #tbHistorial .h-corregir { min-height: 2.25rem; padding: 0; font-size: .85rem; }
+  /* Corregir la forma de pago de un abono */
+  .efecto-caja { margin: 0; padding: .6rem .75rem; border: 1px solid var(--linea); border-radius: var(--radio, 6px); background: var(--fondo); font-size: .9rem; }
+  .segmentos button:disabled { opacity: .55; cursor: not-allowed; }
   #tbHistorial .estado { font-size: .72rem; padding: 0 .45rem; }
   #tbHistorial .menos { color: var(--suave); }
   #tbHistorial .btn-texto { min-height: 2.25rem; min-width: 4.75rem; justify-content: flex-end; text-decoration: none; display: inline-flex; align-items: center; }
@@ -454,6 +458,34 @@
   </form>
 </dialog>
 
+<dialog id="dlgForma" aria-labelledby="formaTitulo">
+  <form id="frmForma">
+    <h2 id="formaTitulo">Corregir forma de pago</h2>
+    <p class="ayuda" id="formaDetalle"></p>
+    <fieldset>
+      <legend>¿Cómo se pagó realmente?</legend>
+      <div class="segmentos" id="formaMetodos">
+        <button type="button" class="btn" data-forma-metodo="efectivo" aria-pressed="false">Efectivo</button>
+        <button type="button" class="btn" data-forma-metodo="transferencia" aria-pressed="false">Transferencia</button>
+        <button type="button" class="btn" data-forma-metodo="tarjeta" aria-pressed="false">Tarjeta</button>
+      </div>
+    </fieldset>
+    <p class="efecto-caja" id="formaEfecto" aria-live="polite"></p>
+    <div class="campo">
+      <label for="formaRef">Referencia <span class="ayuda">(opcional)</span></label>
+      <input id="formaRef" autocomplete="off" placeholder="Número de transferencia o recibo">
+    </div>
+    <div class="campo">
+      <label for="formaMotivo">Motivo <span class="ayuda">(opcional)</span></label>
+      <input id="formaMotivo" maxlength="200" autocomplete="off" placeholder="Ej.: se marcó efectivo por error">
+    </div>
+    <div class="dlg-acciones">
+      <button type="button" class="btn" id="formaCancelar">Cancelar</button>
+      <button type="submit" class="btn btn-primario" id="formaConfirmar">Guardar cambio</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="aviso" role="status" popover="manual" hidden></div>
 
 <script>
@@ -487,6 +519,7 @@
   let clientes = [];          // todos los clientes (para ver también a los que están al día)
   let perfiles = {};          // id -> nombre
   let miId = null;
+  let miRol = null;           // 'socio' o 'vendedor'
   let historial = [];         // compras, abonos (agrupados) y devoluciones del cliente abierto
   let filtroHist = 'todo';
   const PASO_HIST = 25;
@@ -539,9 +572,10 @@
     $('#app').hidden = !con;
     $('#salir').hidden = !con;
     if (!con) { $('#app').classList.remove('ver-detalle'); return; }
-    const { data: ps } = await db.from('perfiles').select('id, nombre');
+    const { data: ps } = await db.from('perfiles').select('id, nombre, rol');
     perfiles = Object.fromEntries((ps ?? []).map((p) => [p.id, p.nombre]));
     miId = session.user.id;
+    miRol = (ps ?? []).find((p) => p.id === miId)?.rol ?? null;
     if (!perfiles[miId]) aviso('Tu usuario no tiene perfil activo. Pide que lo agreguen en la tabla perfiles.', 'error');
     $('#usuario').textContent = perfiles[miId] ?? session.user.email;
     navPendientes(db);
@@ -739,6 +773,14 @@
     }
     const pedido = clienteActual;
 
+    // El formulario se reinicia ANTES de consultar y se oculta mientras carga: así lo que se
+    // elija (p. ej. Transferencia) no se borra al terminar la carga ni queda en otro cliente
+    $('#frmAbono').hidden = true;
+    $('#frmAbono').reset();
+    try { $('#abImprimir').checked = localStorage.getItem('rebas-imprimir-abono') !== 'no'; } catch (_) {}
+    metodoAbono = 'efectivo';
+    $('#abMetodos').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x.dataset.metodo === metodoAbono));
+
     const [rf, rvt, ra, rd] = await Promise.all([
       db.from('v_cartera_ventas').select('*').eq('cliente_id', id).gt('saldo', 0).order('creado_en'),
       db.from('ventas').select('id, creado_en, total, metodo_pago, estado, usuario_id')
@@ -813,10 +855,6 @@
     limiteHist = PASO_HIST;
     pintarHistorial();
 
-    $('#frmAbono').reset();
-    try { $('#abImprimir').checked = localStorage.getItem('rebas-imprimir-abono') !== 'no'; } catch (_) {}
-    metodoAbono = 'efectivo';
-    $('#abMetodos').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x.dataset.metodo === metodoAbono));
     textoBotonAbono();
     actualizarAyudaAplicar();
     $('#detVacio').hidden = true;
@@ -903,11 +941,19 @@
         </li>`;
       }
       if (h.tipo === 'abono') {
+        // Si se corrigió la forma de pago (script 19): cuál era y quién la cambió
+        const a0 = h.items[0];
+        const corregido = a0.metodo_original && a0.metodo_original !== h.metodo;
+        const quienCambio = perfiles[a0.metodo_cambiado_por];
+        const textoCambio = corregido
+          ? ` · antes ${METODOS[a0.metodo_original] ?? esc(a0.metodo_original)}${quienCambio ? `, lo corrigió ${esc(quienCambio)}` : ''}${a0.metodo_cambio_motivo ? ` (${esc(a0.metodo_cambio_motivo)})` : ''}`
+          : '';
         return rotulo + `
         <li>
           <span class="h-ico abono" aria-hidden="true">${ICO_HIST.abono}</span>
-          <div class="f-info">Abono N.° ${h.numero} · ${METODOS[h.metodo] ?? esc(h.metodo)}
-            <small class="num">${hora} · ${h.items.length === 1 ? 'venta' : 'ventas'} ${h.items.map((a) => a.venta_id).join(', ')}${h.referencia ? ` · ref. ${esc(h.referencia)}` : ''}${quien ? ` · recibió ${esc(quien)}` : ''}</small></div>
+          <div class="f-info">Abono N.° ${h.numero} · ${METODOS[h.metodo] ?? esc(h.metodo)}${corregido ? ' <span class="estado estado-neutro">Corregido</span>' : ''}
+            <small class="num">${hora} · ${h.items.length === 1 ? 'venta' : 'ventas'} ${h.items.map((a) => a.venta_id).join(', ')}${h.referencia ? ` · ref. ${esc(h.referencia)}` : ''}${quien ? ` · recibió ${esc(quien)}` : ''}${textoCambio}</small>
+            ${puedeCorregir(h) ? `<button type="button" class="btn-texto h-corregir" data-forma="${i}" aria-label="Corregir la forma de pago del abono ${h.numero}">Corregir forma de pago</button>` : ''}</div>
           <strong class="abonado">${cop.format(h.total)}</strong>
           <button type="button" class="btn-texto" data-imprimir="${i}" aria-label="Imprimir abono ${h.numero}">Imprimir</button>
         </li>`;
@@ -936,6 +982,72 @@
   $('#tbHistorial').addEventListener('click', (e) => {
     const b = e.target.closest('[data-imprimir]');
     if (b) pedirImpresion(historial[+b.dataset.imprimir], true);
+    const f = e.target.closest('[data-forma]');
+    if (f) pedirForma(historial[+f.dataset.forma]);
+  });
+
+  // ---------- Corregir la forma de pago de un abono (script 19) ----------
+  // Un socio o quien lo registró; la base de datos no deja si ya entró en un cierre de caja
+  const puedeCorregir = (h) => miRol === 'socio' || (!!miId && h.usuario_id === miId);
+  let porCorregir = null;   // grupo del historial
+  let formaNueva = null;
+
+  function pintarForma() {
+    const g = porCorregir;
+    $('#formaMetodos').querySelectorAll('button').forEach((b) => {
+      const m = b.dataset.formaMetodo;
+      b.disabled = m === g.metodo;
+      b.setAttribute('aria-pressed', String(m === formaNueva));
+      b.textContent = METODOS[m] + (m === g.metodo ? ' (actual)' : '');
+    });
+    const valor = cop.format(g.total);
+    $('#formaEfecto').textContent = !formaNueva ? 'Elige la forma de pago correcta.'
+      : g.metodo === 'efectivo' ? `El cierre de caja dejará de esperar estos ${valor} en efectivo.`
+      : formaNueva === 'efectivo' ? `El cierre de caja esperará estos ${valor} más en efectivo.`
+      : 'No cambia lo que espera el cierre de caja.';
+    $('#formaConfirmar').disabled = !formaNueva;
+    $('#formaConfirmar').textContent = formaNueva ? `Cambiar a ${METODOS[formaNueva].toLowerCase()}` : 'Guardar cambio';
+  }
+
+  function pedirForma(g) {
+    if (!g || g.tipo !== 'abono') return;
+    porCorregir = g;
+    formaNueva = g.metodo === 'efectivo' ? 'transferencia' : null;
+    $('#frmForma').reset();
+    $('#formaDetalle').textContent = `Abono N.° ${g.numero} por ${cop.format(g.total)} · ${fHora.format(new Date(g.fecha))} · registrado como ${METODOS[g.metodo] ?? g.metodo}`;
+    pintarForma();
+    $('#dlgForma').showModal();
+    (formaNueva ? $(`[data-forma-metodo="${formaNueva}"]`) : $('#formaCancelar')).focus();
+  }
+
+  $('#formaMetodos').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-forma-metodo]');
+    if (!b || b.disabled) return;
+    formaNueva = b.dataset.formaMetodo;
+    pintarForma();
+  });
+  $('#formaCancelar').addEventListener('click', () => $('#dlgForma').close());
+  $('#frmForma').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const g = porCorregir;
+    if (!g || !formaNueva || !clienteActual) return;
+    const btn = $('#formaConfirmar');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    const { error } = await db.rpc('cambiar_forma_abono', {
+      p_abono_id: g.numero,
+      p_metodo: formaNueva,
+      p_referencia: $('#formaRef').value.trim() || null,
+      p_motivo: $('#formaMotivo').value.trim() || null
+    });
+    if (error) {
+      pintarForma();
+      const falta = error.code === 'PGRST202' || /cambiar_forma_abono/.test(error.message);
+      return aviso(falta ? 'Falta ejecutar el script 19_cambiar_forma_abono.sql en Supabase.' : 'No se cambió: ' + error.message, 'error');
+    }
+    $('#dlgForma').close();
+    aviso(`Abono N.° ${g.numero} cambiado a ${METODOS[formaNueva].toLowerCase()}.`);
+    await abrirCliente(clienteActual.cliente_id);
   });
 
   // ---------- Elegir qué imprimir ----------
